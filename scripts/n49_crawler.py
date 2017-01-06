@@ -16,7 +16,6 @@ cdriver_path	 = '/Users/andrewtallos/Downloads/chromedriver'
 driver		 = webdriver.Chrome(executable_path=cdriver_path)
 
 
-
 '''	Get a list of search queries, e.g. ['contractor, 'inspector'].
 	Args:
 		fname: Name of the .xlsx file containing our search queries.
@@ -82,7 +81,7 @@ def get_html(queries):
 	
 	# Create a list of URLs to individual business pages.
 	email_links = []
-	for query in queries[:3]:
+	for query in queries:
 		driver.get(query)
 		
 		n_results = driver.find_element_by_id('search-criteria-total-results')
@@ -144,6 +143,10 @@ if __name__=='__main__':
 	urls		= get_html(queries)
 	emails		= get_emails(urls, verbose=True)
 	
+	import cPickle as pickle
+	with open('emails', 'w') as fp:
+		pickle.dump(emails, fp)
+
 	print emails
 	print
 	print len(emails), ' emails downloaded.'
