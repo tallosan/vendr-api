@@ -108,8 +108,17 @@ def get_html(queries):
 '''
 def scroll(sr, nr):
 	
+	
+	# Scroll through the page. n49 has a bug where the # of results listed
+	# does not match the actual # of results. Breaking the loop after 1
+	# minute solves this.
+	import time
+	timeout = time.time() + 60
+
 	while len(sr.find_elements_by_class_name('search-hit-image')) < nr:
 		driver.execute_script('window.scrollTo(0, document.body.scrollHeight);')
+		if time.time() > timeout:
+			return
 
 
 '''	Recieves a list of individual business page URLs, and returns the
