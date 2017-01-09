@@ -55,7 +55,7 @@ def linkify(queries):
 	suffixs = [
 			"/253/Ajax/", "/459/Aurora/", "/422/Brampton/", 
 			"/35025/Brock/", "/300/Burlington/", "/423/Caledon/",
-			"262/Clarington/", "/31027/Georgina/", "/303/Halton Hills/",
+			"/262/Clarington/", "/31027/Georgina/", "/303/Halton Hills/",
 			"/470/Markham/", "/305/Milton/", "/425/Mississauga/", 
 			"/472/Newmarket/", "/307/Oakville/", "/268/Oshawa/",
 			"/269/Pickering/", "/475/Richmond Hill/", "/699/Scarborough",
@@ -141,13 +141,15 @@ def get_emails(urls, verbose=False):
 			if email not in emails: emails.append(email.text)
 		except selenium.common.exceptions.NoSuchElementException as NSE_error:
 			if verbose: print str(NSE_error)
-		
+		except Exception as unknown_error:
+			if verbose: print 'unknown error: ' + str(unknown_error)
+
 	return emails
 	
 
 if __name__=='__main__':
 	
-	queries 	= get_search_queries('contractors.xlsx')
+	queries 	= get_search_queries('scripts/contractors.xlsx')
 	queries		= linkify(queries)
 	urls		= get_html(queries)
 	emails		= get_emails(urls, verbose=True)
