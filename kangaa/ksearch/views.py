@@ -36,7 +36,6 @@ def search_router(request):
 ''' Seach view for all Property models. '''
 class PropertySearch(generics.ListAPIView):
 
-    #TODO: Add sorting feature.
     #TODO: Find users by username, not ID.
     ''' Filters the queryset according to the specified parameters. '''
     def get_queryset(self):
@@ -65,21 +64,12 @@ class PropertySearch(generics.ListAPIView):
         
         queryset = self.get_queryset()
         
-        # Divide the property objects accordingly.
-        condos, houses = [], []
+        # Construct our response by serializing each object in the queryset.
+        response = []
         for kproperty in queryset:
-            if type(kproperty) == Condo:
-                condos.append(kproperty)
+            serializer = kproperty.get_serializer()
+            response.append(serializer(kproperty).data)
 
-            elif type(kproperty) == House:
-                houses.append(kproperty)
-
-        # Now serialize using the appropriate serializer, and return.
-        condo_serializer = CondoSerializer(condos, many=True)
-        house_serializer = HouseSerializer(houses, many=True)
-        
-        response = condo_serializer.data + house_serializer.data
-        
         return Response(response)
 
 
@@ -88,7 +78,6 @@ class UserSearch(generics.ListAPIView):
 
     serializer_class = UserSerializer
     
-    #TODO: Add sorting feature.
     ''' Filters the queryset according to the specified parameters. '''
     def get_queryset(self):
         

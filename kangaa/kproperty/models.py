@@ -19,16 +19,17 @@ class Property(models.Model):
                     on_delete=models.CASCADE)
 
     # Main attributes.
-    #address     = models.CharField(max_length=100, blank=False)
-    #location    = models.CharField(max_length=100, blank=False)
     price       = models.FloatField(blank=False)
     sqr_ftg     = models.FloatField(blank=False)
     n_bedrooms  = models.IntegerField(blank=False)
     n_bathrooms = models.IntegerField(blank=False)
-
     location    = models.ForeignKey('Location',
                     related_name='location',
                     on_delete=models.CASCADE, blank=False)
+    
+    ''' Returns the serializer type for this model. '''
+    def get_serializer(self):
+        raise NotImplementedError("'get_serializer()' must be implimented.")
 
 
 '''   Condo model. Contains all data pertaining to a particular Condo
@@ -36,15 +37,26 @@ class Property(models.Model):
 class Condo(Property):
     
     floor_num   = models.IntegerField()
+
+    ''' Returns a CondoSerializer object. '''
+    def get_serializer(self):
+    
+        from kproperty.serializers import CondoSerializer
+        return CondoSerializer
  
 
 '''   House model. Contains all data pertaining to a particular House
       instance. Child of 'Property'. '''
 class House(Property):
     
-    pass
+    ''' Returns a HouseSerializer object. '''
+    def get_serializer(self):
+
+        from kproperty.serializers import HouseSerializer
+        return HouseSerializer
 
 
+'''   Location model. Contains locational data for a particular listing. '''
 class Location(models.Model):
 
     country     = models.CharField(max_length=50, blank=False)

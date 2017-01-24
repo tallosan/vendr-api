@@ -19,15 +19,12 @@ class PropertyList(APIView):
             *format: Specified data format.
     '''
     def get(self, request, format=None):
-
-        condos     = Condo.objects.all()
-        houses     = House.objects.all()
-
-        condo_serializer = CondoSerializer(condos, many=True)
-        house_serializer = HouseSerializer(houses, many=True)
-
-        response = condo_serializer.data + house_serializer.data
         
+        response = []
+        for kproperty in Property.objects.select_subclasses():
+            serializer = kproperty.get_serializer()
+            response.append(serializer(kproperty).data)
+
         return Response(response)
 
     ''' Places objects in the database.
@@ -70,13 +67,8 @@ class PropertyDetail(APIView):
         # Get the object in question, and its serializer.
         try:
             target = Property.objects.get_subclass(pk=pk)
-            if type(target) == Condo:
-                self.serializer = CondoSerializer
-            elif type(target) == House:
-                self.serializer = HouseSerializer
-
+            self.serializer = target.get_serializer()
             return target
-
         except Property.DoesNotExist:
             raise Http404
     

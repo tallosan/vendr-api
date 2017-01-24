@@ -82,4 +82,17 @@ class HouseSerializer(PropertySerializer):
     class Meta(PropertySerializer.Meta):
 
         model = House
+    
+    ''' Handles the creation of a House object.
+        Args:
+            validated_data: The request data we create the new model from.
+    '''
+    def create(self, validated_data):
+
+        location_data   = validated_data.pop('location')
+        location        = Location.objects.create(**location_data)
+        house           = House.objects.create(location=location, **validated_data)
+        
+        return house
+
 
