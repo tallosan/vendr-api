@@ -96,8 +96,6 @@ class PropertySerializer(serializers.ModelSerializer):
     '''
     def update(self, instance, validated_data):
         
-        import collections    # Used for model update check.
-        
         # For each term, perform the necessary updates on the target field.
         # Special case here is for nested object updates.
         for term in validated_data.keys():
@@ -105,7 +103,7 @@ class PropertySerializer(serializers.ModelSerializer):
             target = getattr(instance, term)
             
             # Nested object.
-            if type(target_data) == collections.OrderedDict:
+            if type(target_data).__name__ == 'OrderedDict':
                 for field in target_data.keys():
                     setattr(target, field, target_data[field])
                 target.save()
