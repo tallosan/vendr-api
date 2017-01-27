@@ -9,7 +9,6 @@ from kproperty.models import *
 from kproperty.serializers import *
 
 
-#TODO: Refactor to use Mixins and/or Generics.
 '''   Lists all properties. '''
 class PropertyList(APIView):
         
@@ -76,11 +75,11 @@ class PropertyDetail(APIView):
         Args:
             request: Handler for request field.
             pk: The primary key of the property.
-            *format: Specified data format.
+            *format: Specified data format (e.g. JSON).
     '''
     def get(self, request, pk, format=None):
 
-        kproperty = self.get_object(pk)
+        kproperty       = self.get_object(pk)
         self.serializer = self.serializer(kproperty)
         
         return Response(self.serializer.data)
@@ -89,7 +88,7 @@ class PropertyDetail(APIView):
         Args:
             request: Property data.
             pk: The primary key of the property.
-            *format: Specified data format.
+            *format: Specified data format (e.g. JSON).
     '''
     def put(self, request, pk, format=None):
 
@@ -105,7 +104,7 @@ class PropertyDetail(APIView):
         Args:
             request: Handler for request field.
             pk: The primary key of the property.
-            *format: Specified data format.
+            *format: Specified data format (e.g. JSON).
     '''
     def delete(self, request, pk, format=None):
 
