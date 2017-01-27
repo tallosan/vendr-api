@@ -27,6 +27,16 @@ class Property(models.Model):
                     related_name='location',
                     on_delete=models.CASCADE, blank=False)
     
+    # Secondary attributes.
+    history     = models.ForeignKey('Historical',
+                    related_name='history',
+                    on_delete=models.CASCADE, blank=True, null=True)
+
+    # Hidden fields (i.e. fields connected via a foreign key.
+    tax_records  = models.ForeignKey('TaxRecord',
+                    related_name='tax_records',
+                    on_delete=models.CASCADE, blank=True, null=True)
+
     ''' Returns the serializer type for this model. '''
     def get_serializer(self):
         raise NotImplementedError("'get_serializer()' must be implimented.")
@@ -56,6 +66,8 @@ class House(Property):
         return HouseSerializer
 
 
+###  Detail objects. ###
+   
 '''   Location model. Contains locational data for a particular listing. '''
 class Location(models.Model):
 
@@ -68,4 +80,28 @@ class Location(models.Model):
     
     longitude   = models.DecimalField(max_digits=9, decimal_places=6, blank=False)
     latitude    = models.DecimalField(max_digits=9, decimal_places=6, blank=False)
+
+
+'''   Feature model. Contains the property features (e.g. fireplace, garden, etc). '''
+class Features(models.Model):
+    pass
+
+
+''' Tax model. Contains the tax data for the property. '''
+class TaxRecord(models.Model):
+
+    # Most recent tax assessment, and the year in which it was made.
+    assessment      = models.FloatField(blank=True, null=True)
+    assessment_year = models.IntegerField(blank=True, null=True)
+
+
+'''   Historical model. Contains data about the history of the property. '''
+class Historical(models.Model):
+    
+    # Price the property was last sold for, and the date it was sold.
+    last_sold_price = models.FloatField(blank=True, null=True)
+    last_sold_date  = models.DateField(blank=True, null=True)
+
+    # The year the property was built.
+    year_built      = models.IntegerField(blank=True, null=True)
 
