@@ -3,35 +3,9 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 
 from kproperty.models import *
+from kproperty.nested_serializers import *       
 
 
-#TODO: Refactor this. Move these secondary serializers elsewhere.
-## Secondary.
-'''   Serializer for Location models. '''
-class LocationSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model   = Location
-        fields  = ('country', 'province', 'city',
-                   'address', 'postal_code',
-                   'longitude', 'latitude')
-
-        
-class TaxRecordSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model   = TaxRecord
-        fields  = ('assessment', 'assessment_year')
-
-
-class HistoricalSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model   = Historical
-        fields  = ('last_sold_price', 'last_sold_date',
-                   'year_built')
-        
-## Main.
 '''   Serializer for Property models. '''
 class PropertySerializer(serializers.ModelSerializer):
 
@@ -41,7 +15,8 @@ class PropertySerializer(serializers.ModelSerializer):
     location    = LocationSerializer()
 
     # Secondary fields.
-    tax_records = TaxRecordSerializer()
+    features    = FeaturesSerializer(Features.objects.all(), many=True)
+    tax_records = TaxRecordSerializer(TaxRecord.objects.all(), many=True)
     history     = HistoricalSerializer()
     
     class Meta:
@@ -51,6 +26,7 @@ class PropertySerializer(serializers.ModelSerializer):
                    'sqr_ftg',
                    'n_bedrooms', 'n_bathrooms',
                    'location',
+                   'features',
                    'tax_records',
                    'history')
 
@@ -65,27 +41,39 @@ class PropertySerializer(serializers.ModelSerializer):
 
         # We need to explicitly declare these nested fields so we can create
         # them later on.
-        nested_keys = {
+        foreign_keys = {
                         'location': Location(),
                         'tax_records': TaxRecord(),
-                        'history': Historical()
+                        'history': Historical(),
+                        'features': Features()
         }
-
-        # Go through the validated data, and create the nested objects using
-        # the given data. We then set the respective fields for our property object.
-        kproperty = property_class
-        for key in validated_data.keys():
-            if key in nested_keys.keys():
-                nested_data    = validated_data.pop(key)
-                instance_class = nested_keys[key].__class__
-                instance = instance_class.objects.create(**nested_data)
-                setattr(kproperty, key, instance)
-
-        # Now we pass through the regular (non-nested) field data.
-        setattr(kproperty, 'kwargs', validated_data)
-        for k, v in validated_data.iteritems():
-            setattr(kproperty, k, v)
         
+        # Go through the validated data, and pop any foreign key data. We can't
+        # create these models before our Property model, so this is all we can
+        # do for now.
+        foreign_key_buf = {}
+        for key in validated_data.keys():
+            if key in foreign_keys.keys():
+                foreign_key_buf[key] = (foreign_keys[key], validated_data.pop(key))
+        
+        # Create the Property model using non-FK data (e.g. n_bedrooms).
+        kproperty = property_class.objects.create(**validated_data)
+        
+        # Now we can create our foreign keys models, using our fk buffer.
+        for fkey in foreign_key_buf.keys():
+            fkey_class = foreign_key_buf[fkey][0].__class__
+            data       = foreign_key_buf[fkey][1]
+            
+            #TODO: Condense this into just a for-loop.
+            # Create a unique foreign key model [e.g Location].
+            if type(data).__name__ == 'OrderedDict':
+                fkey_class.objects.create(kproperty=kproperty, **data)
+            
+            # Create multiple foreign key models [e.g Feature set].
+            elif type(data).__name__ == 'list':
+                for ins_data in data:
+                    fkey_class.objects.create(kproperty=kproperty, **ins_data)
+
         kproperty.save()
         return kproperty
  
@@ -97,21 +85,40 @@ class PropertySerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         
         # For each term, perform the necessary updates on the target field.
-        # Special case here is for nested object updates.
+        # Special cases exist for nested objects, & foreign key objects.
         for term in validated_data.keys():
             target_data = validated_data.pop(term)
-            target = getattr(instance, term)
+            target      = getattr(instance, term)
             
-            # Nested object.
+            # Unique Foreign Key model (i.e. one-to-one relation).
             if type(target_data).__name__ == 'OrderedDict':
                 for field in target_data.keys():
                     setattr(target, field, target_data[field])
+                
                 target.save()
+            
+            # Nested Foreign Key models (i.e. one-to-many relation).
+            elif type(target_data).__name__ == 'list':
+                
+                # If we're given an emtpy list, we assume that the foreign keys should
+                # be deleted.
+                if len(target_data) == 0:
+                    target.all().delete()
+                
+                # Otherwise, check if the foreign key already exists. If not, the
+                # we can create it.
+                else:
+                    for data in target_data:
+                        model_class = target.all().model
+                        if target.filter(**data).count() == 0:
+                            model_class.objects.create(kproperty=instance, **data)
+
+            # Regular field update.
             else:
                 setattr(instance, term, target_data)
             
             instance.save()
-
+        
         return instance
 
 
@@ -126,7 +133,7 @@ class CondoSerializer(PropertySerializer):
     ''' Overrides parent by passing a Condo model as the 'property_class'. '''
     def create(self, validated_data):
 
-        return super(CondoSerializer, self).create(Condo(), validated_data)
+        return super(CondoSerializer, self).create(Condo().__class__, validated_data)
 
 
 '''   Serializer for House models. '''
@@ -139,5 +146,5 @@ class HouseSerializer(PropertySerializer):
     ''' Overrides parent by passing a House model as the 'property_class'. '''
     def create(self, validated_data):
 
-        return super(HouseSerializer, self).create(House(), validated_data)
+        return super(HouseSerializer, self).create(House().__class__, validated_data)
 
