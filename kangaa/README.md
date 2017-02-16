@@ -3,6 +3,16 @@
 ```javascript
 BASE_URL = api.kangaa.xyz/v1/
 ```
+
+### OAuth Keys:
+
+client_id:
+
+myZVUa7ISqCTg0MdVMyrQAubFpvfxrdZ6cMPoA3K
+
+client_secret:
+LtZRVZwlAlv0NhyXo4Yure4I8iyP0JwxAcaRGvVh8iS2KQQj3EAqnhkoZq7lT9hcixdO602oG11s2GULQDKEnf844CuGxCxR4ZsfoarLf3XjilRVY1TOkNuUIyh3Sfi7
+
 ---
 
 ### Properties Endpoint:
