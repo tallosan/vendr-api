@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
+from django.conf import settings
 
 from model_utils.managers import InheritanceManager
 
@@ -13,7 +14,7 @@ class Property(models.Model):
     objects     = InheritanceManager()
     
     # Owner of this property listing.
-    owner       = models.ForeignKey('auth.User', related_name='listings',
+    owner       = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='listings',
                     on_delete=models.CASCADE, db_index=True)
 
     # Main attributes.
@@ -58,9 +59,6 @@ class House(Property):
 '''   Location model. Contains locational data for a particular listing. '''
 class Location(models.Model):
 
-    #kproperty   = models.ForeignKey('Property', related_name='location',
-                    #unique=True,
-                    #on_delete=models.CASCADE)
     kproperty   = models.OneToOneField('Property', related_name='location',
                     on_delete=models.CASCADE)
 
@@ -69,6 +67,7 @@ class Location(models.Model):
     city        = models.CharField(max_length=30, blank=False, db_index=True)
     address     = models.CharField(max_length=100, blank=False, db_index=True)
     postal_code = models.CharField(max_length=10, blank=False, db_index=True)
+    
     longitude   = models.DecimalField(max_digits=9, decimal_places=6, blank=False)
     latitude    = models.DecimalField(max_digits=9, decimal_places=6, blank=False)
 
