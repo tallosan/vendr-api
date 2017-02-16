@@ -69,8 +69,13 @@ class PropertySearch(generics.ListAPIView):
         for kproperty in queryset:
             serializer = kproperty.get_serializer()
             response.append(serializer(kproperty).data)
-
-        return Response(response)
+        
+        headers = {
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Credentials': True,
+                    'Access-Control-Allow-Methods': 'GET,HEAD,OPTIONS,POST,PUT',
+                    'Access-Control-Allow-Headers': 'Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers'}
+        return Response(response, headers=headers)
 
 
 '''   Search view for User objects. '''
