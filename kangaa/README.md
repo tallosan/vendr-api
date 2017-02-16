@@ -7,26 +7,26 @@ BASE_URL = api.kangaa.xyz/v1/
 
 ### Properties Endpoint:
 ```javascript
-URL               METHODS           AUTH / PERMISSIONS
+URL               METHODS               AUTH & PERMISSIONS
 
-properties/       GET, POST         OAuth. Must be owner.
-properties/<id>/  GET, PUT, DELETE  OAuth. Must be owner.
+properties/       *GET, POST         	OAuth & must be owner. GET has none.
+properties/<id>/  *GET, PUT, DELETE  	OAuth & must be owner. GET has none.
 ```
 
 ### Users Endpoint:
 ```javascript
-URL               METHODS           AUTH / PERMISSIONS
+URL               METHODS               AUTH & PERMISSIONS
 
-users/            GET, POST         None.
-users/<id>/       GET, PUT, DELETE  Oauth. Must be owner.
+users/            *GET, *POST         	None.
+users/<id>/       *GET, PUT, DELETE  	Oauth & must be owner. GET has none.
 ```
 
 ### Search Endpoint:
 
 ```javascript
-URL               METHODS           AUTH / PERMISSIONS
+URL               METHODS               AUTH & PERMISSIONS
 
-search/<?model>/  GET               None.
+search/<?model>/  *GET               	None.
 ```
 
 #### parameters:
@@ -67,14 +67,14 @@ Querying Nested Values:
 
 Get all properties with an area of exactly 3200 square feet.
 ```javascript
-        search?model=property&sqr_ftg=3200
+search?model=property&sqr_ftg=3200
 ```
 Get all properties with an area greater than 3200 square feet.
 ```javascript
-        search?model=property&sqr_ftg__gt=3200
+search?model=property&sqr_ftg__gt=3200
 ```
 Get all properties in the city of Toronto, that have more than 3 bedrooms.
 ```javascript
-        search?model=property&location__city=Toronto&n_bedrooms__gt=3
+search?model=property&location__city=Toronto&n_bedrooms__gt=3
 ```
 ---
