@@ -18,9 +18,12 @@ from django.contrib import admin
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
+
+    # OAuth.
+    url(r'^o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
     
     # API.
-    url(r'^api/v1/search/', include('ksearch.urls')),
-    url(r'^api/v1/properties/', include('kproperty.urls')),
-    url(r'^api/v1/users/', include('kuser.urls')),
+    url(r'^v1/search/', include('ksearch.urls')),
+    url(r'^v1/properties/', include('kproperty.urls')),
+    url(r'^v1/users/', include('kuser.urls')),
 ]
