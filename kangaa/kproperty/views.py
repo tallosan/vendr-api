@@ -3,15 +3,22 @@ from django.contrib.auth.models import User
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, permissions
+
+from oauth2_provider.ext.rest_framework import TokenHasReadWriteScope, TokenHasScope
 
 from kproperty.models import *
 from kproperty.serializers import *
+from kproperty.permissions import IsOwnerOrReadOnly
 
 
 '''   Lists all properties. '''
 class PropertyList(APIView):
-        
+
+    permission_classes = (
+                            permissions.IsAuthenticatedOrReadOnly,
+    )
+
     ''' Returns all properties in the database.
         Args:
             request: Handler for request field.
@@ -55,19 +62,24 @@ class PropertyDetail(APIView):
 
     def __init__(self):
         
-        self.serializer = None
+        self.serializer         = None
+        self.permission_classes = (
+                                    permissions.IsAuthenticatedOrReadOnly,
+                                    IsOwnerOrReadOnly,
+        )
 
     ''' Retrieve the property if it exists. Returns a 404 otherwise.
         Args:
-            pk: The primary key of the property.
+            request: Property data. Necessary for the permissions check.
     '''
     def get_object(self, pk):
 
         # Get the object in question, and its serializer.
         try:
-            target = Property.objects.get_subclass(pk=pk)
-            self.serializer = target.get_serializer()
-            return target
+            kproperty = Property.objects.get_subclass(pk=pk)
+            self.check_object_permissions(self.request, kproperty)
+            self.serializer = kproperty.get_serializer()
+            return kproperty
         except Property.DoesNotExist:
             raise Http404
     
@@ -78,7 +90,7 @@ class PropertyDetail(APIView):
             *format: Specified data format (e.g. JSON).
     '''
     def get(self, request, pk, format=None):
-
+        
         kproperty       = self.get_object(pk)
         self.serializer = self.serializer(kproperty)
         
@@ -92,7 +104,7 @@ class PropertyDetail(APIView):
     '''
     def put(self, request, pk, format=None):
 
-        kproperty       = self.get_object(pk)
+        kproperty = self.get_object(pk)
         self.serializer = self.serializer(kproperty, data=request.data, partial=True)
         if self.serializer.is_valid():
             self.serializer.save()
