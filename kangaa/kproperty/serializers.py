@@ -9,7 +9,7 @@ from kproperty.nested_serializers import *
 '''   Serializer for Property models. '''
 class PropertySerializer(serializers.ModelSerializer):
 
-    owner       = serializers.ReadOnlyField(source='owner.username')
+    owner       = serializers.ReadOnlyField(source='owner.id')
     
     # Primary fields.
     location    = LocationSerializer()
@@ -100,12 +100,12 @@ class PropertySerializer(serializers.ModelSerializer):
             # Nested Foreign Key models (i.e. one-to-many relation).
             elif type(target_data).__name__ == 'list':
                 
-                # If we're given an emtpy list, we assume that the foreign keys should
+                # If we're given an empty list, we assume that the foreign keys should
                 # be deleted.
                 if len(target_data) == 0:
                     target.all().delete()
                 
-                # Otherwise, check if the foreign key already exists. If not, the
+                # Otherwise, check if the foreign key already exists. If not, then
                 # we can create it.
                 else:
                     for data in target_data:
