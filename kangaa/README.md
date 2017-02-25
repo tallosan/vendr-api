@@ -36,26 +36,25 @@ users/<id>/       *GET, PUT, DELETE  	Oauth & must be owner. GET has none.
 ```javascript
 URL               METHODS               AUTH & PERMISSIONS
 
-search/<?model>/  *GET               	None.
+search/<?type>/  *GET               	None.
 ```
 
 #### parameters:
-	model [REQUIRED]
+	type [REQUIRED]
 		possible values: ['property', 'user']
-		description: The type of resource we are performing the
-			     search on.
+		description: The type of search to perform.
 	kwargs: [OPTIONAL]
 		description: The filters to apply on our search.
 
 		e.g. sqr_ftg=3200
 
-#### how to:
+#### How To:
 
 
 
 Standard Queries:
 
-- To create a query, specify the model type, and then append your query to the
+- To create a query, specify the search type, and then append your query to the
   URL.
 
 Complex Queries:
@@ -70,21 +69,46 @@ Querying Nested Values:
 
 - To query a location objects country, we do ...
 ```javascript
-		search/?model=property&location__country=Canada
+		search/?type=property&location__country=Canada
 ```
 
 #### Examples:
 
 Get all properties with an area of exactly 3200 square feet.
 ```javascript
-search?model=property&sqr_ftg=3200
+search?type=property&sqr_ftg=3200
 ```
 Get all properties with an area greater than 3200 square feet.
 ```javascript
-search?model=property&sqr_ftg__gt=3200
+search?type=property&sqr_ftg__gt=3200
 ```
 Get all properties in the city of Toronto, that have more than 3 bedrooms.
 ```javascript
-search?model=property&location__city=Toronto&n_bedrooms__gt=3
+search?type=property&location__city=Toronto&n_bedrooms__gt=3
+```
+
+### Autocomplete Endpoint:
+
+```javascript
+URL				METHODS               AUTH & PERMISSIONS
+
+autocomplete/<?type>/<?term>	*GET                  None.
+```
+
+#### parameters:
+	type [REQUIRED]
+		possible values: ['location']
+		description: The type of search to perform.
+	term [REQUIRED]
+		description: The search term (i.e. the text currently in the search bar).
+			     N.B. -- It is case insensitive!
+
+		e.g. term=To	(user is typing out 'Toronto').
+
+#### Examples:
+
+Get all properties starting with 'Tor'.
+```javascript
+search?type=location&term=Tor
 ```
 ---
