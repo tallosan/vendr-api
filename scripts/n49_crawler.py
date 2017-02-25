@@ -7,12 +7,13 @@
 
 
 import re	#TODO: Is this even used?
+import cPickle as pickle
 
 import selenium
 from selenium import webdriver
 
 # selenium web driver setup.
-cdriver_path	 = '/Users/andrewtallos/Downloads/chromedriver'
+cdriver_path	 = '/home/john/Downloads/chromedriver'
 driver		 = webdriver.Chrome(executable_path=cdriver_path)
 
 
@@ -124,41 +125,93 @@ def scroll(sr, nr):
 '''	Recieves a list of individual business page URLs, and returns the
 	their respective email addresses.
 	Args:
-		urls: List of URLs to individual business pages.
+		url_file: The file containing our URLs.
+                email_file: The file to store our emails.
 		verbose: Toggle for feedback.
 '''
-def get_emails(urls, verbose=False):
+def get_emails(url_file, email_file, verbose=False):
+        
+        empty = False
+        while not empty:
+                with open(url_file, 'rb') as fp:
+                        urls = pickle.load(fp)
+
+                if len(urls) <= 0: empty = True
+
+                url     = urls.pop()
+                email   = get_email(url, verbose=verbose)
+                
+                # If we get an email back, append it to our pickled file.
+                if email:
+                        with open(email_file, 'rb') as fp:
+                                emails = pickle.load(fp)
+                                emails.append(email)
+                        with open(email_file, 'wb') as fp:
+                                pickle.dump(emails, fp)
+
+                with open(url_file, 'wb') as fp:
+                        pickle.dump(urls, fp)
+
+
+'''     Recieves a url and parses the email from it (if one is listed).
+        Args:
+                url: The URL of the page we're getting the URL from.
+		verbose: Toggle for feedback.
+'''
+def get_email(url, verbose=False):
 	
-	# Extract the emails where possible. N.B. -- If no email is listed,
+        if verbose: print url
+	
+        # Extract the emails where possible. N.B. -- If no email is listed,
 	# selenium will raise a NoSuchElement exception.
-	emails = []
-	for url in urls:
-		if verbose: print url
-		
-		driver.get(url)
-		try:
-			email = driver.find_element_by_class_name('business-email')
-			if email not in emails: emails.append(email.text)
-		except selenium.common.exceptions.NoSuchElementException as NSE_error:
-			if verbose: print str(NSE_error)
-		except Exception as unknown_error:
-			if verbose: print 'unknown error: ' + str(unknown_error)
+        driver.get(url)
+	try:
+		email = driver.find_element_by_class_name('business-email')
+                return email.text
+                
+        except selenium.common.exceptions.NoSuchElementException as NSE_error:
+		if verbose: print str(NSE_error)
+	except Exception as unknown_error:
+		if verbose: print 'unknown error: ' + str(unknown_error)
 
-	return emails
-	
 
-if __name__=='__main__':
-	
-	queries 	= get_search_queries('scripts/contractors.xlsx')
-	queries		= linkify(queries)
-	urls		= get_html(queries)
-	emails		= get_emails(urls, verbose=True)
-	
-	import cPickle as pickle
-	with open('emails', 'w') as fp:
-		pickle.dump(emails, fp)
+#===================================================================================
 
-	print emails
-	print
-	print len(emails), ' emails downloaded.'
+
+GET_URLS      = False
+GET_EMAILS    = False
+FORMAT_EMAILS = True
+
+URL_FILE      = 'urls.pkl'
+EMAIL_FILE    = 'emails.pkl'
+RESULTS_FILE  = 'emails.txt'
+
+if GET_URLS:
+    queries 	= get_search_queries('scripts/contractors.xlsx')
+    queries		= linkify(queries)
+    urls		= get_html(queries)
+        
+    # Save the URLs.
+    with open(URL_FILE, 'wb') as fp:
+        pickle.dump(urls, fp)
+
+if GET_EMAILS:
+
+    # Load the URLs.
+    with open(URL_FILE, 'rb') as fp:
+        urls = pickle.load(fp)
+
+    emails = get_emails(url_file=URL_FILE, email_file=EMAIL_FILE, verbose=False)
+
+if FORMAT_EMAILS:
+    
+    import collections
+
+    # Load the emails.
+    with open(EMAIL_FILE, 'rb') as fp:
+        emails = list(set(pickle.load(fp)))
+
+    # Write the emails to a file, separating each one with commas.
+    with open(RESULTS_FILE, 'w') as fp:
+        fp.write(','.join(emails))
 
