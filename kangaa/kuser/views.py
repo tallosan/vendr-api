@@ -26,7 +26,6 @@ class UserList(APIView):
 
     def get(self, request, format=None):
         
-        print 'GET on /users/ by ', request.user
         response = []
         for user in KUser.objects.all():
             response.append(self.serializer_class(user, context={'request': request}).data)
@@ -36,7 +35,6 @@ class UserList(APIView):
     ''' Create a new User, assuming that their username and email are valid. '''
     def post(self, request, format=None):
         
-        print 'POST on /users/ by ', request.user
         # Determine if the email is available.
         email = request.data.get('email')
         if not self.is_available(email):
@@ -110,7 +108,7 @@ class UserDetail(APIView):
             serializer.save()
             return Response(serializer.data)
 
-        return Response(self.serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     ''' Deletes a user from the database.
         Args:
