@@ -26,4 +26,11 @@ urlpatterns = [
     url(r'^v1/search/', include('ksearch.urls')),
     url(r'^v1/properties/', include('kproperty.urls')),
     url(r'^v1/users/', include('kuser.urls')),
+    url(r'^v1/autocomplete/', include('autocomplete.urls')),
 ]
+
+from django.conf import settings
+from django.conf.urls.static import static
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+

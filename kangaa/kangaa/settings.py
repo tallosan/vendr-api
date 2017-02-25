@@ -19,7 +19,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'w^bbsqn0y6lra9xt30idw)^dkle!ej&eytp+j(3m!m2s0qb$m7'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+#DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '192.168.0.17',
                  'api.kangaa.xyz']
@@ -42,6 +43,7 @@ KANGAA_APPS = [
     'ksearch',
     'kproperty',
     'kuser',
+    'autocomplete',
 ]
 
 INSTALLED_APPS = BASE_APPS + KANGAA_APPS
@@ -91,6 +93,22 @@ DATABASES = {
         'PORT': '',
     }
 }
+
+# Redis cache.
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://192.168.0.17:6379',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient'    
+        },
+        'KEY_PREFIX': 'k'
+    }
+}
+
+# Cache time to live.
+CACHE_TTL = ( 60 ) * 30
+
 
 # Authorized user model.
 AUTH_USER_MODEL = 'kuser.KUser'
