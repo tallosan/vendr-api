@@ -24,7 +24,7 @@ class Property(models.Model):
     n_bathrooms = models.IntegerField(blank=False, db_index=True)
     
     # Foreign key attributes.
-    # [ location, history, tax_records, features ]
+    # [ location, history, tax_records, features, images ]
     
     ''' Returns the serializer type for this model. '''
     def get_serializer(self):
@@ -104,6 +104,20 @@ class Historical(models.Model):
 
     # The year the property was built.
     year_built      = models.IntegerField(blank=True, null=True)
+
+
+'''   Images model. Contains all images associated with the property. '''
+class Images(models.Model):
+
+    kproperty = models.OneToOneField('Property', related_name='images',
+                    on_delete=models.CASCADE)
+
+    thumbnail           = models.ImageField(upload_to='properties/',
+                    default='properties/thumbnail.jpg')
+    low_resolution      = models.ImageField(upload_to='properties/',
+                    default='properties/lr_default.jpg')
+    standard_resolution = models.ImageField(upload_to='properties/',
+                    default='properties/sr_default.jpg')
 
 
 '''   Open house model. Contains scheduling info about open house / showing times. '''
