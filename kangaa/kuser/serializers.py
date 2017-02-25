@@ -69,7 +69,7 @@ class UserSerializer(serializers.ModelSerializer):
             
             # Regular field update.
             else:
-                setattr(instance, term, key_data)
+                setattr(instance, term, target_data)
         
             instance.save()
 
