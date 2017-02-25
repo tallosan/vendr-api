@@ -2,7 +2,6 @@
 #   Serializers for nested models.
 #
 
-
 from django.contrib.auth.models import User
 
 from rest_framework import serializers
@@ -43,4 +42,16 @@ class HistoricalSerializer(serializers.ModelSerializer):
         model   = Historical
         fields  = ('last_sold_price', 'last_sold_date',
                    'year_built')
+
+'''   Serializer for Images models. '''
+class ImagesSerializer(serializers.ModelSerializer):
+    
+    thumbnail           = serializers.ImageField(use_url=True, required=False)
+    low_resolution      = serializers.ImageField(use_url=True, required=False)
+    standard_resolution = serializers.ImageField(use_url=True, required=False)
+    
+    class Meta:
+        model   = Images
+        fields  = ('thumbnail',
+                   'low_resolution', 'standard_resolution')
 
