@@ -18,6 +18,7 @@ class PropertySerializer(serializers.ModelSerializer):
     features    = FeaturesSerializer(Features.objects.all(), many=True)
     tax_records = TaxRecordSerializer(TaxRecord.objects.all(), many=True)
     history     = HistoricalSerializer()
+    images      = ImagesSerializer()
     
     class Meta:
         model   = Property
@@ -28,7 +29,8 @@ class PropertySerializer(serializers.ModelSerializer):
                    'location',
                    'features',
                    'tax_records',
-                   'history')
+                   'history',
+                   'images')
 
     ''' Handles the creation of a Property object.
         N.B. -- It is up to the child classes to pass the correct property class
@@ -45,7 +47,8 @@ class PropertySerializer(serializers.ModelSerializer):
                         'location': Location(),
                         'tax_records': TaxRecord(),
                         'history': Historical(),
-                        'features': Features()
+                        'features': Features(),
+                        'images': Images()
         }
         
         # Go through the validated data, and pop any foreign key data. We can't
@@ -65,7 +68,7 @@ class PropertySerializer(serializers.ModelSerializer):
             data       = foreign_key_buf[fkey][1]
             
             #TODO: Condense this into just a for-loop.
-            # Create a unique foreign key model [e.g Location].
+            # Create a one-to-one model [e.g Location].
             if type(data).__name__ == 'OrderedDict':
                 fkey_class.objects.create(kproperty=kproperty, **data)
             
