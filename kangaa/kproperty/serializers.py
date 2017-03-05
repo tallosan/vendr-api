@@ -16,7 +16,7 @@ class PropertySerializer(serializers.ModelSerializer):
 
     # Secondary fields.
     features    = FeaturesSerializer(Features.objects.all(), many=True)
-    tax_records = TaxRecordSerializer(TaxRecord.objects.all(), many=True)
+    tax_records = TaxRecordsSerializer(TaxRecords.objects.all(), many=True)
     history     = HistoricalSerializer()
     images      = ImagesSerializer()
     
@@ -30,7 +30,9 @@ class PropertySerializer(serializers.ModelSerializer):
                    'features',
                    'tax_records',
                    'history',
-                   'images')
+                   'images',
+                   'created_time',
+                   'is_featured')
 
     ''' Handles the creation of a Property object.
         N.B. -- It is up to the child classes to pass the correct property class
@@ -45,7 +47,7 @@ class PropertySerializer(serializers.ModelSerializer):
         # them later on.
         foreign_keys = {
                         'location': Location(),
-                        'tax_records': TaxRecord(),
+                        'tax_records': TaxRecords(),
                         'history': Historical(),
                         'features': Features(),
                         'images': Images()
