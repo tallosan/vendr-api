@@ -45,7 +45,8 @@ def load_dataset(path='../data.pkl'):
         return shared_x, T.cast(shared_y, 'float64')
 
     # Split the data into training and validation sets. We'll use a 75-25% slit.
-    split = int( len(x_values) * 0.75 )
+    split_percentage = 0.75
+    split            = int( len(x_values) * split_percentage )
     
     x_train, y_train = shared_dataset(x_values[:split], y_values[:split])
     x_val, y_val     = shared_dataset(x_values[split:], y_values[split:])
