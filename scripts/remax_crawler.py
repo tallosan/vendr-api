@@ -12,14 +12,17 @@
 
 import time
 
+import numpy as np
 import cPickle as pickle
+
+import requests
+import json
 
 import selenium
 from selenium import webdriver
 from selenium.webdriver import ActionChains
 from selenium.webdriver.support.ui import Select
-
-cdriver_path 	= '/home/john/Downloads/chromedriver'
+cdriver_path    = '/home/john/Downloads/chromedriver'
 driver		= webdriver.Chrome(executable_path=cdriver_path)
 driver.implicitly_wait(10)
 
@@ -150,10 +153,31 @@ def next_page(cur_page):
 '''
 def parse_listings(listings):
 
-	data = []
+	data_file = 'data.pkl'
 	for listing in listings:
-		print listing
-		data += parse_listing(listing)
+		print '\n', listing
+		
+		# Load the data file.
+		with open(data_file, 'rb') as fp:
+			data = pickle.load(fp)
+		
+		# Get the listing data, and write it to our data file.
+		try:
+			listing_data = parse_listing(listing)
+			data.append(listing_data)
+			print '-- \tadded ', '[', len(data), ']'
+			with open(data_file, 'wb') as fp:
+				pickle.dump(data, fp)
+		except selenium.common.exceptions.NoSuchElementException as se:
+			print '-- \terror', str(se)
+		except selenium.common.exceptions.WebDriverException as se:
+                        print '-- \terror', str(se)
+		except ValueError as value_error:
+			print '-- \terror', str(value_error)
+                except Exception as general_exc:
+                        print '-- \tunknown error: ', str(general_exc)
+		
+		print '[', len(data), ']'
 
 	print '[', len(data), ']'
 	print data[0], '\t', data[1]
@@ -177,33 +201,64 @@ def parse_listing(listing):
 	
 	# X-Values.
 	location 	= pdesc.find_element_by_class_name('propertyAddress')
-	region, postal  = format_location(location.find_elements_by_css_selector('span'))
+	try:
+		region, loc = format_location(
+			location.find_elements_by_css_selector('span'))
+		lat, lng	= loc
+	except Exception:
+		region, lat, lng = None, None, None
 	names		= pdesc.find_elements_by_class_name('propertyName')
 	values		= pdesc.find_elements_by_class_name('propertyValue')
 
+	# Extract all data from the Property section.
 	meta = {}
-	for name, value in zip(names, values):
-		meta[name.text[:-1]] = value.text
+	for name, value in zip(names, values): meta[name.text[:-1]] = value.text
 	
-	for k in meta.keys():
-		print k, ': ', meta[k]
-
-	building_type	= meta['Building type']
-	sqr_ftg		= format_sqr_ftg(meta['Living space'])
-	garage_spaces	= meta['Garage Spaces']
-
-	taxes		= meta['Taxes']
+	# These are the x-values we are interested in.
+	x_keys = {
+			#'Building type': None,
+			'Living space': None,
+			#'Garage Spaces': None,
+			#'Taxes': None,
+			#'Kitchens': None,
+			'Rooms': None,
+			'Bedrooms': None,
+			'Bathrooms': None
+	}
 	
-	n_kitchens	= meta['Kitchens']
-	n_rooms		= meta['Rooms']
-	n_bedrooms	= meta['Bedrooms']
-	n_bathrooms	= meta['Bathrooms']
+	for x_key in x_keys.keys():
+		try:
+			if meta: x_keys[x_key] = meta[x_key]
+		except KeyError as key_error:
+			pass
 
-	aksdj;
+	# Attempt to get the square footage.
+        if x_keys['Living space']:
+		x_keys['Living space'] = format_sqr_ftg(meta['Living space'])
+	else:
+		element = driver.find_element_by_class_name('simple-table')
+		x_keys['Living space'] = get_square_footage(element)
 	
-	#TODO: Normalize numerical data w/standard deviation.
-	#      (x - mean) / stddev
+	#if not x_keys['Garage Spaces']: x_keys['Garage Spaces'] = 0
+	x_values = np.array(
+			[
+				x_keys['Living space'],
+				lat, lng, #region,
+				#x_keys['Building type'],
+				#x_keys['Garage Spaces'],
+				#format_price(x_keys['Taxes']),
+				#format_rooms(x_keys['Kitchens']),
+				format_rooms(x_keys['Rooms']),
+				format_rooms(x_keys['Bedrooms']),
+				x_keys['Bathrooms']
+			], dtype='float64'
+	)
 
+	print x_keys
+	print x_values
+	if np.isnan(x_values).any():
+		raise ValueError
+	
 	return (x_values, price)
 
 ''' Takes in a price string, and formats it into an int.
@@ -211,8 +266,11 @@ def parse_listing(listing):
         price: The price string, formatted as such: '$ ___,___'.
 '''
 def format_price(price):
-
-	return int(''.join(price[1:].split(',')))
+	
+	try: return np.float64(''.join(price[1:].split(',')))
+	except TypeError as type_error: pass
+	
+	return None
 
 
 ''' Takes in a block of location data, and formats it. We return the region as
@@ -224,27 +282,99 @@ def format_location(location):
 
 	region	 = ''.join(location[1].text.split(' '))
 	postal	 = ''.join(location[2].text.split(' '))
-	print postal
-	from geopy.geocoders import Nominatim
-	import ssl
-
-	context = ssl._create_unverified_context()
-	geolocator = Nominatim()
-	print geolocator.geocode(postal)
 	
+	BASE = 'http://maps.googleapis.com/maps/api/geocode/json?components=postal_code:'
+	url  = BASE + postal
+	r    = requests.get(url)
+	json_data = json.loads(r.text)
+	
+	# Using the GoogleMaps API, get the longitude and latitude. If this fails, then
+        # we will turn to an alternate source -- zip-codes.com.
+	try:
+		lat = json_data['results'][0]['geometry']['location']['lat']
+		lng = json_data['results'][0]['geometry']['location']['lng']
+	except IndexError as index_error:
+		ALT = 'https://www.zip-codes.com/m/canadian/postal-code.asp?postalcode='
+		r = requests.get(ALT + postal)
+		i_lat, i_lng = r.text.index('Latitude:'), r.text.index('Longitude:')
+		lat = r.text[i_lat + 20: i_lat + 29]
+		lng = r.text[i_lng + 22: i_lng + 31]
+		if lat[0] != '-': lat = lat[1:]
+		if lng[0] != '-': lng = lng[1:]
+		print 'ALTERNATE'
+		print lat, lng
+
 	#TODO: Encode region.
-	#TODO: Find latitude and longitutde values.
-	return region, postal
+	return region, (lat, lng)
 
 
 ''' Takes in a value for the square footage, and returns a valid int value.
     args:
     	sqr_ftg: The square footage in a string format.
 '''
-def format_sqr_ftg(sqr_ftg):
+def format_sqr_ftg(sqr_ftg_element):
 
-	print sqr_ftg
-	pass
+	sqr_ftg = sqr_ftg_element.split('-')
+	try:
+		#return float(sqr_ftg[0]) + float(sqr_ftg[1].split()[0])
+		return float(sqr_ftg[0]) + ((float(sqr_ftg[1]) - float(sqr_ftg[0]))/2)
+	except ValueError as value_error:
+		return float(sqr_ftg[0].split()[0])
+
+
+''' Takes in an element containing the room dimensions, and returns the
+    property's square feet.
+    args:
+    	element: The Web Element containing the room dimensions.
+'''
+def get_square_footage(element):
+
+	table_values = element.find_elements_by_css_selector('tr')
+	
+	# Extract the room dimensions.
+	dimensions = []
+	sqr_ftg    = 0
+	for tr in table_values[1:]:
+		td = tr.text.split('X')
+		try:
+			dimensions.append(float(td[0].split()[-1]))
+			dimensions.append(float(td[1].split()[0]))
+		except Exception as exc:
+			pass
+		try:
+			dimensions.append(float(td[0].split()[-2]))
+			dimensions.append(float(td[1].split()[-2]))
+		except Exception as exc:
+			pass
+			
+	# Calculate the room dimensions (in metres), and sum the total
+	# square feet of the property.
+	if len(dimensions) == 0: return None
+	while len(dimensions) > 0:
+		dim0 = dimensions.pop(0)
+		dim1 = dimensions.pop(0)
+		sqr_ftg += (dim0 * dim1)
+	
+	# The conversion factor from metres to square feet.
+	conv_to_square_feet = 10.7639
+	return sqr_ftg * conv_to_square_feet
+
+
+''' Format the rooms string. We have 2 cases to consider:
+    a) The room is formatted as '# + #'. E.g. 3 + 1.
+    b) Standard format '#'. E.g. 3
+    args:
+    	room_str: A string containing the number of rooms data.
+'''
+def format_rooms(room_str):
+	
+	try:
+		if '+' in room_str:
+			room_nums = room_str.split('+')
+			return int(room_nums[0]) + int(room_nums[1])
+		return int(room_str)
+	except TypeError:
+		return 1
 
 
 #=================================================================================
@@ -253,7 +383,7 @@ def format_sqr_ftg(sqr_ftg):
 REGION_FILE 	= 'scripts/gta_regions.txt'
 LISTINGS_FILE	= 'listings.pkl'
 GET_LISTINGS 	= True
-LOAD_LISTINGS	= False
+LOAD_LISTINGS	= True
 
 if GET_LISTINGS:
 	regions		= parse_regions(REGION_FILE)
@@ -267,5 +397,4 @@ if LOAD_LISTINGS:
 		listings = pickle.load(fp)
 
 	parse_listings(listings)
-
 
