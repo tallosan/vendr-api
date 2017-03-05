@@ -50,9 +50,3 @@ def load_dataset(path='../data.pkl'):
 
     return [ (x_train, y_train), (x_val, y_val) ]
 
-
-dataset = load_dataset('../data.pkl')
-
-print len(dataset[0][0].eval())
-print len(dataset[0][1].eval())
-
