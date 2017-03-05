@@ -11,21 +11,25 @@ from model_utils.managers import InheritanceManager
 class Property(models.Model):
 
     # Allows us to use polymorphism.
-    objects     = InheritanceManager()
+    objects      = InheritanceManager()
     
     # Owner of this property listing.
-    owner       = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='listings',
+    owner        = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='properties',
                     on_delete=models.CASCADE, db_index=True)
 
     # Main attributes.
-    price       = models.FloatField(blank=False, db_index=True)
-    sqr_ftg     = models.FloatField(blank=False, db_index=True)
-    n_bedrooms  = models.IntegerField(blank=False, db_index=True)
-    n_bathrooms = models.IntegerField(blank=False, db_index=True)
+    price        = models.FloatField(blank=False, db_index=True)
+    sqr_ftg      = models.FloatField(blank=False, db_index=True)
+    n_bedrooms   = models.IntegerField(blank=False, db_index=True)
+    n_bathrooms  = models.IntegerField(blank=False, db_index=True)
     
     # Foreign key attributes.
     # [ location, history, tax_records, features, images ]
-    
+
+    # Meta data.
+    created_time = models.DateTimeField(auto_now_add=True)
+    is_featured  = models.BooleanField(default=False)
+
     ''' Returns the serializer type for this model. '''
     def get_serializer(self):
         raise NotImplementedError("'get_serializer()' must be implimented.")
@@ -72,7 +76,7 @@ class Location(models.Model):
     latitude    = models.DecimalField(max_digits=9, decimal_places=6, blank=False)
 
 
-'''   Feature model. Contains the property features (e.g. fireplace, garden, etc). '''
+'''   Features model. Contains the property features (e.g. fireplace, garden, etc). '''
 class Features(models.Model):
     
     kproperty   = models.ForeignKey('Property', related_name='features',
@@ -81,8 +85,8 @@ class Features(models.Model):
     feature     = models.CharField(max_length=50, blank=True)
 
 
-'''   Tax model. Contains the tax data for the property. '''
-class TaxRecord(models.Model):
+'''   Tax Record model. Contains the tax data for the property. '''
+class TaxRecords(models.Model):
 
     kproperty   = models.ForeignKey('Property', related_name='tax_records',
                     on_delete=models.CASCADE)
@@ -118,6 +122,14 @@ class Images(models.Model):
                     default='properties/lr_default.jpg')
     standard_resolution = models.ImageField(upload_to='properties/',
                     default='properties/sr_default.jpg')
+
+    ''' Generate a custom UUID for our image. '''
+    def uuid_generator(self):
+
+        BASE = 'properties/'
+        suffix = 0
+
+        return BASE + suffix
 
 
 '''   Open house model. Contains scheduling info about open house / showing times. '''
