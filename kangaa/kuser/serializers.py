@@ -24,16 +24,16 @@ class ProfileSerializer(serializers.ModelSerializer):
 '''   Serializer for User models. '''
 class UserSerializer(serializers.ModelSerializer):
 
-    profile  = ProfileSerializer(required=False)
-    listings = serializers.PrimaryKeyRelatedField(many=True, required=False,
+    profile    = ProfileSerializer(required=False)
+    properties = serializers.PrimaryKeyRelatedField(many=True, required=False,
                     queryset=Property.objects.select_subclasses())
 
     class Meta:
         model   = KUser
         fields  = ('id', #'href',
-                   'email', 'password',
+                   'email', #'password',
                    'profile',
-                   'listings',
+                   'properties',
                    'join_date')
 
     ''' Handles the creation of a Kangaa User object.
