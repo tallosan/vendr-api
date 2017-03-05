@@ -28,10 +28,10 @@ class FeaturesSerializer(serializers.ModelSerializer):
 
 
 '''   Serializer for Tax Record models. '''
-class TaxRecordSerializer(serializers.ModelSerializer):
+class TaxRecordsSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model   = TaxRecord
+        model   = TaxRecords
         fields  = ('assessment', 'assessment_year')
 
 
