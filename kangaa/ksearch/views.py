@@ -19,14 +19,15 @@ from kuser.serializers import *
 '''
 def search_router(request):
     
+    request.GET._mutable = True
+    search_type = request.GET.pop('type')[0]
+    
     # We can return either search for properties, or users. Anything else
     # will raise a 404.
-    if request.GET.get('type') == 'property':
-
+    if search_type == 'property':
         return PropertySearch.as_view()(request)
     
-    elif request.GET.get('type') == 'user':
-        
+    elif search_type == 'user':
         return UserSearch.as_view()(request)
 
     else:
@@ -36,17 +37,22 @@ def search_router(request):
 ''' Seach view for all Property models. '''
 class PropertySearch(generics.ListAPIView):
 
-    #TODO: Find users by username, not ID.
     ''' Filters the queryset according to the specified parameters. '''
     def get_queryset(self):
         
-        filter_args = {}
-        
-        # Construct the filter chain.
         filters = self.request.GET
+        #ptypes = filters['ptype']
+        
+        # Construct the filter chain. We have both multi-value, and single-value cases.
+        # If our data is in a list, we assume it's multi-value. If not, single.
+        filter_args = {}
         for kfilter in filters.keys():
-            if kfilter != 'type':
-                filter_args[kfilter] = filters[kfilter]
+            if (filters[kfilter][0] == '[') and (filters[kfilter][-1] == ']'):
+                next_filter = self.parse_multikey(filters[kfilter])
+            else:
+                next_filter = filters[kfilter]
+            
+            filter_args[kfilter] = next_filter
         
         # Build the query set by querying each Property model in the database.
         queryset = []
@@ -58,6 +64,20 @@ class PropertySearch(generics.ListAPIView):
         
         return queryset
 
+    ''' (Helper Function) Parses a multi-key value into something we can pass
+        through a Django filter.
+        Args:
+            multi_value: The multi-value key, contained in a list (e.g. [..., ...])
+    '''
+    def parse_multikey(self, multi_value):
+        
+        multi_value = [
+                            q.strip('[').strip(']').lstrip(' ')
+                            for q in multi_value.encode('utf8').split(',')
+                      ]
+        
+        return multi_value
+    
     ''' Overrides the default 'list()' method. Serializes each object according
         to their type. '''
     def list(self, request):
@@ -70,12 +90,7 @@ class PropertySearch(generics.ListAPIView):
             serializer = kproperty.get_serializer()
             response.append(serializer(kproperty).data)
         
-        headers = {
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Credentials': True,
-                    'Access-Control-Allow-Methods': 'GET,HEAD,OPTIONS,POST,PUT',
-                    'Access-Control-Allow-Headers': 'Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers'}
-        return Response(response, headers=headers)
+        return Response(response)
 
 
 '''   Search view for User objects. '''
@@ -92,8 +107,7 @@ class UserSearch(generics.ListAPIView):
         #TODO: Sanitize input.
         filters = self.request.GET
         for kfilter in filters.keys():
-            if kfilter != 'type':
-                filter_args[kfilter] = filters[kfilter]
+            filter_args[kfilter] = filters[kfilter]
                 
         queryset = User.objects.filter(**filter_args)
         
