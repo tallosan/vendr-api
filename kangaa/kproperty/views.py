@@ -40,6 +40,7 @@ class PropertyList(APIView):
     '''
     def post(self, request, format=None):
 
+        #TODO: Handle this in sub-method.
         # Determine the serializer type, as specified by the '?model' param.
         if request.GET.get('model') == 'condo':
             serializer = CondoSerializer(data=request.data)
@@ -55,6 +56,19 @@ class PropertyList(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    ''' Takes in the 'type' parameter, and returns the appropriate serializer.
+        Args:
+            type: The type paramter (e.g. condo).
+    '''
+    def resolve_serializer(self, ktype):
+
+        types = {
+                    'condo': CondoSerializer,
+                    'house': HouseSerializer
+                }
+
+        return types[ktype]
 
 
 '''   Lists an individual property's (identified by primary key) details. '''
