@@ -1,5 +1,3 @@
-from django.contrib.auth.models import User
-
 from rest_framework import serializers
 
 from kproperty.models import *
@@ -127,13 +125,20 @@ class PropertySerializer(serializers.ModelSerializer):
         return instance
 
 
-'''   Serializer for Condo models. '''
-class CondoSerializer(PropertySerializer):
+'''   Serializer for cooperative living properties. '''
+class CoOpSerializer(PropertySerializer):
 
     class Meta(PropertySerializer.Meta):
 
-        model   = Condo
         fields  = PropertySerializer.Meta.fields + ('floor_num', )
+
+
+'''   Serializer for Condo models. '''
+class CondoSerializer(CoOpSerializer):
+
+    class Meta(CoOpSerializer.Meta):
+
+        model   = Condo
 
     ''' Overrides parent by passing a Condo model as the 'property_class'. '''
     def create(self, validated_data):
@@ -141,15 +146,38 @@ class CondoSerializer(PropertySerializer):
         return super(CondoSerializer, self).create(Condo().__class__, validated_data)
 
 
+'''   Serializer for freehold properties. '''
+class FreeholdSerializer(PropertySerializer):
+
+    class Meta(PropertySerializer.Meta):
+        
+        fields  = PropertySerializer.Meta.fields + ('freehold_contract', )
+
+
 '''   Serializer for House models. '''
-class HouseSerializer(PropertySerializer):
+class HouseSerializer(FreeholdSerializer):
 
     class Meta(PropertySerializer.Meta):
 
-        model = House
+        model   = House
+        fields  = FreeholdSerializer.Meta.fields
    
     ''' Overrides parent by passing a House model as the 'property_class'. '''
     def create(self, validated_data):
 
         return super(HouseSerializer, self).create(House().__class__, validated_data)
+
+
+'''   Serializer for Multiplex models. '''
+class MultiplexSerializer(FreeholdSerializer):
+
+    class Meta(FreeholdSerializer.Meta):
+
+        model   = Multiplex
+        fields  = FreeholdSerializer.Meta.fields + ('degree', )
+
+    ''' Overrides parent by passing a House model as the 'property_class'. '''
+    def create(self, validated_data):
+
+        return super(MultiplexSerializer, self).create(Multiplex().__class__, validated_data)
 
