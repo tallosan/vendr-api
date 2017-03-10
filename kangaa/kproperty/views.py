@@ -40,15 +40,13 @@ class PropertyList(APIView):
     '''
     def post(self, request, format=None):
 
-        #TODO: Handle this in sub-method.
-        # Determine the serializer type, as specified by the '?model' param.
-        if request.GET.get('model') == 'condo':
-            serializer = CondoSerializer(data=request.data)
-        elif request.GET.get('model') == 'house':
-            serializer = HouseSerializer(data=request.data)
-        else:
-            raise Http404("Invalid model.")
-        
+        # Determine the serializer type, as specified by the '?ptype' param.
+        try:
+            serializer_type = self.resolve_serializer(request.GET.get('ptype'))
+            serializer = serializer_type(data=request.data)
+        except KeyError as key_error:
+            raise Http404('error: invalid property type.')
+
         # Save the valid serializer along with data about the user who created it.
         if serializer.is_valid():
             serializer.save(owner=self.request.user)
@@ -57,18 +55,19 @@ class PropertyList(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    ''' Takes in the 'type' parameter, and returns the appropriate serializer.
+    ''' Takes in the 'ptype' parameter, and returns the appropriate serializer.
         Args:
-            type: The type paramter (e.g. condo).
+            type: The property type paramter (e.g. condo).
     '''
-    def resolve_serializer(self, ktype):
+    def resolve_serializer(self, ptype):
 
         types = {
                     'condo': CondoSerializer,
-                    'house': HouseSerializer
+                    'house': HouseSerializer,
+                    'multiplex': MultiplexSerializer
                 }
 
-        return types[ktype]
+        return types[ptype]
 
 
 '''   Lists an individual property's (identified by primary key) details. '''
