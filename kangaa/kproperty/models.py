@@ -35,22 +35,40 @@ class Property(models.Model):
         raise NotImplementedError("'get_serializer()' must be implimented.")
 
 
-'''   Condo model. Contains all data pertaining to a particular Condo
-      instance. Child of 'Property'. '''
-class Condo(Property):
+'''   Parent for all cooperative ownership properties. '''
+class CoOp(Property):
     
     floor_num   = models.IntegerField()
+    
+    ''' (Abstract) Raises a NotImplementedError, as this should be implemented
+        in the child models. '''
+    def get_serializer(self):
+        raise NotImplementedError("no 'get_serializer()' method for parent Freehold.")
 
+
+'''   Condo model. '''
+class Condo(CoOp):
+    
     ''' Returns a CondoSerializer object. '''
     def get_serializer(self):
     
         from kproperty.serializers import CondoSerializer
         return CondoSerializer
- 
 
-'''   House model. Contains all data pertaining to a particular House
-      instance. Child of 'Property'. '''
-class House(Property):
+
+'''   Parent for all freehold ownership properties. '''
+class Freehold(Property):
+    
+    freehold_contract = models.IntegerField(default=0)
+    
+    ''' (Abstract) Raises a NotImplementedError, as this should be implemented
+        in the child models. '''
+    def get_serializer(self):
+        raise NotImplementedError("no 'get_serializer()' method for parent Freehold.")
+
+
+'''   House model. '''
+class House(Freehold):
     
     ''' Returns a HouseSerializer object. '''
     def get_serializer(self):
@@ -59,7 +77,21 @@ class House(Property):
         return HouseSerializer
 
 
-###  Detail objects. ###
+'''   Multiplex model. '''
+class Multiplex(Freehold):
+
+    degree = models.IntegerField()
+
+    ''' Returns a MultiplexSerializer object. '''
+    def get_serializer(self):
+
+        from kproperty.serializers import MultiplexSerializer
+        return MultiplexSerializer
+
+
+# Detail models.
+# =================================================================================
+
 '''   Location model. Contains locational data for a particular listing. '''
 class Location(models.Model):
 
