@@ -7,6 +7,7 @@ from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
+import kproperty.models
 from kproperty.models import *
 from kproperty.serializers import *
 from kuser.serializers import *
@@ -20,7 +21,10 @@ from kuser.serializers import *
 def search_router(request):
     
     request.GET._mutable = True
-    search_type = request.GET.pop('type')[0]
+    try:
+        search_type = request.GET.pop('stype')[0]
+    except KeyError:
+        raise Http404("error: 'stype' (search type) must be specified.")
     
     # We can return either search for properties, or users. Anything else
     # will raise a 404.
@@ -40,25 +44,23 @@ class PropertySearch(generics.ListAPIView):
     ''' Filters the queryset according to the specified parameters. '''
     def get_queryset(self):
         
-        filters = self.request.GET
-        #ptypes = filters['ptype']
-        
-        # Construct the filter chain. We have both multi-value, and single-value cases.
-        # If our data is in a list, we assume it's multi-value. If not, single.
-        filter_args = {}
-        for kfilter in filters.keys():
-            if (filters[kfilter][0] == '[') and (filters[kfilter][-1] == ']'):
-                next_filter = self.parse_multikey(filters[kfilter])
-            else:
-                next_filter = filters[kfilter]
-            
-            filter_args[kfilter] = next_filter
-        
-        # Build the query set by querying each Property model in the database.
+        # Construct a filter chain from the given parameters.
+        try:
+            filter_args = self.gen_filter_chain(self.request.GET)
+        except IndexError:
+            filter_args = {}
+       
+        # Get the Property types arguments, if any are given.
+        try:
+            ptypes = filter_args.pop('ptypes')
+        except KeyError:
+            ptypes = []
+
+        # Build the query set by querying each model type.
         queryset = []
-        for subclass in Property.__subclasses__():
+        for model in self.get_models(ptypes):
             try:
-                queryset += subclass.objects.filter(**filter_args)
+                queryset += model.objects.filter(**filter_args)
             except FieldError:
                 pass
         
@@ -78,12 +80,56 @@ class PropertySearch(generics.ListAPIView):
         
         return multi_value
     
+    ''' (Helper Function) Parses a set of filters and generate a filter
+        chain from them.
+        Args:
+            filters: A dictionary of filter type-filter value, parameters.
+    '''
+    def gen_filter_chain(self, filters):
+
+        # Construct the filter chain. We have both multi-value, and single-value cases.
+        # If our data is in a list, we assume it's multi-value. If not, single.
+        filter_args = {}
+        for kfilter in filters.keys():
+            if (filters[kfilter][0] == '[') and (filters[kfilter][-1] == ']'):
+                next_filter = self.parse_multikey(filters[kfilter])
+            else:
+                next_filter = filters[kfilter]
+            
+            filter_args[kfilter] = next_filter
+
+        return filter_args
+ 
+    ''' (Helper Function) Using the property types parameter, return the
+        specified model subclasses.
+        Args:
+            ptypes: A list of strings specifying property types. 
+    '''
+    def get_models(self, ptypes):
+        
+        # Get the models.
+        try:
+            models = [
+                        getattr(kproperty.models, model)
+                        for model in ptypes
+                     ]
+        except AttributeError:
+            raise Http404('error: invalid model type. \
+                           n.b. -- this function is NOT case insensitive')
+        
+        # No models specified, so we'll just return all types.
+        if not models:
+            models = [Condo, House, Multiplex]
+        
+        return models
+
+    
     ''' Overrides the default 'list()' method. Serializes each object according
         to their type. '''
     def list(self, request):
         
         queryset = self.get_queryset()
-        
+
         # Construct our response by serializing each object in the queryset.
         response = []
         for kproperty in queryset:
