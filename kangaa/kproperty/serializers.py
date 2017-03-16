@@ -30,7 +30,9 @@ class PropertySerializer(serializers.ModelSerializer):
                    'history',
                    'images',
                    'created_time',
-                   'is_featured')
+                   'is_featured',
+                   'views',
+                   'offers')
 
     ''' Handles the creation of a Property object.
         N.B. -- It is up to the child classes to pass the correct property class
