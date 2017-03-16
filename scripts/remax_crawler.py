@@ -221,9 +221,9 @@ def parse_listing(listing):
 			#'Garage Spaces': None,
 			#'Taxes': None,
 			#'Kitchens': None,
-			'Rooms': None,
-			'Bedrooms': None,
-			'Bathrooms': None
+			#'Rooms': None,
+			#'Bedrooms': None,
+			#'Bathrooms': None
 	}
 	
 	for x_key in x_keys.keys():
@@ -248,9 +248,9 @@ def parse_listing(listing):
 				#x_keys['Garage Spaces'],
 				#format_price(x_keys['Taxes']),
 				#format_rooms(x_keys['Kitchens']),
-				format_rooms(x_keys['Rooms']),
-				format_rooms(x_keys['Bedrooms']),
-				x_keys['Bathrooms']
+				#format_rooms(x_keys['Rooms']),
+				#format_rooms(x_keys['Bedrooms']),
+				#x_keys['Bathrooms']
 			], dtype='float64'
 	)
 
@@ -301,10 +301,7 @@ def format_location(location):
 		lng = r.text[i_lng + 22: i_lng + 31]
 		if lat[0] != '-': lat = lat[1:]
 		if lng[0] != '-': lng = lng[1:]
-		print 'ALTERNATE'
-		print lat, lng
 
-	#TODO: Encode region.
 	return region, (lat, lng)
 
 
