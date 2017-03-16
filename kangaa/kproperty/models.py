@@ -28,9 +28,11 @@ class Property(models.Model):
 
     # Meta data.
     created_time = models.DateTimeField(auto_now_add=True)
+    views        = models.IntegerField(default=0)
+    offers       = models.IntegerField(default=0)
     is_featured  = models.BooleanField(default=False)
 
-    ''' Returns the serializer type for this model. '''
+    ''' (Abstract) Returns the serializer type for this model. '''
     def get_serializer(self):
         raise NotImplementedError("'get_serializer()' must be implimented.")
 
