@@ -109,6 +109,6 @@ autocomplete/<?type>/<?term>	*GET                  None.
 
 Get all properties starting with 'Tor'.
 ```javascript
-search?type=location&term=Tor
+?type=location&term=Tor
 ```
 ---
