@@ -36,11 +36,11 @@ users/<id>/       *GET, PUT, DELETE  	Oauth & must be owner. GET has none.
 ```javascript
 URL               METHODS               AUTH & PERMISSIONS
 
-search/<?type>/  *GET               	None.
+search/<?stype>/  *GET               	None.
 ```
 
 #### parameters:
-	type [REQUIRED]
+	stype [REQUIRED]
 		possible values: ['property', 'user']
 		description: The type of search to perform.
 	kwargs: [OPTIONAL]
@@ -69,22 +69,35 @@ Querying Nested Values:
 
 - To query a location objects country, we do ...
 ```javascript
-		search/?type=property&location__country=Canada
+		search/?stype=property&location__country=Canada
+```
+
+Querying Multiple Values On the Same Field:
+
+- To query multiple values on the same field, pass in an array of these values.
+
+- To query all Condos and Multiplexes, we do ...
+```javascript
+		search/?stype=property&ptypes=[Condo,Multiplex]
 ```
 
 #### Examples:
 
 Get all properties with an area of exactly 3200 square feet.
 ```javascript
-search?type=property&sqr_ftg=3200
+search?stype=property&sqr_ftg=3200
 ```
 Get all properties with an area greater than 3200 square feet.
 ```javascript
-search?type=property&sqr_ftg__gt=3200
+search?stype=property&sqr_ftg__gt=3200
 ```
 Get all properties in the city of Toronto, that have more than 3 bedrooms.
 ```javascript
-search?type=property&location__city=Toronto&n_bedrooms__gt=3
+search?stype=property&location__city=Toronto&n_bedrooms__gt=3
+```
+Get all Condo and House properties in Toronto.
+```javascript
+search?stype=property&ptypes=[House, Condo]
 ```
 
 ### Autocomplete Endpoint:
