@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
+from rest_framework.exceptions import APIException
 
 from oauth2_provider.ext.rest_framework import TokenHasReadWriteScope, TokenHasScope
 
@@ -45,7 +46,10 @@ class PropertyList(APIView):
             serializer_type = self.resolve_serializer(request.GET.get('ptype'))
             serializer = serializer_type(data=request.data)
         except KeyError as key_error:
-            raise Http404('error: invalid property type.')
+            key_error_exc = APIException(detail={'error': 'invalid property type.'})
+            key_error_exc.status_code = status.HTTP_400_BAD_REQUEST
+
+            raise key_error_exc
 
         # Save the valid serializer along with data about the user who created it.
         if serializer.is_valid():
@@ -94,7 +98,11 @@ class PropertyDetail(APIView):
             self.serializer = kproperty.get_serializer()
             return kproperty
         except Property.DoesNotExist:
-            raise Http404
+            error_msg = {'error': 'property with id=' + str(pk) + ' does not exist.'}
+            dne_exc = APIException(detail=error_msg)
+            dne_exc.status_code = status.HTTP_400_BAD_REQUEST
+            
+            raise dne_exc
     
     ''' Returns the property details.
         Args:

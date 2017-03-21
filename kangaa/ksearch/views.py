@@ -1,11 +1,13 @@
 from django.shortcuts import render
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import FieldError
 
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.decorators import api_view
+from rest_framework.exceptions import APIException
 
 import kproperty.models
 from kproperty.models import *
@@ -18,16 +20,20 @@ from kuser.serializers import *
     Args:
         request: HttpResponse object containing 'type' parameter.
 '''
+@api_view(['GET'])
 def search_router(request):
     
     request.GET._mutable = True
+    
+    # Get the search type (assuming one is specified).
     try:
         search_type = request.GET.pop('stype')[0]
     except KeyError:
-        raise Http404("error: 'stype' (search type) must be specified.")
+        error_msg = {'error': "'stype' (search type) must be specified."}
+        return Response(data=error_msg, status=status.HTTP_400_BAD_REQUEST)
     
     # We can return either search for properties, or users. Anything else
-    # will raise a 404.
+    # will raise a 400.
     if search_type == 'property':
         return PropertySearch.as_view()(request)
     
@@ -35,7 +41,8 @@ def search_router(request):
         return UserSearch.as_view()(request)
 
     else:
-        raise Http404('Invalid search type.')
+        return Response(data={'error': 'invalid search type.'},
+                        status=status.HTTP_400_BAD_REQUEST)
 
 
 ''' Seach view for all Property models. '''
@@ -65,21 +72,7 @@ class PropertySearch(generics.ListAPIView):
                 pass
         
         return queryset
-
-    ''' (Helper Function) Parses a multi-key value into something we can pass
-        through a Django filter.
-        Args:
-            multi_value: The multi-value key, contained in a list (e.g. [..., ...])
-    '''
-    def parse_multikey(self, multi_value):
-        
-        multi_value = [
-                            q.strip('[').strip(']').lstrip(' ')
-                            for q in multi_value.encode('utf8').split(',')
-                      ]
-        
-        return multi_value
-    
+   
     ''' (Helper Function) Parses a set of filters and generate a filter
         chain from them.
         Args:
@@ -100,6 +93,20 @@ class PropertySearch(generics.ListAPIView):
 
         return filter_args
  
+    ''' (Helper Function) Parses a multi-key value into something we can pass
+        through a Django filter.
+        Args:
+            multi_value: The multi-value key, contained in a list (e.g. [..., ...])
+    '''
+    def parse_multikey(self, multi_value):
+        
+        multi_value = [
+                            q.strip('[').strip(']').lstrip(' ')
+                            for q in multi_value.encode('utf8').split(',')
+        ]
+        
+        return multi_value
+ 
     ''' (Helper Function) Using the property types parameter, return the
         specified model subclasses.
         Args:
@@ -112,10 +119,16 @@ class PropertySearch(generics.ListAPIView):
             models = [
                         getattr(kproperty.models, model)
                         for model in ptypes
-                     ]
+            ]
         except AttributeError:
-            raise Http404('error: invalid model type. \
-                           n.b. -- this function is NOT case insensitive')
+            error_msg = {
+                    'error' : 'invalid model type. note, this parameter is case sensitive.'
+            }
+            
+            exc = APIException(detail=error_msg)
+            exc.status_code = 401
+            
+            raise exc
         
         # No models specified, so we'll just return all types.
         if not models:
@@ -150,7 +163,6 @@ class UserSearch(generics.ListAPIView):
         filter_args = {}
         
         # Construct the filter chain.
-        #TODO: Sanitize input.
         filters = self.request.GET
         for kfilter in filters.keys():
             filter_args[kfilter] = filters[kfilter]
