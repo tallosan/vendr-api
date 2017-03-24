@@ -6,7 +6,7 @@ from django.conf import settings
 from model_utils.managers import InheritanceManager
 
 
-'''   Property model. Contains all data pertaining to a particular 
+'''   [Abstract] Property model. Contains all data pertaining to a particular 
       Property instance. '''
 class Property(models.Model):
 
