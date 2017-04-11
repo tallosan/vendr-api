@@ -44,6 +44,7 @@ KANGAA_APPS = [
     'kproperty',
     'kuser',
     'autocomplete',
+    'transaction',
 ]
 
 INSTALLED_APPS = BASE_APPS + KANGAA_APPS
