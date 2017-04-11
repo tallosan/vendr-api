@@ -6,6 +6,7 @@ from django.http import Http404
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.exceptions import APIException
 
 from oauth2_provider.ext.rest_framework import TokenHasReadWriteScope, TokenHasScope
 
@@ -24,6 +25,7 @@ class UserList(APIView):
                             permissions.AllowAny,
     )
 
+    ''' Get a list of users. '''
     def get(self, request, format=None):
         
         response = []
@@ -38,8 +40,13 @@ class UserList(APIView):
         # Determine if the email is available.
         email = request.data.get('email')
         if not self.is_available(email):
-            raise Http404('Invalid username and/or email.')
-            
+            user_exists_exc = APIException(detail={
+                                                    'error': 'user with email ' +\
+                                                     str(email) + ' already exists.'}
+            )
+            user_exists_exc.status_code = status.HTTP_400_BAD_REQUEST
+            raise user_exists_exc
+
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -68,7 +75,7 @@ class UserDetail(APIView):
                             IsOwnerOrReadOnly,
     )
 
-    ''' Retreive the user if s/he exists. Raise a 404 if not.
+    ''' Retrieve the user if s/he exists.
         Args:
             pk: The primary key (id) of the target user.
     '''
@@ -79,7 +86,10 @@ class UserDetail(APIView):
             self.check_object_permissions(self.request, kuser)
             return kuser
         except User.DoesNotExist:
-            raise Http404
+            user_dne_exc = APIException(detail={'error': 'user with id ' + str(pk) +\
+                                ' does not exist.'})
+            user_dne_exc.status_code = status.HTTP_400_BAD_REQUEST
+            raise user_dne_exc
 
     ''' Returns the user details.
         Args:
