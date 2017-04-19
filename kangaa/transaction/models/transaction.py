@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import uuid
+
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
@@ -19,26 +21,24 @@ class TransactionManager(models.Manager):
             seller: The User who is selling the property.
             kproperty: The Property in question.
     '''
-    def create(self, buyer, seller, kproperty, **extra_fields):
+    def create_transaction(self, buyer, seller, kproperty, **extra_fields):
         
         # Ensure that the buyer, seller, and property are specified.
         if any(arg is None for arg in {buyer, seller, kproperty}):
             raise ValueError('error: buyer, seller, or kproperty not specified.')
- 
-        # Ensure that the seller actuall owns the property.
-        if seller.id == kproperty.owner.id:
+        
+        # Ensure that the seller actually owns the property.
+        if seller.id != kproperty.owner.id:
             raise ValueError('error: seller id does not match property owner id.')
 
         # Create the transaction.
         now = timezone.now()
-        transaction = self.model(buyer=buyer, seller=seller, kproperty=kproperty,
-                                 start_date=now
+        transaction = self.create(buyer=buyer, seller=seller, kproperty=kproperty,
+                        start_date=now, **extra_fields
         )
-        transaction.save(using=self._db)
 
         # Set buyer & seller permissions.
         #buyer.add_permission(...)
-
         return transaction
 
 
@@ -46,7 +46,8 @@ class TransactionManager(models.Manager):
       with a set of Offers and a Contract. Each Transaction has 3 stages. '''
 class Transaction(models.Model):
 
-    objects     = TransactionManager()
+    id          = models.UUIDField(primary_key=True, default=uuid.uuid4,
+                        editable=False, db_index=True)
     
     # The buyer, seller, and the property this transaction is on.
     buyer       = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='buyer',
@@ -64,7 +65,6 @@ class Transaction(models.Model):
     
     # Stage 3: Closing Stage.
 
-
     # The transaction stage we're in.
     STAGES      = (
                     (0, 'OFFER_STAGE'),
@@ -72,41 +72,19 @@ class Transaction(models.Model):
                     (2, 'CLOSING_STAGE')
     )
     stage       = models.IntegerField(choices=STAGES, default=0)
-
-    # Meta:
     start_date  = models.DateTimeField(auto_now_add=True)
     
-    class Meta:
-        permissions = ()
-
-
-    ''' Perform the save iff the user has field level permissions and the object
-        already exists.
-        Args:
-            user: The ID of the user performing the save.
-            protected_fields: Any protected fields the user is changing.
-    '''
-    def save(self, user, protected_fields, *args, **kwargs):
-        
-        # Raise an exception if the user doesn't have permission, and the object
-        # already exists.
-        if (not self._has_permission(user_id, protected_fields)) and self.pk:
-            raise FieldPermissionError()
-
-        super(Transaction, self).save(*args, **kwargs)
+    objects     = TransactionManager()
 
     ''' Returns True if the user has permission to access the given fields,
         and False if not.
         Args:
             user_id: The ID of the User.
-            protected_fields: The protected fields the User is attempting to modify.
+            fields: The fields the User is attempting to modify.
     '''
-    def _has_permission(self, user_id, protected_fields):
+    def check_field_permissions(self, user_id, fields):
         
-        # Determine whether or not the user is valid.
-        if user_id not in protected_fields.keys():
-            raise ValueError('error: user is not involved in this transaction.')
-        
+        print fields
         # The mapping between the user types, and the fields they can access.
         protected_fields = {
                                 self.buyer.id: [ self.buyer_offer, self.buyer_contract ],
@@ -115,12 +93,17 @@ class Transaction(models.Model):
                                                 self.seller_contract, self.contract
                                 ]
         }
-
+     
+        # Determine whether or not the user is valid.
+        if user_id not in protected_fields.keys():
+            raise ValueError('error: user is not involved in this transaction.')
+    
         # Return False if a field is not in the user's permission scope.
         for field in protected_fields[user_id]:
             print field
 
-        return True
+        #return True
+        return False
 
     ''' Move to the next stage in the transaction. N.B. -- Only the seller has
         permission to move from the Offer stage to the Contract stage.
@@ -129,11 +112,14 @@ class Transaction(models.Model):
 
         pass
 
+    def get_offers(self, user_id):
+
+        return self.offers.filter(owner=user_id)
+
 
     ''' String representation for Transaction models. '''
     def __str__(self):
 
-        return  'buyer ' + str(self.buyer) + \
-                ' and seller ' + str(self.seller) + \
-                ' on property ' + str(self.kproperty)
+        return 'buyer: ' + str(self.buyer) + ', seller: ' + str(self.seller) + ', ' + \
+               'property: ' + str(self.kproperty)
 
