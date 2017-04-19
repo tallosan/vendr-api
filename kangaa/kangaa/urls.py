@@ -23,10 +23,11 @@ urlpatterns = [
     url(r'^o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
     
     # API.
-    url(r'^v1/search/', include('ksearch.urls')),
+    url(r'^v1/search', include('ksearch.urls')),
     url(r'^v1/properties/', include('kproperty.urls')),
     url(r'^v1/users/', include('kuser.urls')),
     url(r'^v1/autocomplete/', include('autocomplete.urls')),
+    url(r'^v1/transactions/', include('transaction.urls')),
 ]
 
 from django.conf import settings
