@@ -16,11 +16,12 @@ User = get_user_model()
 '''   Serializer for Transactions. '''
 class OfferSerializer(serializers.ModelSerializer):
     
-    owner = serializers.ReadOnlyField(source='owner.id')
+    owner = serializers.ReadOnlyField(source='owner.email')
     
     class Meta:
         model   = Offer
         fields = (
+                    'id',
                     'owner',
                     'offer',
                     'deposit',
