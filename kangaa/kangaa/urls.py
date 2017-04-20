@@ -26,7 +26,7 @@ urlpatterns = [
     url(r'^v1/search', include('ksearch.urls')),
     url(r'^v1/properties/', include('kproperty.urls')),
     url(r'^v1/users/', include('kuser.urls')),
-    url(r'^v1/autocomplete/', include('autocomplete.urls')),
+    url(r'^v1/autocomplete', include('autocomplete.urls')),
     url(r'^v1/transactions/', include('transaction.urls')),
 ]
 
