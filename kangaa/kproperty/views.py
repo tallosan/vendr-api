@@ -43,7 +43,8 @@ class PropertyList(APIView):
 
         # Determine the serializer type, as specified by the '?ptype' param.
         try:
-            serializer_type = self.resolve_serializer(request.GET.get('ptype'))
+            ptype = request.GET.get('ptype')
+            serializer_type = self.resolve_serializer(ptype.lower())
             serializer = serializer_type(data=request.data)
         except KeyError as key_error:
             key_error_exc = APIException(detail={'error': 'invalid property type.'})
