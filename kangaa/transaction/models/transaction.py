@@ -57,24 +57,16 @@ class Transaction(models.Model):
     kproperty   = models.ForeignKey(Property, related_name='kproperty',
                     editable=False, on_delete=models.CASCADE)
 
-    # Stage 1: Offer Stage.
-    # [Foreign Key: buyer_offer, seller_offer, offer]
-
-    # Stage 2: Negotiation Stage.
-    # [Foreign Key: buyer_contract, seller_contract, contract]
-    
-    # Stage 3: Closing Stage.
-
     # The transaction stage we're in.
-    STAGES      = (
+    STAGES     = (
                     (0, 'OFFER_STAGE'),
                     (1, 'NEGOTIATION_STAGE'),
                     (2, 'CLOSING_STAGE')
     )
-    stage       = models.IntegerField(choices=STAGES, default=0)
-    start_date  = models.DateTimeField(auto_now_add=True)
+    stage      = models.IntegerField(choices=STAGES, default=0)
+    start_date = models.DateTimeField(auto_now_add=True)
     
-    objects     = TransactionManager()
+    objects = TransactionManager()
 
     ''' Returns True if the user has permission to access the given fields,
         and False if not.
@@ -83,16 +75,14 @@ class Transaction(models.Model):
             fields: The fields the User is attempting to modify.
     '''
     def check_field_permissions(self, user_id, fields):
-        
-        print fields
+
         # The mapping between the user types, and the fields they can access.
         protected_fields = {
-                                self.buyer.id: [ self.buyer_offer, self.buyer_contract ],
-                                self.seller: [
-                                                self.seller_offer, self.offer,
-                                                self.seller_contract, self.contract
-                                ]
+                                self.buyer.pk: [],
+                                self.seller.pk: [ 'stage', 'accepted_offer' ]
         }
+        print protected_fields.keys()
+        print user_id
      
         # Determine whether or not the user is valid.
         if user_id not in protected_fields.keys():
@@ -103,7 +93,7 @@ class Transaction(models.Model):
             print field
 
         #return True
-        return False
+        return True
 
     ''' Move to the next stage in the transaction. N.B. -- Only the seller has
         permission to move from the Offer stage to the Contract stage.
@@ -112,10 +102,13 @@ class Transaction(models.Model):
 
         pass
 
+    ''' Returns a queryset for the given user's offers.
+        Args:
+            user_id: The ID of the given user.
+    '''
     def get_offers(self, user_id):
 
-        return self.offers.filter(owner=user_id)
-
+        return self.offers.filter(owner=user_id).order_by('-timestamp')
 
     ''' String representation for Transaction models. '''
     def __str__(self):
