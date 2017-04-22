@@ -26,6 +26,7 @@ class OfferSerializer(serializers.ModelSerializer):
                     'offer',
                     'deposit',
                     'comment',
+                    'is_accepted',
                     'timestamp',
         )
 
