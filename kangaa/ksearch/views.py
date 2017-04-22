@@ -117,14 +117,11 @@ class PropertySearch(generics.ListAPIView):
         # Get the models.
         try:
             models = [
-                        getattr(kproperty.models, model)
+                        getattr(kproperty.models, model[:1].upper() + model[1:].lower())
                         for model in ptypes
             ]
         except AttributeError:
-            error_msg = {
-                    'error' : 'invalid model type. note, this parameter is case sensitive.'
-            }
-            
+            error_msg = { 'error' : 'invalid model type.' }
             exc = APIException(detail=error_msg)
             exc.status_code = 401
             
