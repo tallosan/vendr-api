@@ -26,9 +26,24 @@ class OfferSerializer(serializers.ModelSerializer):
                     'offer',
                     'deposit',
                     'comment',
-                    'is_accepted',
                     'timestamp',
         )
+
+    ''' Handles the creation of an Offer object.
+        Args:
+            validated_data: The request data we create the new model from.
+    '''
+    def create(self, validated_data):
+        
+        # Get the owner and transaction pertaining to this Offer.
+        owner       = validated_data.pop('owner')
+        transaction = validated_data.pop('transaction')
+        
+        offer = Offer.objects.create(owner=owner,
+                                     transaction=transaction,
+                                     **validated_data)
+        
+        return offer
 
 
 '''   Serializer for Contracts. '''
