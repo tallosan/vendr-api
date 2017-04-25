@@ -12,6 +12,8 @@ from transaction.models import Transaction, Offer
 from transaction.serializers import OfferSerializer
 from transaction.permissions import TransactionAccessPermission
 
+from transaction.exceptions import BadTransactionRequest
+
 User = get_user_model()
 
 
@@ -101,10 +103,7 @@ class OfferDetail(APIView):
 
             error_msg = {'error': error_resource + ' with id ' + error_pk + \
                                   ' does not exist.'}
-            dne_exc = APIException(detail=error_msg)
-            dne_exc.status = status.HTTP_400_BAD_REQUEST
-            
-            raise dne_exc
+            raise BadTransactionRequest(detail=error_msg)
 
     ''' Handles GET requests for Offer models.
         Args:
