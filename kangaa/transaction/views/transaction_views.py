@@ -12,6 +12,8 @@ from transaction.models import Transaction
 from transaction.serializers import TransactionSerializer
 from transaction.permissions import TransactionAccessPermission
 
+from transaction.exceptions import BadTransactionRequest
+
 User = get_user_model()
 
 
@@ -31,12 +33,10 @@ class TransactionList(APIView):
             kproperty_id = request.data.pop('kproperty')
             seller       = User.objects.get(id=seller_id)
             kproperty    = Property.objects.get(id=kproperty_id)
+        
         except KeyError:
             error_msg = {'error': 'seller and buyer fields must be specified.'}
-            field_exception = APIException(detail=error_msg)
-            field_exception.status = status.HTTP_400_BAD_REQUEST
-            
-            raise field_exception
+            raise BadTransactionRequest(detail=error_msg)
     
         # Ensure that only one offer is being passed initially.
         assert len(request.data.get('offers')) == 1, "more than one offer sent."
@@ -78,10 +78,7 @@ class TransactionDetail(APIView):
         except Transaction.DoesNotExist:
             error_msg = {'error': 'transaction with id ' + str(transaction_pk) + \
                                   ' does not exist.'}
-            trans_dne_exc = APIException(detail=error_msg)
-            trans_dne_exc.status = status.HTTP_400_BAD_REQUEST
-            
-            raise trans_dne_exc
+            raise BadTransactionRequest(detail=error_msg)
 
     ''' Handles GET requests for Transaction models.
         Args:
@@ -104,11 +101,17 @@ class TransactionDetail(APIView):
     '''
     def put(self, request, transaction_pk, format=None):
 
+        # Handle invalid nested updates.
+        if request.data.get('offers') or request.data.get('contracts'):
+            error_msg = { 'error': 'nested fields should be handled through ' +\
+                                    'their respective endpoints, not transaction/.' }
+            raise BadTransactionRequest(detail=error_msg)
+
+        # Get the given transaction, and perform an update.
         transaction = self.get_object(transaction_pk)
         serializer  = self.serializer_class(transaction, data=request.data, partial=True)
-
         if serializer.is_valid():
-            serializer.save(user=self.request.user)
+            serializer.save()
             return Response(serializer.data)
     
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
