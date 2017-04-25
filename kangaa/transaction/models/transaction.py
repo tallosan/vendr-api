@@ -9,7 +9,6 @@ from django.utils import timezone
 from model_utils.managers import InheritanceManager
 
 from kproperty.models import Property
-#from transaction.exceptions import FieldPermissionError
 
 
 '''   Custom Transaction Manager. '''
@@ -57,6 +56,9 @@ class Transaction(models.Model):
     kproperty   = models.ForeignKey(Property, related_name='kproperty',
                     editable=False, on_delete=models.CASCADE)
 
+    buyer_accepted_offer  = models.UUIDField(blank=True, null=True)
+    seller_accepted_offer = models.UUIDField(blank=True, null=True)
+
     # The transaction stage we're in.
     STAGES     = (
                     (0, 'OFFER_STAGE'),
@@ -76,31 +78,38 @@ class Transaction(models.Model):
     '''
     def check_field_permissions(self, user_id, fields):
 
-        # The mapping between the user types, and the fields they can access.
-        protected_fields = {
-                                self.buyer.pk: [],
-                                self.seller.pk: [ 'stage', 'accepted_offer' ]
+        # Mapping between users and the restricted fields that they cannot access.
+        restricted_fields = {
+                                self.buyer.pk: [ 'seller_accepted_offer',
+                                                 'seller_accepted_contract'
+                                ],
+                                self.seller.pk: [ 'buyer_accepted_offer',
+                                                  'buyer_accepted_contract'
+                                ]
         }
-        print protected_fields.keys()
-        print user_id
-     
-        # Determine whether or not the user is valid.
-        if user_id not in protected_fields.keys():
-            raise ValueError('error: user is not involved in this transaction.')
-    
+        
         # Return False if a field is not in the user's permission scope.
-        for field in protected_fields[user_id]:
-            print field
+        for field in fields:
+            if field in restricted_fields[user_id]:
+                return False
 
-        #return True
         return True
 
-    ''' Move to the next stage in the transaction. N.B. -- Only the seller has
-        permission to move from the Offer stage to the Contract stage.
-    '''
-    def next_stage(self):
+    ''' Advance to the next stage in the transaction. '''
+    def advance_stage(self):
+        
+        # Ensure that we are not already at the last stage.
+        if self.stage == 2:
+            raise ValueError(
+                    "error: 'advance_stage()' cannot be called on a stage 3 transaction."
+        )
 
-        pass
+        # Ensure that both the buyer and seller have accepted the offer.
+        if self.seller_accepted_offer != self.buyer_accepted_offer:
+            raise ValueError("error: the buyer and seller offers are not equal.")
+
+        # Increment the transaction stage.
+        self.stage += 1
 
     ''' Returns a queryset for the given user's offers.
         Args:
@@ -113,6 +122,5 @@ class Transaction(models.Model):
     ''' String representation for Transaction models. '''
     def __str__(self):
 
-        return 'buyer: ' + str(self.buyer) + ', seller: ' + str(self.seller) + ', ' + \
-               'property: ' + str(self.kproperty)
+        return self.pk
 
