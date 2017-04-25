@@ -15,7 +15,7 @@ k6ubpqHS9dSO0jocg0FYjNh40tz9iVpBKaNGLmS2vZci5jhffaXcDOsK6BJQwTeJFmeOmvhNAJFAk41k
 
 ---
 
-### Authentication:
+## Authentication:
 
 The API is protected via OAuth. The OAuth endpoint is:
 
@@ -70,6 +70,7 @@ POST	http://api.kangaa.xyz/v1/properties/<ptype>/	(Authentication Required)
 | ptype         | The type of property. | < condo, house, multiplex > |
 
 
+
 **GET, UPDATE, DELETE**:
 
 Get, Update, or Delete the property object with the given ID.
@@ -84,7 +85,7 @@ DELETE	http://api.kangaa.xyz/v1/properties/<id>/    (Authentication Required)
 
 | Parameter     | Description           | Values                  |
 | ------------- |-----------------------| ----------------------- |
-| id            | The user id.          | A valid user id	  |
+| id            | The property id.      | A valid property id	  |
 
 ---
 ### Users Endpoint [POST, GET, PUT, DELETE]:
@@ -131,6 +132,7 @@ GET	http://api.kangaa.xyz/v1/search?<stype>&<query=query value>
 | -------------------- |-----------------------| ----------------------- |
 | stype                | The type of search.   | < property, user >	 |
 | query (*optional*)   | The search queries.   | Any valid search query. |
+
 
 #### How To:
 
@@ -292,3 +294,4 @@ What a Transaction looks like in JSON:
     "start_date": "2017-04-18T20:30:19.096212Z"
 }
 ```
+
