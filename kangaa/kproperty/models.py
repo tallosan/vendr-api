@@ -36,6 +36,12 @@ class Property(models.Model):
     def get_serializer(self):
         raise NotImplementedError("'get_serializer()' must be implimented.")
 
+    ''' Custom string representation. '''
+    def __str__(self):
+
+        return self.location.address + ', ' + self.location.city + ' ' + \
+                self.location.province
+
 
 '''   Parent for all cooperative ownership properties. '''
 class CoOp(Property):
