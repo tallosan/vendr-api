@@ -34,16 +34,14 @@ class UserList(APIView):
 
         return Response(response)
     
-    ''' Create a new User, assuming that their username and email are valid. '''
+    ''' Create a new User if their username and email are valid. '''
     def post(self, request, format=None):
         
         # Determine if the email is available.
         email = request.data.get('email')
         if not self.is_available(email):
-            user_exists_exc = APIException(detail={
-                                                    'error': 'user with email ' +\
-                                                     str(email) + ' already exists.'}
-            )
+            error_msg = {'error': 'user with email ' + str(email) + ' already exists.'}
+            user_exists_exc = APIException(detail=error_msg)
             user_exists_exc.status_code = status.HTTP_400_BAD_REQUEST
             raise user_exists_exc
 
@@ -91,7 +89,7 @@ class UserDetail(APIView):
             user_dne_exc.status_code = status.HTTP_400_BAD_REQUEST
             raise user_dne_exc
 
-    ''' Returns the user details.
+    ''' Returns the user details. Note, only the user can see their personal info. 
         Args:
             request: Handler for request field.
             pk: The primary key of the target user.
@@ -99,10 +97,24 @@ class UserDetail(APIView):
     '''
     def get(self, request, pk, format=None):
 
-        kuser      = self.get_object(pk=pk)
-        serializer = self.serializer_class(kuser)
+        kuser = self.get_object(pk=pk)
+        
+        # If the user is making a request on their own info, then we do not
+        # need to restrict access.
+        restrict_access = True
+        if request.user == kuser:
+            restrict_access = False
 
-        return Response(serializer.data)
+        serializer      = self.serializer_class(kuser)
+        serializer_data = serializer.data
+       
+        # Remove any restricted fields if necessary.
+        restricted_fields = ('password', )
+        if restrict_access:
+            for restricted_field in restricted_fields:
+                serializer_data.pop(restricted_field)
+        
+        return Response(serializer_data)
     
     ''' Updates the user.
         Args:

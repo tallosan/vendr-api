@@ -3,10 +3,9 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from kproperty.models import Property
-from kuser.models import KUser, Profile
+from kuser.models import KUser, Profile, \
+                         TransactionNotification, OfferNotification, ContractNotification
 from transaction.models import Transaction
-from notification.models import *
-
 from transaction.serializers import TransactionSerializer
 
 from itertools import chain
