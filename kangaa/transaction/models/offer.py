@@ -23,7 +23,6 @@ class Offer(models.Model):
     offer       = models.FloatField()
     deposit     = models.FloatField()
     comment     = models.CharField(max_length=350, blank=True)
-    is_accepted = models.BooleanField(default=False)
-
+    
     timestamp   = models.DateTimeField(auto_now_add=True)
-
+    
