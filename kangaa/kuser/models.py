@@ -59,10 +59,27 @@ class CustomUserManager(BaseUserManager):
                                  **extra_fields)
 
 
+def generate_id():
+    
+    import time
+    import random
+
+    START_TIME = 34781902734
+    '''
+    t = int(time.time() * 1000) - START_TIME
+    u = random.SystemRandom().getrandbits(32)
+    id = (t << 32) | u
+    '''
+    id = int(random.SystemRandom().getrandbits(32))
+    return id
+
+
 '''   Custom Kangaa user class. '''
 class KUser(AbstractBaseUser, PermissionsMixin):
     
     email           = models.EmailField(unique=True, db_index=True)
+    uuid            = models.BigIntegerField(default=generate_id)#, unique=True)
+                        #primary_key=True)
     
     is_staff        = models.BooleanField(default=False)
     is_admin        = models.BooleanField(default=False)
@@ -82,7 +99,7 @@ class KUser(AbstractBaseUser, PermissionsMixin):
     ''' Returns the full name of the user. '''
     def get_fullname(self):
 
-        return #self.first_name + ' ' + self.last_name
+        return self.profile.first_name + ' ' + self.profile.last_name
 
     def get_short_name():
 
@@ -111,5 +128,5 @@ class Profile(models.Model):
     location        = models.CharField(max_length=50, blank=True)
 
     prof_pic        = models.ImageField(upload_to='profiles/',
-                        default='profiles/default.svg')
+                        default='profiles/default.svg', blank=True)
 
