@@ -4,10 +4,12 @@
 # =====================================================================
 
 from django.contrib.auth import get_user_model
-
+from django.db import IntegrityError
 from rest_framework import serializers
 
 from transaction.models import Transaction, Offer, Contract
+from transaction.exceptions import BadTransactionRequest
+
 from .nested_serializers import OfferSerializer, ContractSerializer
 
 User = get_user_model()
@@ -18,7 +20,7 @@ class TransactionSerializer(serializers.ModelSerializer):
     
     buyer       = serializers.ReadOnlyField(source='buyer.id')
     
-    offers      = OfferSerializer(Offer.objects.all(), many=True)
+    offers      = OfferSerializer(Offer.objects.all(), many=True, required=True)
     contracts   = ContractSerializer(Contract.objects.all(), many=True, required=False)
 
     class Meta:
@@ -48,11 +50,15 @@ class TransactionSerializer(serializers.ModelSerializer):
         kproperty = validated_data.pop('kproperty')
         
         offer_data = validated_data.pop('offers')[0]
-        
-        trans = Transaction.objects.create_transaction(buyer=buyer, seller=seller,
-                    kproperty=kproperty,
-                    **validated_data
-        )
+        try:
+            trans = Transaction.objects.create_transaction(buyer=buyer, seller=seller,
+                        kproperty=kproperty,
+                        **validated_data
+            )
+        except IntegrityError:
+            error_msg = {'error': 'a transaction on property ' + str(kproperty.pk) + \
+                                  ' by user ' + str(buyer.pk) + ' already exists.'}
+            raise BadTransactionRequest(error_msg)
 
         # Create the offer.
         Offer.objects.create(owner=buyer, transaction=trans, **offer_data)
