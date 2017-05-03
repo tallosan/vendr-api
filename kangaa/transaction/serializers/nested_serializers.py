@@ -16,7 +16,7 @@ User = get_user_model()
 '''   Serializer for Transactions. '''
 class OfferSerializer(serializers.ModelSerializer):
     
-    owner = serializers.ReadOnlyField(source='owner.email')
+    owner = serializers.ReadOnlyField(source='owner.pk')
     
     class Meta:
         model   = Offer
