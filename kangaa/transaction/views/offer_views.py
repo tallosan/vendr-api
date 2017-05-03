@@ -24,14 +24,18 @@ class OfferList(APIView):
     permission_classes = ( permissions.IsAuthenticated, )
 
     ''' Custom 'get_queryset()' method to get only Offer models involved in
-        the given transaction.
+        the given transaction. Note, we separate the offers by their respective owners.
         Args:
             transaction_pk: The primary key of the Transaction we're querying over.
     '''
     def get_queryset(self, transaction_pk):
 
         transaction = Transaction.objects.get(pk=transaction_pk)
-        return transaction.offers.all()
+        
+        return {
+                    'buyer_offers': transaction.get_offers(user_id=transaction.buyer),
+                    'seller_offers': transaction.get_offers(user_id=transaction.seller)
+        }
 
     ''' Get a list of offers associated with a given transaction.
         Args:
@@ -42,10 +46,14 @@ class OfferList(APIView):
     def get(self, request, transaction_pk, format=None):
         
         queryset = self.get_queryset(transaction_pk)
-
-        response = []
-        for offer in queryset:
-            response.append(self.serializer_class(offer).data)
+        
+        buyer_offers  = self.serializer_class(queryset['buyer_offers'], many=True).data
+        seller_offers = self.serializer_class(queryset['seller_offers'], many=True).data
+        
+        response = {
+                        'buyer_offers': buyer_offers,
+                        'seller_offers': seller_offers
+        }
         
         return Response(response)
         
@@ -108,7 +116,8 @@ class OfferDetail(APIView):
     ''' Handles GET requests for Offer models.
         Args:
             request: Handler for the request field.
-            pk: The primary key of the transaction.
+            transaction_pk: The primary key of the transaction.
+            pk: The primary key of the offer.
             *format: Specified data format (e.g. JSON).
     '''
     def get(self, request, transaction_pk, pk, format=None):
@@ -117,4 +126,26 @@ class OfferDetail(APIView):
         serializer = self.serializer_class(offer)
         
         return Response(serializer.data)
+
+    ''' Handles DELETE requests for Offer models. Note, we can only delete the
+        most recent offer.
+        Args:
+            request: The DELETE request.
+            transaction_pk: The primary key of the transaction.
+            pk: The primary key of the offer.
+            *format: Specified data format (e.g. JSON).
+    '''
+    def delete(self, request, transaction_pk, pk, format=None):
+
+        offer = self.get_object(transaction_pk=transaction_pk, pk=pk)
+
+        # Ensure that the user both owns the offer, and the offer is the most recent.
+        transaction = Transaction.objects.get(pk=transaction_pk)
+        if offer != transaction.offers.filter(owner=request.user).latest('timestamp'):
+            error_msg = {'error': 'only active (i.e. most recent) offers can be deleted.'}
+            raise BadTransactionRequest(detail=error_msg)
+        
+        offer.delete()
+        
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
