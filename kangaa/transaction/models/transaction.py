@@ -70,6 +70,9 @@ class Transaction(models.Model):
     
     objects = TransactionManager()
 
+    class Meta:
+        unique_together = ['buyer', 'seller', 'kproperty']
+
     ''' Returns True if the user has permission to access the given fields,
         and False if not.
         Args:
@@ -122,5 +125,5 @@ class Transaction(models.Model):
     ''' String representation for Transaction models. '''
     def __str__(self):
 
-        return self.pk
+        return str(self.pk)
 
