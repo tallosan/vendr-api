@@ -126,6 +126,9 @@ class TransactionDetail(APIView):
     def delete(self, request, transaction_pk, format=None):
 
         transaction = self.get_object(transaction_pk)
+        
+        # Set current user for the 'post_delete()' signal.
+        transaction._current_user = request.user
         transaction.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
