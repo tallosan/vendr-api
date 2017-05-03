@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import FieldError
+from django.contrib.auth import get_user_model
 
 from rest_framework import generics, status
 from rest_framework.views import APIView
@@ -13,6 +14,8 @@ import kproperty.models
 from kproperty.models import *
 from kproperty.serializers import *
 from kuser.serializers import *
+
+User = get_user_model()
 
 
 ''' Handles search requests by routing to the appropriate view depending
