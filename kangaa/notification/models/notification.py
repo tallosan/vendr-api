@@ -22,7 +22,6 @@ from transaction.models import Transaction, Offer, Contract
     Args:
         sender: The class responsible for sending the signal.
         instance: The instance of the class that was saved.
-        created: Boolean, True if instance was created, False if just saved.
 '''
 @staticmethod
 @receiver(signal=[post_save, post_delete], sender=Transaction)
@@ -30,7 +29,7 @@ from transaction.models import Transaction, Offer, Contract
 @receiver(signal=[post_save, post_delete], sender=Contract)
 def handler(sender, instance, **kwargs):
 
-    # Creation notification.
+    # Creation notification. Note, we need to ensure that the sender was just created.
     if (kwargs['signal'] == post_save) and (kwargs['created']):
         notification_type = resolve_type(instance.__class__)
         notification_type.objects.create_creation_notification(instance)
@@ -96,7 +95,7 @@ class TransactionNotificationManager(BaseNotificationManager):
         return notification
 
 
-'''   Responsible for creating all tpes of offer notifications.'''
+'''   Responsible for creating all types of offer notifications.'''
 class OfferNotificationManager(BaseNotificationManager):
  
     ''' Notification on Offer creation.
@@ -178,8 +177,7 @@ class BaseNotification(models.Model):
     ''' Custom string representation. '''
     def __str__(self):
         
-        #return self.description
-        return str(self.pk)
+        return self.description
 
 
 '''   A notification on a transaction. '''
