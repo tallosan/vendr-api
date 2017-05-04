@@ -29,7 +29,7 @@ class UserList(APIView):
     def get(self, request, format=None):
         
         response = []
-        for user in KUser.objects.all():
+        for user in User.objects.all():
             response.append(self.serializer_class(user, context={'request': request}).data)
 
         return Response(response)
