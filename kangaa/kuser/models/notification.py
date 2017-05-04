@@ -10,9 +10,12 @@ import uuid
 from django.db import models
 from django.db.models.signals import post_save, post_delete, pre_delete
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericForeignKey
 from django.dispatch import receiver
 
 from transaction.models import Transaction, Offer, Contract
+
 
 
 ''' [Static] Handler for creating notifications. We determine the type of
@@ -171,13 +174,31 @@ class BaseNotification(models.Model):
     is_viewed   = models.BooleanField(default=False)
     timestamp   = models.DateTimeField(auto_now_add=True)
 
+    # Meta data for child classes.
+    _content_type = models.ForeignKey(ContentType, editable=False)
+    actual_type  = GenericForeignKey('_content_type', 'id')
+
     class Meta:
         abstract = True
-    
+
+    ''' Custom save method. Sets actual type value. '''
+    def save(self, *args, **kwargs):
+        
+        # Set the actual type if we're creating the model.
+        if not self.pk:
+            self.actual_type = self
+        
+        super(BaseNotification, self).save(*args, **kwargs)
+
     ''' Custom string representation. '''
     def __str__(self):
         
         return self.description
+
+    ''' [Abstract] Returns the serializer type for this notification type. '''
+    @staticmethod
+    def get_serializer():
+        raise NotImplementedError('error: all notifications must implement this.')
 
 
 '''   A notification on a transaction. '''
@@ -187,6 +208,11 @@ class TransactionNotification(BaseNotification):
                     on_delete=models.SET_NULL, null=True)
     objects = TransactionNotificationManager()
     
+    ''' Returns the serializer for transaction notifications. '''
+    @staticmethod
+    def get_serializer():
+        
+        return 'TransactionNotificationSerializer'
 
 '''   A notification on a transaction's offers. '''
 class OfferNotification(TransactionNotification):
@@ -195,6 +221,12 @@ class OfferNotification(TransactionNotification):
                 on_delete=models.SET_NULL, null=True)
     objects = OfferNotificationManager()
 
+    ''' Returns the serializer for this notification type. '''
+    @staticmethod
+    def get_serializer():
+        
+        return 'OfferNotificationSerializer'
+
 
 '''   A notification on a transaction's contracts. '''
 class ContractNotification(TransactionNotification):
@@ -202,4 +234,10 @@ class ContractNotification(TransactionNotification):
     contract = models.ForeignKey(Contract, related_name='notifications',
                 on_delete=models.SET_NULL, null=True)
     objects  = ContractNotificationManager()
+    
+    ''' Returns the serializer for this notification type. '''
+    @staticmethod
+    def get_serializer():
+        
+        return 'ContractNotificationSerializer'
 
