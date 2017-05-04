@@ -13,29 +13,34 @@ from kuser.models import TransactionNotification, OfferNotification, \
 
 class NotificationSerializer(serializers.ModelSerializer):
 
-    #recipient = serializers.PrimaryKeyRelatedField(source=recipient.pk)
+    recipient = serializers.PrimaryKeyRelatedField(source='recipient.pk', read_only=True)
 
     class Meta:
         fields = ('id',
-                  #'recipient',
+                  'recipient',
                   'description',
                   'is_viewed',
                   'timestamp'
         )
 
         
-class TransactionSerializer(NotificationSerializer):
+class TransactionNotificationSerializer(NotificationSerializer):
 
-    fields = NotificationSerializer.Meta.fields + ('transaction', )
-
-
-class OfferSerializer(TransactionSerializer):
-
-    fields = TransactionSerializer.Meta.fields + ('offer', )
+    class Meta(NotificationSerializer.Meta):
+        model  = TransactionNotification
+        fields = NotificationSerializer.Meta.fields + ('transaction', )
 
 
-class ContractSerializer(TransactionSerializer):
+class OfferNotificationSerializer(TransactionNotificationSerializer):
 
-    fields = TransactionSerializer.Meta.fields + ('contract', )
+    class Meta(TransactionNotificationSerializer.Meta):
+        model  = OfferNotification
+        fields = TransactionNotificationSerializer.Meta.fields + ('offer', )
 
+
+class ContractNotificationSerializer(TransactionNotificationSerializer):
+
+    class Meta(TransactionNotificationSerializer.Meta):
+        model  = ContractNotification
+        fields = TransactionNotificationSerializer.Meta.fields + ('contract', )
 
