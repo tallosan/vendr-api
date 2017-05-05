@@ -107,8 +107,10 @@ class Transaction(models.Model):
                     "error: 'advance_stage()' cannot be called on a stage 3 transaction."
         )
 
-        # Ensure that both the buyer and seller have accepted the offer.
-        if self.seller_accepted_offer != self.buyer_accepted_offer:
+        # Ensure that both the buyer and seller have accepted the offer, and neither
+        # are done.
+        if self.seller_accepted_offer != None and \
+           (self.seller_accepted_offer != self.buyer_accepted_offer):
             raise ValueError("error: the buyer and seller offers are not equal.")
 
         # Increment the transaction stage.
