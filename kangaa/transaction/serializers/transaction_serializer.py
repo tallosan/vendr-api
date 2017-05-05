@@ -78,12 +78,17 @@ class TransactionSerializer(serializers.ModelSerializer):
             target = getattr(instance, field)
 
             if field == 'stage':
-                instance.advance_stage()
+                try:
+                    instance.advance_stage()
+                except ValueError:
+                    error_msg = {'error': 'cannot increment stage, as the buyer ' +\
+                                          'and seller must agree on an accepted offer.'}
+                    raise BadTransactionRequest(error_msg)
             else:
                 setattr(instance, field, target_data)
 
             instance.save()
-        
+
         return instance
 
     ''' Transaction representation. Returns the offer data split into two separate
