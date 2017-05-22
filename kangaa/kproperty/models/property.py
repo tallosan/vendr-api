@@ -52,7 +52,7 @@ class Property(models.Model):
 '''   Parent for all cooperative ownership properties. '''
 class CoOp(Property):
     
-    floor_num   = models.IntegerField()
+    unit_num   = models.IntegerField()
     
     ''' (Abstract) Raises a NotImplementedError, as this should be implemented
         in the child models. '''
