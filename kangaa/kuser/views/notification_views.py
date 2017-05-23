@@ -4,6 +4,7 @@
 
 from django.contrib.auth import get_user_model
 
+from rest_framework import permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import APIException
@@ -33,7 +34,7 @@ def resolve_serializer(serializer_class):
 '''   Notification list view. '''
 class NotificationList(APIView):
 
-    permission_classes = ( IsNotificationOwner, )
+    permission_classes = ( permissions.IsAuthenticated, IsNotificationOwner, )
     
     ''' Get the given user's notifications.
         Args:
