@@ -22,7 +22,7 @@ class TransactionSerializer(serializers.ModelSerializer):
     
     offers      = OfferSerializer(Offer.objects.all(), many=True, required=True)
     contracts   = ContractSerializer(Contract.objects.all(), many=True, required=False)
-
+    
     class Meta:
         model  = Transaction
         fields = (
