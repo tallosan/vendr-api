@@ -9,7 +9,10 @@ from __future__ import unicode_literals
 from django.db import models
 from django.conf import settings
 
+from hashlib import sha256
+
 from .property import Property
+from custom_storage import ZappMediaStorage
 
 
 '''   Location model. Contains locational data for a particular listing. '''
@@ -62,26 +65,27 @@ class Historical(models.Model):
     year_built      = models.IntegerField(blank=True, null=True)
 
 
+''' (Helper) Generates a file name for an image model. '''
+def listing_file_name(instance, filename):
+        
+        BASE_URL = '/listings/images/'
+        FILE_EXT = sha256(instance.encode('utf-8')).hexdigest()
+
+        return BASE_URL + FILE_EXT
+
 '''   Images model. Contains all images associated with the property. '''
 class Images(models.Model):
-
-    kproperty = models.OneToOneField('Property', related_name='images',
+    
+    kproperty = models.ForeignKey('Property', related_name='images',
                     on_delete=models.CASCADE)
-
-    thumbnail           = models.ImageField(upload_to='properties/',
-                    default='properties/thumbnail.jpg')
-    low_resolution      = models.ImageField(upload_to='properties/',
-                    default='properties/lr_default.jpg')
-    standard_resolution = models.ImageField(upload_to='properties/',
-                    default='properties/sr_default.jpg')
-
-    ''' Generate a custom UUID for our image. '''
-    def uuid_generator(self):
-
-        BASE = 'properties/'
-        suffix = 0
-
-        return BASE + suffix
+    #thumbnail = models.ImageField(upload_to=listing_file_name,
+                    #storage=ZappMediaStorage())
+    image = models.ImageField(upload_to=listing_file_name,
+                    storage=ZappMediaStorage())
+    #low_resolution = models.ImageField(upload_to=listing_file_name,
+                    #storage=ZappMediaStorage())
+    #standard_resolution = models.ImageField(upload_to=listing_file_name,
+                    #storage=ZappMediaStorage())
 
 
 '''   Open house model. Contains scheduling info about open house / showing times. '''
