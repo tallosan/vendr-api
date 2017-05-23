@@ -13,5 +13,9 @@ urlpatterns = [
             views.OfferDetail.as_view()),
 
         # Contract views.
+        url(r'^(?P<transaction_pk>[0-9a-f-]+)/contracts/$',
+            views.ContractList.as_view()),
+        url(r'^(?P<transaction_pk>[0-9a-f-]+)/contracts/(?P<pk>[0-9a-f-]+)/$',
+            views.ContractDetail.as_view()),
 ]
 
