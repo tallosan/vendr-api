@@ -16,7 +16,7 @@ class PropertySerializer(serializers.ModelSerializer):
     features    = FeaturesSerializer(Features.objects.all(), many=True)
     tax_records = TaxRecordsSerializer(TaxRecords.objects.all(), many=True)
     history     = HistoricalSerializer()
-    images      = ImagesSerializer()
+    images      = ImagesSerializer(Images.objects.all(), many=True)
     
     class Meta:
         model   = Property
@@ -132,7 +132,7 @@ class CoOpSerializer(PropertySerializer):
 
     class Meta(PropertySerializer.Meta):
 
-        fields  = PropertySerializer.Meta.fields + ('floor_num', )
+        fields  = PropertySerializer.Meta.fields + ('unit_num', )
 
 
 '''   Serializer for Condo models. '''
