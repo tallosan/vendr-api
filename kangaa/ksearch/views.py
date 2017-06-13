@@ -132,7 +132,7 @@ class PropertySearch(generics.ListAPIView):
         
         # No models specified, so we'll just return all types.
         if not models:
-            models = [Condo, House, Multiplex]
+            models = [Condo, POTL, Multiplex]
         
         return models
 
