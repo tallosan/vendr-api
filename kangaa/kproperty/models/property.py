@@ -37,10 +37,12 @@ class Property(models.Model):
     views        = models.IntegerField(default=0)
     offers       = models.IntegerField(default=0)
     is_featured  = models.BooleanField(default=False)
+    
+    description  = models.CharField(max_length=350, blank=True, null=True)
 
     ''' (Abstract) Returns the serializer type for this model. '''
     def get_serializer(self):
-        raise NotImplementedError("'get_serializer()' must be implimented.")
+        raise NotImplementedError("'get_serializer()' must be implemented.")
 
     ''' Custom string representation. '''
     def __str__(self):
@@ -81,14 +83,16 @@ class Freehold(Property):
         raise NotImplementedError("no 'get_serializer()' method for parent Freehold.")
 
 
-'''   House model. '''
-class House(Freehold):
+'''   POTL model. '''
+class POTL(Freehold):
+
+    monthly_expenses = models.FloatField()
     
     ''' Returns a HouseSerializer object. '''
     def get_serializer(self):
 
-        from kproperty.serializers import HouseSerializer
-        return HouseSerializer
+        from kproperty.serializers import POTLSerializer
+        return POTLSerializer
 
 
 '''   Multiplex model. '''
