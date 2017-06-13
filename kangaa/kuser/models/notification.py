@@ -51,8 +51,8 @@ def resolve_type(sender_class):
 
     class_mappings = {
                         Transaction: TransactionNotification,
-                        Offer: OfferNotification,
-                        Contract: ContractNotification
+                        Offer: OfferNotification#,
+                        #Contract: ContractNotification
     }
 
     return class_mappings[sender_class]
@@ -214,6 +214,7 @@ class TransactionNotification(BaseNotification):
         
         return 'TransactionNotificationSerializer'
 
+
 '''   A notification on a transaction's offers. '''
 class OfferNotification(TransactionNotification):
 
@@ -228,16 +229,15 @@ class OfferNotification(TransactionNotification):
         return 'OfferNotificationSerializer'
 
 
-'''   A notification on a transaction's contracts. '''
+'''   A notification on a transaction's contracts.
 class ContractNotification(TransactionNotification):
  
     contract = models.ForeignKey(Contract, related_name='notifications',
                 on_delete=models.SET_NULL, null=True)
     objects  = ContractNotificationManager()
-    
-    ''' Returns the serializer for this notification type. '''
+    '''''' Returns the serializer for this notification type.
     @staticmethod
     def get_serializer():
         
         return 'ContractNotificationSerializer'
-
+'''
