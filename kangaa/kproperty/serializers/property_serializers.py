@@ -1,7 +1,9 @@
 from rest_framework import serializers
 
+from django.core.files.uploadedfile import UploadedFile
+
 from kproperty.models import *
-from kproperty.nested_serializers import *       
+from .property_field_serializers import *       
 
 
 '''   Serializer for Property models. '''
@@ -17,7 +19,7 @@ class PropertySerializer(serializers.ModelSerializer):
     tax_records = TaxRecordsSerializer(TaxRecords.objects.all(), many=True)
     history     = HistoricalSerializer()
     images      = ImagesSerializer(Images.objects.all(), many=True)
-    
+
     class Meta:
         model   = Property
         fields  = ('id', 'owner',
@@ -89,12 +91,14 @@ class PropertySerializer(serializers.ModelSerializer):
     '''
     def update(self, instance, validated_data):
         
+        validated_data = self.adapt_context(validated_data)
+        
         # For each term, perform the necessary updates on the target field.
         # Special cases exist for nested objects, & foreign key objects.
         for term in validated_data.keys():
             target_data = validated_data.pop(term)
             target      = getattr(instance, term)
-            
+
             # Unique Foreign Key model (i.e. one-to-one relation).
             if type(target_data).__name__ == 'OrderedDict':
                 for field in target_data.keys():
@@ -113,11 +117,19 @@ class PropertySerializer(serializers.ModelSerializer):
                 # Otherwise, check if the foreign key already exists. If not, then
                 # we can create it.
                 else:
+
+                    #TODO: Refactor this! We are hard coding 'image'.
                     for data in target_data:
                         model_class = target.all().model
-                        if target.filter(**data).count() == 0:
-                            model_class.objects.create(kproperty=instance, **data)
-
+                        if issubclass(data.__class__, UploadedFile):
+                        #if type(data).__name__ == 'InMemoryUploadedFile' or \
+                                #'TemporaryUploadedFile':
+                            model_class.objects.create(kproperty=instance, image=data)
+                        
+                        else:
+                            if target.filter(**data).count() == 0:
+                                model_class.objects.create(kproperty=instance, **data)
+            
             # Regular field update.
             else:
                 setattr(instance, term, target_data)
@@ -125,6 +137,14 @@ class PropertySerializer(serializers.ModelSerializer):
             instance.save()
         
         return instance
+        
+    # TODO: Refactor this!
+    def adapt_context(self, validated_data):
+
+        for key in self.context.keys():
+            validated_data[key] = self.context.pop(key)
+
+        return validated_data
 
 
 '''   Serializer for cooperative living properties. '''
@@ -157,17 +177,17 @@ class FreeholdSerializer(PropertySerializer):
 
 
 '''   Serializer for House models. '''
-class HouseSerializer(FreeholdSerializer):
+class POTLSerializer(FreeholdSerializer):
 
     class Meta(PropertySerializer.Meta):
 
-        model   = House
+        model   = POTL
         fields  = FreeholdSerializer.Meta.fields
    
     ''' Overrides parent by passing a House model as the 'property_class'. '''
     def create(self, validated_data):
 
-        return super(HouseSerializer, self).create(House().__class__, validated_data)
+        return super(POTLSerializer, self).create(POTL().__class__, validated_data)
 
 
 '''   Serializer for Multiplex models. '''

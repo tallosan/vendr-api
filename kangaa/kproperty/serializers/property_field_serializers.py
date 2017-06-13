@@ -43,15 +43,13 @@ class HistoricalSerializer(serializers.ModelSerializer):
         fields  = ('last_sold_price', 'last_sold_date',
                    'year_built')
 
+
 '''   Serializer for Images models. '''
 class ImagesSerializer(serializers.ModelSerializer):
     
-    thumbnail           = serializers.ImageField(use_url=True, required=False)
-    low_resolution      = serializers.ImageField(use_url=True, required=False)
-    standard_resolution = serializers.ImageField(use_url=True, required=False)
+    image = serializers.ReadOnlyField(source='image.name')
     
     class Meta:
         model   = Images
-        fields  = ('thumbnail',
-                   'low_resolution', 'standard_resolution')
+        fields = ('image', 'timestamp')
 
