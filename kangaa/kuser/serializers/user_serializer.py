@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from kproperty.models import Property
 from kuser.models import KUser, Profile
-from kuser.models import TransactionNotification, OfferNotification, ContractNotification
+from kuser.models import TransactionNotification, OfferNotification#, ContractNotification
 from transaction.models import Transaction
 from transaction.serializers import TransactionSerializer
 
@@ -28,6 +28,7 @@ class ProfileSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
 
     profile    = ProfileSerializer(required=False)
+    #TODO: Send password in plaintext.
     properties = serializers.PrimaryKeyRelatedField(many=True, required=False,
                     queryset=Property.objects.select_subclasses())
 
@@ -35,7 +36,7 @@ class UserSerializer(serializers.ModelSerializer):
     notification_qs  = []
     notification_qs += TransactionNotification.objects.all()
     notification_qs += OfferNotification.objects.all()
-    notification_qs += ContractNotification.objects.all()
+    #notification_qs += ContractNotification.objects.all()
     
     notifications = serializers.PrimaryKeyRelatedField(many=True, required=False,
                         queryset=notification_qs)
@@ -83,7 +84,7 @@ class UserSerializer(serializers.ModelSerializer):
         for term in validated_data.keys():
             target_data = validated_data.pop(term)
             target = getattr(instance, term)
-            
+                      
             # One-to-one relation update.
             if type(target_data).__name__ == 'OrderedDict':
                 for field in target_data.keys():
@@ -91,6 +92,10 @@ class UserSerializer(serializers.ModelSerializer):
 
                 target.save()
             
+            # Handle password updates.
+            elif term == 'password':
+                instance.set_password(target_data)
+ 
             # Regular field update.
             else:
                 setattr(instance, term, target_data)
