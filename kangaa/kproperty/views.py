@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from rest_framework.exceptions import APIException
+from rest_framework.parsers import FormParser, MultiPartParser
 
 from oauth2_provider.ext.rest_framework import TokenHasReadWriteScope, TokenHasScope
 
@@ -19,20 +20,6 @@ class PropertyList(APIView):
     permission_classes = (
                             permissions.IsAuthenticatedOrReadOnly,
     )
-
-    ''' Returns all properties in the database.
-        Args:
-            request: Handler for request field.
-            *format: Specified data format.
-    '''
-    def get(self, request, format=None):
-        
-        response = []
-        for kproperty in Property.objects.select_subclasses():
-            serializer = kproperty.get_serializer()
-            response.append(serializer(kproperty).data)
-
-        return Response(response)
 
     ''' Places objects in the database.
         Args:
@@ -68,7 +55,7 @@ class PropertyList(APIView):
 
         types = {
                     'condo': CondoSerializer,
-                    'house': HouseSerializer,
+                    'potl': POTLSerializer,
                     'multiplex': MultiplexSerializer
                 }
 
@@ -85,6 +72,7 @@ class PropertyDetail(APIView):
                                     permissions.IsAuthenticatedOrReadOnly,
                                     IsOwnerOrReadOnly,
         )
+        self.parsers = (FormParser, MultiPartParser, )
 
     ''' Retrieve the property if it exists. Returns a 404 otherwise.
         Args:
@@ -96,6 +84,14 @@ class PropertyDetail(APIView):
         try:
             kproperty = Property.objects.get_subclass(pk=pk)
             self.check_object_permissions(self.request, kproperty)
+            
+            # TODO: Refactor this.
+            for model in [Condo, POTL, Multiplex]:
+                try:
+                    if model.objects.get(pk=kproperty.pk):
+                        kproperty = model.objects.get(pk=kproperty.pk)
+                except Exception:pass
+
             self.serializer = kproperty.get_serializer()
             return kproperty
         except Property.DoesNotExist:
@@ -125,10 +121,14 @@ class PropertyDetail(APIView):
             *format: Specified data format (e.g. JSON).
     '''
     def put(self, request, pk, format=None):
-
+        
         kproperty = self.get_object(pk)
-        self.serializer = self.serializer(kproperty, data=request.data, partial=True)
-        if self.serializer.is_valid():
+        
+        # TODO: Refactor this. The context hack is not ideal.
+        self.serializer = self.serializer(kproperty,
+                            data=request.data, context=request.data,
+                            partial=True)
+        if self.serializer.is_valid(raise_exception=True):
             self.serializer.save()
             return Response(self.serializer.data)
         
