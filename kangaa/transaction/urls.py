@@ -17,5 +17,13 @@ urlpatterns = [
             views.ContractList.as_view()),
         url(r'^(?P<transaction_pk>[0-9a-f-]+)/contracts/(?P<pk>[0-9a-f-]+)/$',
             views.ContractDetail.as_view()),
+
+        # [Contract] :: Clause views.
+        url(r'^(?P<transaction_pk>[0-9a-f-]+)/contracts/(?P<contract_pk>[0-9a-f-]+)/'
+                'clauses/$',
+            views.ClauseList.as_view(), name='clause-list'),
+        url(r'^(?P<transaction_pk>[0-9a-f-]+)/contracts/(?P<contract_pk>[0-9a-f-]+)/'
+                'clauses/(?P<pk>[0-9a-f-]+)/$',
+            views.ClauseDetail.as_view()),
 ]
 
