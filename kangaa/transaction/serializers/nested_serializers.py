@@ -7,8 +7,8 @@ from django.contrib.auth import get_user_model
 
 from rest_framework import serializers
 
-from transaction.models import Transaction, Offer, Contract, StaticClause,\
-    AbstractContractFactory
+from transaction.models import *#Transaction, Offer, Contract, StaticClause,\
+    #AbstractContractFactory
 
 
 User = get_user_model()
@@ -65,32 +65,68 @@ class OfferSerializer(serializers.ModelSerializer):
         }
   
         return offers
+
+
+class ClauseSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        fields = ('id', 'title', 'is_active', 'preview')
       
 
 '''   Serializer for static clauses. '''
-class StaticClauseSerializer(serializers.ModelSerializer):
+class StaticClauseSerializer(ClauseSerializer):
 
-    class Meta:
+    class Meta(ClauseSerializer.Meta):
+        
         model = StaticClause
-        fields = ('id',
-                  'title',
-                  'is_active',
-                  'preview',
-        )
+
+
+class DynamicClauseSerializer(ClauseSerializer):
+
+    class Meta(ClauseSerializer.Meta):
+    
+        model  = DynamicClause
+        fields = ClauseSerializer.Meta.fields + ('generator', )
+        validators = []
+    #TODO: This should be done better.
+    def to_internal_value(self, data):
+        return data
+    
+    def to_representation(self, instance):
+        
+        clause = super(DynamicClauseSerializer, self).to_representation(instance)
+        clause['generator'] = instance.generator
+        
+        return clause
+
+
+class DropdownClauseSerializer(DynamicClauseSerializer):
+
+    class Meta(DynamicClauseSerializer.Meta):
+        model  = DynamicClause
 
 
 '''   Serializer for Contracts. '''
 class ContractSerializer(serializers.ModelSerializer):
 
-    static_clauses = StaticClauseSerializer(StaticClause.objects.all(), many=True,
-                        required=False)
+    owner = serializers.ReadOnlyField(source='owner.pk')
+    clauses = serializers.SerializerMethodField()
 
     class Meta:
         model  = Contract
         fields = ('id', 'owner',
-                  'static_clauses',#'dynamic_clauses')
+                  'clauses',
                   'timestamp'
         )
+
+    ''' Custom URL representation.
+        Args:
+            instance: The Contract being serialized.
+    '''
+    def get_clauses(self, instance):
+
+        return '{}transactions/{}/contracts/{}/clauses/'.format(
+                settings.BASE_URL, instance.transaction.pk, instance.pk)
 
     ''' Create a contract of the given type.
         Args:
