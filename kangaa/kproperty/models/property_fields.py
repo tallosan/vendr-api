@@ -10,6 +10,7 @@ from django.db import models
 from django.conf import settings
 
 from hashlib import sha256
+import uuid
 
 from .property import Property
 from custom_storage import ZappMediaStorage
@@ -68,10 +69,11 @@ class Historical(models.Model):
 ''' (Helper) Generates a file name for an image model. '''
 def listing_file_name(instance, filename):
         
-        BASE_URL = '/listings/images/'
-        FILE_EXT = sha256(instance.encode('utf-8')).hexdigest()
+        BASE_URL = 'listings/images/'
+        #ID       = sha256(instance).hexdigest()
+        ID       = str(uuid.uuid4())
 
-        return BASE_URL + FILE_EXT
+        return BASE_URL + ID
 
 '''   Images model. Contains all images associated with the property. '''
 class Images(models.Model):
@@ -80,8 +82,9 @@ class Images(models.Model):
                     on_delete=models.CASCADE)
     #thumbnail = models.ImageField(upload_to=listing_file_name,
                     #storage=ZappMediaStorage())
-    image = models.ImageField(upload_to=listing_file_name,
-                    storage=ZappMediaStorage())
+    image = models.ImageField(upload_to=listing_file_name, storage=ZappMediaStorage(),
+                max_length=150)
+    timestamp = models.DateField(auto_now_add=True)
     #low_resolution = models.ImageField(upload_to=listing_file_name,
                     #storage=ZappMediaStorage())
     #standard_resolution = models.ImageField(upload_to=listing_file_name,
