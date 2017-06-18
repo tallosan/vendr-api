@@ -58,6 +58,9 @@ class Transaction(models.Model):
 
     buyer_accepted_offer  = models.UUIDField(blank=True, null=True)
     seller_accepted_offer = models.UUIDField(blank=True, null=True)
+    
+    buyer_accepted_contract  = models.UUIDField(blank=True, null=True)
+    seller_accepted_contract = models.UUIDField(blank=True, null=True)
 
     # The transaction stage we're in.
     STAGES     = (
@@ -84,7 +87,7 @@ class Transaction(models.Model):
         # Mapping between users and the restricted fields that they cannot access.
         restricted_fields = {
                                 self.buyer.pk: [ 'seller_accepted_offer',
-                                                 'seller_accepted_contract'
+                                                 'seller_accepted_contract',
                                 ],
                                 self.seller.pk: [ 'buyer_accepted_offer',
                                                   'buyer_accepted_contract'
@@ -107,11 +110,19 @@ class Transaction(models.Model):
                     "error: 'advance_stage()' cannot be called on a stage 3 transaction."
         )
 
-        # Ensure that both the buyer and seller have accepted the offer, and neither
-        # are done.
-        if self.seller_accepted_offer != None and \
-           (self.seller_accepted_offer != self.buyer_accepted_offer):
-            raise ValueError("error: the buyer and seller offers are not equal.")
+        # Determine the resource we are checking.
+        if self.stage == 0:
+            seller_resource = self.seller_accepted_offer
+            buyer_resource  = self.buyer_accepted_offer
+            resource = 'offer'
+        elif self.stage == 1:
+            seller_resource = self.seller_accepted_contract
+            buyer_resource  = self.buyer_accepted_contract
+            resource = 'contract'
+        
+        # Ensure that both the buyer and seller have accepted the resource.
+        if (seller_resource is None) or (seller_resource != buyer_resource):
+            raise ValueError("error: the buyer and seller resources are not equal.")
 
         # Increment the transaction stage.
         self.stage += 1
