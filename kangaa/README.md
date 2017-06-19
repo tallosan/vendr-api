@@ -436,7 +436,7 @@ DELETE	http://api.zappme.xyz/v1/transactions/<id>/    (Authentication Required)
     "start_date": "2017-06-19T19:40:08.490699Z"
 }
 ```
-### Transactions / Offers [POST, GET, PUT, DELETE]:
+### Transactions / Offers [POST, GET, DELETE]:
 
 **POST**
 
@@ -565,4 +565,71 @@ DELETE	http://api.zappme.xyz/v1/transactions/<transaction_id>/contracts/<contrac
 ```
 ---
 
+### Transactions / Contracts / Clauses [GET, PUT]:
+
+There are two types of clauses: static, and dynamic.
+There difference is that static clauses cannot be removed or edited, whereas dynamic clauses can.
+
+***Clause Anatomy***:
+
+Each dynamic clause has two views, a generator view, and a preview view.
+Each static clause only has the preview view.
+There are only two fields that you can edit on a dynamic clause:
+```javascript
+is_active and value.
+```
+
+To remove a dynamic clause, set its 'is_active' field to False.
+To update a dynamic clause's value, set its 'value' field.
+
+**GET, UPDATE**:
+
+Get, Update, or Delete the contract object with the given ID.
+
+```javascript
+GET	http://api.zappme.xyz/v1/transactions/<transaction_id>/contracts/<contract_id>/clause/<clause_id>    (Authentication Required)
+UPDATE	http://api.zappme.xyz/v1/transactions/<transaction_id>/contracts/<contract_id>/clause/<clause_id>    (Authentication Required)
+DELETE	http://api.zappme.xyz/v1/transactions/<transaction_id>/contracts/<contract_id>/clause/<clause_id>    (Authentication Required)
+```
+
+#### Request Parameters:
+
+| Parameter      | Description                  | Values                                |
+| -------------- |------------------------------| ------------------------------------- |
+| transaction_id | The transaction id.          | The id of the contract's transaction. |
+| contract_id    | The contract id.             | The id of the contract.               |
+| clause_id      | The clause id.               | The id of the clause.                 |
+
+
+***Sample Response***:
+
+N.B. -- We are only showing one clause of each type to keep things short.
+
+```javascript
+{
+    "dynamic_clauses": [
+        {
+            "generator": {
+                "category": "U", 
+                "prompt": "Ensure Chattels & Fixtures are in good working order", 
+                "ui_type": "TOGGLE", 
+                "value": true
+            }, 
+            "id": "9f777fa0-f4bc-4d46-9365-fc86cefb385b", 
+            "is_active": true, 
+            "preview": "The Seller represents and warrants that the chattels and fixtures as included in this Agreement will be in good working order and free from liens and encumbrances on completion. The parties in this Agreement of Purchase and Sale agree that this representation and warranty shall survive and not merge on completion of this transaction, but apply only to those circumstances existing at the date of completion stated herein.", 
+            "title": "Chattels and Fixtures"
+        }
+    ], 
+    "static_clauses": [
+        {
+            "id": "b0a4dd10-4d6c-4a19-9f4d-bb70e43d0868", 
+            "is_active": true, 
+            "preview": "Notwithstanding the completion date set out in the Agreement, the parties in this Agreement may, by mutual agreement in writing, advance or extend the completion date of this transaction. ", 
+            "title": "Completion Date Adjustments"
+        }
+    ]
+}
+```
+---
 
