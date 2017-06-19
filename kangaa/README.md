@@ -8,10 +8,10 @@ BASE_URL = api.kangaa.xyz/v1/
 
 #### client_id:
 
-UYccFpgFqzb1PjOaXNVbKdoUIfbhgktSCEEKOzaE
+CVUK9hAGWf1AxoVJfjlUGgAThezkYrZ83dkGc6kg
 
 #### client_secret:
-k6ubpqHS9dSO0jocg0FYjNh40tz9iVpBKaNGLmS2vZci5jhffaXcDOsK6BJQwTeJFmeOmvhNAJFAk41kMgdHqWfjuRAeFTg7yfBM017WmFJzmT6xEgkJRVPHbR1cqSEm
+3jtPlGH58i6X5tPlwwjzJNG5OOZ0LCSzyTcJHMCHd0pxSwtUG8wN318lelywFfqsDR8hodvxezLhBu4YEKGpEH2rGS2kHSRNKsSMrOTMlSr0xwa3vCRieX4UxoIAFlia
 
 ---
 
