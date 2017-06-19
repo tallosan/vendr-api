@@ -47,11 +47,17 @@ class AbstractContractFactory(object):
         elif contract_type == 'condo':
             contract_factory = CondoContract.objects
         
-        elif contract_type == 'freehold':
-            contract_factory = FreeholdContract.objects
+        elif contract_type == 'house':
+            contract_factory = HouseContract.objects
         
-        elif contract_type == 'potl':
-            contract_factory = POTLFreeholdContract.objects
+        elif contract_type == 'townhouse':
+            contract_factory = TownhouseContract.objects
+
+        elif contract_type == 'manufactured':
+            contract_factory = ManufacturedContract.objects
+
+        elif contract_type == 'vacant_land':
+            contract_factory = VacantLandContract.objects
 
         # Create the contract.
         contract = contract_factory.create_contract(owner=owner,
@@ -148,7 +154,6 @@ class CoOpContractManager(BaseContractManager):
         return contract
 
 
-
 class CondoContractManager(CoOpContractManager):
     
     ''' Initialize this manager with any necessary additional static clauses. '''
@@ -236,12 +241,12 @@ class CoOwnershipContractManager(BaseContractManager):
 
 
 
-class FreeholdContractManager(BaseContractManager):
+class HouseContractManager(BaseContractManager):
  
     ''' Initialize this manager with any necessary additional static clauses. '''
     def __init__(self):
         
-        super(FreeholdContractManager, self).__init__()
+        super(HouseContractManager, self).__init__()
         self.static_clauses += [
                 
                 # Generic clauses.
@@ -260,14 +265,14 @@ class FreeholdContractManager(BaseContractManager):
                 STATIC_CLAUSES['tender'],
         ]
     
-    ''' Create a Freehold Contract.
+    ''' Create a House Contract.
         Args:
             owner: The owner of the contract.
             transaction: The transaction this contract belongs to.
     '''
     def create_contract(self, owner, transaction, **kwargs):
         
-        contract = super(FreeholdContractManager, self).\
+        contract = super(HouseContractManager, self).\
                      create_contract(owner, transaction, **kwargs)
 
         # Dynamic Clauses:
@@ -285,11 +290,11 @@ class FreeholdContractManager(BaseContractManager):
         return contract
 
 
-class POTLFreeholdContractManager(FreeholdContractManager):
+class TownhouseContractManager(HouseContractManager):
 
     def __init__(self):
 
-        super(POTLFreeholdContractManager, self).__init__()
+        super(TownhouseContractManager, self).__init__()
         self.static_clauses += [
             
             # Generic clauses.
@@ -298,14 +303,14 @@ class POTLFreeholdContractManager(FreeholdContractManager):
             STATIC_CLAUSES['condo_laws_acknowledgement_pre'],
         ]
     
-    ''' Create a POTL Freehold Contract.
+    ''' Create a Townhouse House Contract.
         Args:
             owner: The owner of the contract.
             transaction: The transaction this contract belongs to.
     '''
     def create_contract(self, owner, transaction, **kwargs):
         
-        contract =  super(POTLFreeholdContractManager, self).\
+        contract =  super(TownhouseContractManager, self).\
               create_contract(owner, transaction, **kwargs)
 
         # Dynamic Clauses:
@@ -313,12 +318,12 @@ class POTLFreeholdContractManager(FreeholdContractManager):
         return contract
 
 
-class MobileContractManager(BaseContractManager):
+class ManufacturedContractManager(BaseContractManager):
     
     ''' Initialize this manager with any necessary additional static clauses. '''
     def __init__(self):
         
-        super(MobileContractManager, self).__init__()
+        super(ManufacturedContractManager, self).__init__()
         self.static_clauses += [
 
                 # Generic clauses.
@@ -327,7 +332,7 @@ class MobileContractManager(BaseContractManager):
                 STATIC_CLAUSES['adjustments'],
                 STATIC_CLAUSES['tender'],
 
-                # Mobile specific clauses.
+                # Manufactured specific clauses.
                 MOBILE_STATIC_CLAUSES['rules_and_regs'],
                 MOBILE_STATIC_CLAUSES['lease'],
                 MOBILE_STATIC_CLAUSES['title'],
@@ -337,14 +342,14 @@ class MobileContractManager(BaseContractManager):
                 MOBILE_STATIC_CLAUSES['insurance']
         ]
     
-    ''' Create a Mobile Contract.
+    ''' Create a Manufactured Contract.
         Args:
             owner: The owner of the contract.
             transaction: The transaction this contract belongs to.
     '''
     def create_contract(self, owner, transaction, **kwargs):
         
-        contract = super(MobileContractManager, self).\
+        contract = super(ManufacturedContractManager, self).\
               create_contract(owner, transaction, **kwargs)
 
         # Dynamic Clauses:
@@ -358,7 +363,6 @@ class MobileContractManager(BaseContractManager):
         chattels_and_fixs = ChattelsAndFixsClause.objects.create(contract=contract)
  
         return contract
-
 
 
 '''   Vacant land contract manager.'''
@@ -416,13 +420,6 @@ class Contract(models.Model):
     owner       = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='contracts',
                     on_delete=models.CASCADE)
     
-    class Meta:
-        unique_together = ['transaction', 'owner']
-    # 'generator': [
-    #         {'prompt': 'Date of Signing', 'values': [], 'type': 'string', 'order': 1},
-    #         {'prompt': 'Method of Payment', 'values': [], 'type': 'string', 'order': 0},
-    # ]
-
     @property
     def clauses(self):
         
@@ -435,25 +432,30 @@ class Contract(models.Model):
         
         return clauses
 
+    def save(self, *args, **kwargs):
+
+        if self.transaction.contracts.filter(owner=self.owner).count() >= 1:
+            raise ValueError('error: this user already has a contract.')
+
+        super(Contract, self).save(*args, **kwargs)
 
 class CoOpContract(Contract):
     objects = CoOpContractManager()
 
-
 class CondoContract(Contract):
     objects = CondoContractManager()
 
+class ManufacturedContract(Contract):
+    objects = ManufacturedContractManager()
 
-class MobileContract(Contract):
-    objects = MobileContractManager()
+class HouseContract(Contract):
+    objects = HouseContractManager()
 
+class TownhouseContract(HouseContract):
+    objects = TownhouseContractManager()
 
-class FreeholdContract(Contract):
-    objects = FreeholdContractManager()
-
-
-class POTLFreeholdContract(FreeholdContract):
-    objects = POTLFreeholdContractManager()
+class VacantLandContract(Contract):
+    objects = VacantLandContractManager
 
 # ===========================================================================
 
@@ -630,7 +632,7 @@ class IrrevocabilityClause(DynamicDateClause):
     def save(self, *args, **kwargs):
 
         if not self.pk:
-            self.category = 'DEADLINE'
+            self.category = 'D'
             self.title = 'Irrevocability'
             self.prompt = 'Cancellation Deadline'
 
@@ -651,7 +653,7 @@ class MortgageDeadlineClause(DynamicDateClause):
     def save(self, *args, **kwargs):
 
         if not self.pk:
-            self.category = 'DEADLINE'
+            self.category = 'D'
             self.title = 'Mortgage Date'
             self.prompt = 'Mortgage Deadline'
 
@@ -687,6 +689,8 @@ class SurveyDeadlineClause(DynamicDateClause):
         preview = DYNAMIC_STANDARD_CLAUSES['survey_date'].\
                   format(date)
 
+        return preview
+
 class DepositClause(DynamicTextClause):
 
     value = models.PositiveIntegerField(null=True)
@@ -695,7 +699,7 @@ class DepositClause(DynamicTextClause):
 
         if not self.pk:
             self.title = 'Deposit'
-            self.category = 'DEADLINE'
+            self.category = 'D'
             self.prompt = 'Deposit Deadline'
 
         super(DepositClause, self).save(*args, **kwargs)
@@ -706,12 +710,16 @@ class DepositClause(DynamicTextClause):
         transaction = self.contract.transaction
 
         # Fields: Deposit amount, Seller name, Deposit Deadline.
-        deposit = transaction.seller_accepted_offer.deposit
-        seller_name = transaction.seller.full_name
+        #deposit = transaction.seller_accepted_offer.deposit
+        #seller_name = transaction.seller.full_name
+        deposit = 3000
+        seller_name = 'macmasterrace101'
         deposit_deadline = self.value
 
         preview = DYNAMIC_STANDARD_CLAUSES['deposit'].\
                   format(deposit, seller_name, deposit_deadline)
+
+        return preview
 
 class ChattelsAndFixsClause(DynamicToggleClause):
 
@@ -787,7 +795,7 @@ class MaintenanceClause(DynamicToggleClause):
 
         if not self.pk:
             self.title = 'Maintenance'
-            self.category = 'Upkeep'
+            self.category = 'U'
             self.prompt = 'Seller will provide maintenance on the property prior ' \
                           'to purchase'
         super(MaintenanceClause, self).save(*args, **kwargs)
@@ -822,7 +830,7 @@ class PaymentMethodClause(DynamicDropdownClause):
     def save(self, *args, **kwargs):
 
         if not self.pk:
-            self.category = 'FINANCIAL'
+            self.category = 'F'
             self.title = 'Payment Method'
             self.prompt = 'Payment Method'
             self.options = ['Credit Card', 'Cheque', 'Cash']
@@ -836,7 +844,6 @@ class PaymentMethodClause(DynamicDropdownClause):
         preview = 'The Buyer agrees to pay the Seller on completion of this ' + \
                   'transaction via a ' + payment_method + ' payment.'
         return preview
-
 
 class ChattelsIncludedClause(DynamicChipClause):
 
@@ -852,7 +859,7 @@ class ChattelsIncludedClause(DynamicChipClause):
     @property
     def preview(self):
         
-        chattels = ', '.join(self.values)
+        chattels = ', '.join(self.value)
         preview = DYNAMIC_STANDARD_CLAUSES['chattels_inc'].\
                   format(chattels)
 
@@ -872,7 +879,7 @@ class FixturesExcludedClause(DynamicChipClause):
     @property
     def preview(self):
 
-        fixtures = ', '.join(self.values)
+        fixtures = ', '.join(self.value)
         preview = DYNAMIC_STANDARD_CLAUSES['fixtures_exc'].\
                   format(fixtures)
 
@@ -892,7 +899,7 @@ class RentalItemsClause(DynamicChipClause):
     @property
     def preview(self):
 
-        rented_items = ', '.join(self.values)
+        rented_items = ', '.join(self.value)
         preview = DYNAMIC_STANDARD_CLAUSES['rented_items'].\
                   format(rented_items)
                   
