@@ -75,34 +75,30 @@ class Condo(CoOp):
 '''   Parent for all freehold ownership properties. '''
 class Freehold(Property):
     
-    freehold_contract = models.IntegerField(default=0)
-    
     ''' (Abstract) Raises a NotImplementedError, as this should be implemented
         in the child models. '''
     def get_serializer(self):
         raise NotImplementedError("no 'get_serializer()' method for parent Freehold.")
 
 
-'''   POTL model. '''
-class POTL(Freehold):
+'''   House model. '''
+class House(Freehold):
 
-    monthly_expenses = models.FloatField()
-    
     ''' Returns a HouseSerializer object. '''
     def get_serializer(self):
 
-        from kproperty.serializers import POTLSerializer
-        return POTLSerializer
+        from kproperty.serializers import HouseSerializer
+        return HouseSerializer
 
 
-'''   Multiplex model. '''
-class Multiplex(Freehold):
+'''   Townhouse model. '''
+class Townhouse(Freehold):
 
     degree = models.IntegerField()
 
-    ''' Returns a MultiplexSerializer object. '''
+    ''' Returns a TownhouseSerializer object. '''
     def get_serializer(self):
 
-        from kproperty.serializers import MultiplexSerializer
-        return MultiplexSerializer
+        from kproperty.serializers import TownhouseSerializer
+        return TownhouseSerializer
 
