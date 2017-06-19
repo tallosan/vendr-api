@@ -1,7 +1,7 @@
-# Kangaa API
+# Zapp API
 
 ```javascript
-BASE_URL = api.kangaa.xyz/v1/
+BASE_URL = api.zappme.xyz/v1/
 ```
 
 ### OAuth Keys:
@@ -20,16 +20,16 @@ CVUK9hAGWf1AxoVJfjlUGgAThezkYrZ83dkGc6kg
 The API is protected via OAuth. The OAuth endpoint is:
 
 ```javascript
-http://api.kangaa.xyz/o/token/
+http://api.zappme.xyz/o/token/
 ```
 
 In order to access protected resources, a user needs an access token.
-The following example shows how the user with *email* 'superdev@kangaa.xyz', and *password* 'reallystrongpassword' is able
+The following example shows how the user with *email* 'superdev@zappme.xyz', and *password* 'reallystrongpassword' is able
   to obtain an access token from the OAuth endpoint.
 
 
 ```javascript
-curl -X POST -d "grant_type=password&username=superdev@kangaa.xyz&password=reallystrongpassword" -u"client_id:client_secret" http://api.kangaa.xyz/o/token/'
+curl -X POST -d "grant_type=password&username=superdev@zappme.xyz&password=reallystrongpassword" -u"client_id:client_secret" http://api.zappme.xyz/o/token/'
 ```
 
 Upon issuing the above request, we'll get back a response that looks like ...
@@ -46,7 +46,7 @@ Upon issuing the above request, we'll get back a response that looks like ...
 
 We can now use the access token to query any of superdev0's protected resources by setting the Authorization header.
 ```javascript
-http http://api.kangaa.xyz/v1/transactions/8e4ae98c-f40a-4cfc-9e7b-6a6773149170/ 'Authorization:Bearer access_token'
+http http://api.zappme.xyz/v1/transactions/8e4ae98c-f40a-4cfc-9e7b-6a6773149170/ 'Authorization:Bearer access_token'
 ```
 ---
 
@@ -60,14 +60,51 @@ http http://api.kangaa.xyz/v1/transactions/8e4ae98c-f40a-4cfc-9e7b-6a6773149170/
 Create a new property object of type 'ptype'.
 
 ```javascript
-POST	http://api.kangaa.xyz/v1/properties/<ptype>/	(Authentication Required)
+BODY
+
+Content-Type: application/json
+{
+    "location": {
+        "address": "60 Brian Harrison", 
+        "city": "Toronto", 
+        "country": "Canada", 
+        "latitude": "43.773313", 
+        "longitude": "-79.258729", 
+        "postal_code": "M1P0B2", 
+        "province": "Ontario"
+    }, 
+    "n_bathrooms": 1, 
+    "n_bedrooms": 2, 
+    "price": 250000.0, 
+    "sqr_ftg": 3000.0,
+    "unit_num": 1105,
+    "tax_records": [
+         {
+             "assessment": 200000, "assessment_year": 2015
+         }
+     ],
+     "history": {
+         "last_sold_price": 20000,
+         "last_sold_date": "2011-08-14",
+         "year_built": 2010
+     },
+     "features": [
+         { "feature": "Oven" },
+         { "feature": "Pool" }
+     ]
+}
+Multipart/form-data
+{ images ... }
+
+POST	http://api.zappme.xyz/v1/properties/<?ptype>	(Authentication Required)
 ```
 
 #### Request Parameters:
 
 | Parameter     | Description           | Values                      |
 | ------------- |-----------------------| --------------------------- |
-| ptype         | The type of property. | < condo, house, multiplex > |
+| ptype         | The type of property. | <condo, house, townhouse,   |
+|		|			|  manufactured, vacant_land> |
 
 
 
@@ -76,9 +113,9 @@ POST	http://api.kangaa.xyz/v1/properties/<ptype>/	(Authentication Required)
 Get, Update, or Delete the property object with the given ID.
 
 ```javascript
-GET	http://api.kangaa.xyz/v1/properties/<id>/
-UPDATE	http://api.kangaa.xyz/v1/properties/<id>/    (Authentication Required)
-DELETE	http://api.kangaa.xyz/v1/properties/<id>/    (Authentication Required)
+GET	http://api.zappme.xyz/v1/properties/<id>/
+UPDATE	http://api.zappme.xyz/v1/properties/<id>/    (Authentication Required)
+DELETE	http://api.zappme.xyz/v1/properties/<id>/    (Authentication Required)
 ```
 
 #### Request Parameters:
@@ -86,6 +123,61 @@ DELETE	http://api.kangaa.xyz/v1/properties/<id>/    (Authentication Required)
 | Parameter     | Description           | Values                  |
 | ------------- |-----------------------| ----------------------- |
 | id            | The property id.      | A valid property id	  |
+
+
+***Sample Response***:
+
+```javascript
+{
+    "created_time": "2017-06-19T17:36:33.155889Z", 
+    "features":
+         { "feature": "Oven" },
+         { "feature": "Pool" }
+    },
+    "history": {
+         "last_sold_price": 20000,
+         "last_sold_date": "2011-08-14",
+         "year_built": 2010
+    },
+    "id": 1, 
+    "images": [
+        {
+            "image": "https://s3.ca-central-1.amazonaws.com/media.zapp/listings/images/07482c04-7a0e-44a4-8f63-e488ec95a404", 
+            "timestamp": "2017-06-19"
+        },
+        {
+            "image": "https://s3.ca-central-1.amazonaws.com/media.zapp/listings/images/1d67cd2f-08d8-4250-b267-80c17771e6a6", 
+            "timestamp": "2017-06-19"
+        }
+    ], 
+    "is_featured": false, 
+    "location": {
+        "address": "18 Little Italy", 
+        "city": "Torino", 
+        "country": "Canada", 
+        "latitude": "43.773313", 
+        "longitude": "-79.258729", 
+        "postal_code": "M230B3", 
+        "province": "Ontario"
+    }, 
+    "n_bathrooms": 1, 
+    "n_bedrooms": 2, 
+    "price": 250000.0, 
+    "sqr_ftg": 300.0,
+    "unit_num": 1105,
+    "offers": 0, 
+    "owner": 1, 
+    "price": 250000.0, 
+    "sqr_ftg": 4200.0, 
+    "tax_records": [
+        {
+            "assessment": 4250000.0, 
+            "assessment_year": 2016
+        }
+    ], 
+    "views": 30
+}
+```
 
 ---
 ### Users Endpoint [POST, GET, PUT, DELETE]:
@@ -95,7 +187,21 @@ DELETE	http://api.kangaa.xyz/v1/properties/<id>/    (Authentication Required)
 Create a new user.
 
 ```javascript
-POST	http://api.kangaa.xyz/v1/users/
+BODY
+{
+	"email":"superdev@zappme.xyz",
+	"password": "reallystrongpassword",
+	"profile":
+		{
+			"first_name":"super",
+			"last_name": "dev",
+			"location": "Toronto",
+			"bio": "I write code."
+		}
+	}
+}
+
+POST	http://api.zappme.xyz/v1/users/
 ```
 
 
@@ -104,9 +210,9 @@ POST	http://api.kangaa.xyz/v1/users/
 Get, Update, or Delete the property object with the given ID.
 
 ```javascript
-GET	http://api.kangaa.xyz/v1/users/<id>/
-UPDATE	http://api.kangaa.xyz/v1/users/<id>/    (Authentication Required)
-DELETE	http://api.kangaa.xyz/v1/users/<id>/    (Authentication Required)
+GET	http://api.zappme.xyz/v1/users/<id>/
+UPDATE	http://api.zappme.xyz/v1/users/<id>/    (Authentication Required)
+DELETE	http://api.zappme.xyz/v1/users/<id>/    (Authentication Required)
 ```
 
 #### Request Parameters:
@@ -115,6 +221,37 @@ DELETE	http://api.kangaa.xyz/v1/users/<id>/    (Authentication Required)
 | ------------- |-----------------------| ----------------------- |
 | id            | The user id.          | A valid user id	  |
 
+
+***Sample Response***:
+
+```javascript
+[
+    {
+        "email": "tallosan@zappme.xyz", 
+        "id": 1, 
+        "join_date": "2017-06-19T17:10:41.713149Z", 
+        "notifications": [], 
+        "password": "bcrypt_sha256$$2b$12$rdd/V7y4vIB/Ilj6nfm07um8DjW5mgSjwiADung7/DK0qYJXFVA7y", 
+        "profile": {
+            "bio": "", 
+            "first_name": "", 
+            "last_name": "", 
+            "location": "", 
+            "prof_pic": "http://api.zappme.xyz/media/profiles/default.svg"
+        }, 
+        "properties": [
+		3
+	], 
+        "transactions": {
+            "incoming": [
+	    	"8367365d-5730-4096-9d92-efd7e778eae9"
+	], 
+            "outgoing": [
+	]
+        }
+    }
+]
+```
 ---
 ### Search Endpoint [GET]:
 
@@ -123,7 +260,7 @@ DELETE	http://api.kangaa.xyz/v1/users/<id>/    (Authentication Required)
 Search on either properties or users.
 
 ```javascript
-GET	http://api.kangaa.xyz/v1/search?<stype>&<query=query value>
+GET	http://api.zappme.xyz/v1/search?<stype>&<query=query value>
 ```
 
 #### Request Parameters:
@@ -159,9 +296,9 @@ Querying Nested Values:
 Querying Multiple Values On the Same Field:
 
 - To query multiple values on the same field, pass in an array of these values.
-- To query all Condos and Multiplexes, we do ...
+- To query all Condos and Townhouses, we do ...
 ```javascript
-		search?stype=property&ptypes=[Condo,Multiplex]
+		search?stype=property&ptypes=[Condo,Townhouse]
 ```
 
 #### Examples:
@@ -188,7 +325,7 @@ search?stype=property&ptypes=[House, Condo]
 Get autocomplete results on the given resource.
 
 ```javascript
-GET	http://api.kangaa.xyz/v1/autocomplete?<type>&<term=term value>
+GET	http://api.zappme.xyz/v1/autocomplete?<type>&<term=term value>
 ```
 
 #### Request Parameters:
@@ -212,29 +349,51 @@ only users belonging to the transaction (buyer & seller) have.
 
 In addition to generic authentication on the whole model, we also must handle field level permissions.
 
-A Transaction object is simply a tool for organizing sub-objects involved in the transaction.
-These are Offers, and Contracts.
+A Transaction model is simply a container for organizing sub-objects involved in the transaction; Offers, and Contracts.
+Transactions also look after any clerical or meta data.
 
-We also look after the transaction stage (offer stage, contract stage, closing stage), along with any
-additional metadata pertaining to the transaction.
+### On Stages:
+
+A transaction can be in one of 3 stages, represented in the transaction model as an integer 'stage':
+
+0 -- Offer stage.
+
+1 -- Contract stage.
+
+2 -- Closing stage.
+
+
+Each stage limits the resources and actions that can be performed on a transaction. For example, when in the Offer stage,
+a user can ONLY interact with the offer resources.
+
+Each stage has a set of 2 'accepted' resources. When these are equal, they represent an agreement between both parties.
+For example, when in the offer stage, note that a transaction has 2 accepted offer resources named:
+
+buyer_accepted_offer & seller_accepted_offer.
+
+Users should be setting their corresponding accepted resource once they are happy with the state of the transaction.
+To move to the next stage, the user should attempt to increment the stage variable. This will only succeed if the 2 accepted
+resources are not null, and are equal (i.e. point to the same offer).
+
 
 **POST**
 
 Create a new transaction.
 
 ```javascript
-POST	http://api.kangaa.xyz/v1/transactions/    (Authentication Required)
-```
+BODY:
 
+POST	http://api.zappme.xyz/v1/transactions/    (Authentication Required)
+```
 
 **GET, UPDATE, DELETE**:
 
 Get, Update, or Delete the transaction object with the given ID.
 
 ```javascript
-GET	http://api.kangaa.xyz/v1/transactions/<id>/    (Authentication Required)
-UPDATE	http://api.kangaa.xyz/v1/transactions/<id>/    (Authentication Required)
-DELETE	http://api.kangaa.xyz/v1/transactions/<id>/    (Authentication Required)
+GET	http://api.zappme.xyz/v1/transactions/<id>/    (Authentication Required)
+UPDATE	http://api.zappme.xyz/v1/transactions/<id>/    (Authentication Required)
+DELETE	http://api.zappme.xyz/v1/transactions/<id>/    (Authentication Required)
 ```
 
 #### Request Parameters:
@@ -245,53 +404,165 @@ DELETE	http://api.kangaa.xyz/v1/transactions/<id>/    (Authentication Required)
 
 ---
 
-What a Transaction looks like in JSON:
 
-```json
+***Sample Response***:
+
+```javascript
 {
-    "buyer": 35, 
-    "id": "8e4ae98c-f40a-4cfc-9e7b-6a6773149170", 
-    "kproperty": 52, 
-    "offers": [
-        {
-            "buyer_offers": [
-                {
-                    "comment": "Please consider this new offer!", 
-                    "deposit": 2000.0, 
-                    "id": "98ff9a4f-820d-4864-92e9-f40671ed879f", 
-                    "is_accepted": false, 
-                    "offer": 350000.0, 
-                    "owner": "tallosan@kangaa.xyz", 
-                    "timestamp": "2017-04-22T19:55:18.106262Z"
-                }, 
-                {
-                    "comment": "My initial offer!", 
-                    "deposit": 2000.0, 
-                    "id": "8f439a29-c6e4-4cd3-bb3d-30a2878216fc", 
-                    "is_accepted": false, 
-                    "offer": 350000.0, 
-                    "owner": "tallosan@kangaa.xyz", 
-                    "timestamp": "2017-04-22T19:54:55.674213Z"
-                }, 
-            ]
-        }, 
-        {
-            "seller_offers": [
-                {
-                    "comment": "Please consider this counter offer!", 
-                    "deposit": 2000.0, 
-                    "id": "8f439a29-c6e4-4cd3-bb3d-30a2878216fc", 
-                    "is_accepted": false, 
-                    "offer": 350000.0, 
-                    "owner": "tallosan@kangaa.xyz", 
-                    "timestamp": "2017-04-22T19:54:55.674213Z"
-                }, 
-            ]
-        }
-    ], 
-    "seller": 35, 
+    "buyer": 1, 
+    "buyer_accepted_contract": null, 
+    "buyer_accepted_offer": "384ddec8-d904-4e11-bfda-7b3030b1c372", 
+    "contracts": [], 
+    "id": "23fdebcf-82f4-4150-92c7-9724ec02669e", 
+    "kproperty": 3, 
+    "offers": {
+        "buyer_offers": [
+            {
+                "comment": "Please consider this offer!", 
+                "deposit": 20000.0, 
+                "id": "384ddec8-d904-4e11-bfda-7b3030b1c372", 
+                "offer": 350000.0, 
+                "owner": 1, 
+                "timestamp": "2017-06-19T19:40:08.570101Z"
+            }
+        ], 
+        "seller_offers": [
+        ]
+    }, 
+    "seller": 1, 
+    "seller_accepted_contract": null, 
+    "seller_accepted_offer": null, 
     "stage": 0, 
-    "start_date": "2017-04-18T20:30:19.096212Z"
+    "start_date": "2017-06-19T19:40:08.490699Z"
 }
 ```
+### Transactions / Offers [POST, GET, PUT, DELETE]:
+
+**POST**
+
+Create a new offer.
+
+```javascript
+BODY: 
+
+{	
+	"offer": 300000,
+	"deposit": 20000,
+	"comment": "Hello Mr. Owner, I hope you will consider my offer."
+}
+
+POST	http://api.zappme.xyz/v1/transactions/<transaction_id>/offers/    (Authentication Required)
+```
+
+#### Request Parameters:
+
+| Parameter      | Description                  | Values                                |
+| -------------- |------------------------------| ------------------------------------- |
+| transaction_id | The transaction id.          | The transaction the offer belongs to. |
+
+
+**GET, DELETE**:
+
+Get or Delete the offer object with the given ID. N.B. -- It makes no sense for us to handle updates.
+
+```javascript
+GET	http://api.zappme.xyz/v1/transactions/<transaction_id>/offers/<offer_id>    (Authentication Required)
+DELETE	http://api.zappme.xyz/v1/transactions/<transaction_id>/offers/<offer_id>    (Authentication Required)
+```
+
+#### Request Parameters:
+
+| Parameter      | Description                  | Values                                |
+| -------------- |------------------------------| ------------------------------------- |
+| transaction_id | The transaction id.          | The id of the offer's transaction.    |
+| offer_id       | The offer id.                | The id of the offer.                  |
+
+
+***Sample Response***:
+
+```javascript
+{
+    "buyer_offers": [
+        {
+            "comment": "Hello Mr. Owner, I hope you will consider my offer.", 
+            "deposit": 20000.0, 
+            "id": "1b4872d9-66a4-4c1c-a5a2-3a9a67d68c1b", 
+            "offer": 300000.0, 
+            "owner": 1, 
+            "timestamp": "2017-06-19T19:49:20.018898Z"
+        }, 
+        {
+            "comment": "Fair enough, I accept!", 
+            "deposit": 20000.0, 
+            "id": "384ddec8-d904-4e11-bfda-7b3030b1c372", 
+            "offer": 350000.0, 
+            "owner": 1, 
+            "timestamp": "2017-06-19T19:40:08.570101Z"
+        }
+    ], 
+    "seller_offers": [
+        {
+            "comment": "I feel my property is worth $5000 more.", 
+            "deposit": 20000.0, 
+            "id": "1b4872d9-66a4-4c1c-a5a2-3a9a67d68c1b", 
+            "offer": 350000.0, 
+            "owner": 1, 
+            "timestamp": "2017-06-19T19:49:20.018898Z"
+        }, 
+    ]
+}
+```
+---
+
+### Transactions / Contracts[POST, GET, PUT, DELETE]:
+
+N.B. -- A user can only have ONE contract for any given transaction.
+
+**POST**
+
+Create a new contract.
+
+```javascript
+
+POST	http://api.zappme.xyz/v1/transactions/<transaction_id>/contracts/?ctype/    (Authentication Required)
+```
+
+#### Request Parameters:
+
+| Parameter      | Description                  | Values                                |
+| -------------- |------------------------------| ------------------------------------- |
+| transaction_id | The transaction id.          | The id of the contract's transaction. |
+| ctype          | The type of property.        | < condo, house, townhouse,            |
+|		 |			        |  manufactured, vacant_land >          |
+
+**GET, UPDATE, DELETE**:
+
+Get, Update, or Delete the contract object with the given ID.
+
+```javascript
+GET	http://api.zappme.xyz/v1/transactions/<transaction_id>/contracts/<contract_id>    (Authentication Required)
+UPDATE	http://api.zappme.xyz/v1/transactions/<transaction_id>/contracts/<contract_id>    (Authentication Required)
+DELETE	http://api.zappme.xyz/v1/transactions/<transaction_id>/contracts/<contract_id>    (Authentication Required)
+```
+
+#### Request Parameters:
+
+| Parameter      | Description                  | Values                                |
+| -------------- |------------------------------| ------------------------------------- |
+| transaction_id | The transaction id.          | The id of the contract's transaction. |
+| contract_id    | The contract id.             | The id of the contract.               |
+
+
+***Sample Response***:
+
+```javascript
+{
+    "clauses": "http://api.zappme.xyz/v1/transactions/23fdebcf-82f4-4150-92c7-9724ec02669e/contracts/85336987-4e53-40cd-a02d-253658167c57/clauses/", 
+    "id": "85336987-4e53-40cd-a02d-253658167c57", 
+    "owner": 1, 
+    "timestamp": "2017-06-19T19:43:21.081036Z"
+}
+```
+---
+
 
