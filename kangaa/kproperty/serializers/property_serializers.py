@@ -173,33 +173,33 @@ class FreeholdSerializer(PropertySerializer):
 
     class Meta(PropertySerializer.Meta):
         
-        fields  = PropertySerializer.Meta.fields + ('freehold_contract', )
+        fields  = PropertySerializer.Meta.fields #+ ('freehold_contract', )
 
 
 '''   Serializer for House models. '''
-class POTLSerializer(FreeholdSerializer):
+class HouseSerializer(FreeholdSerializer):
 
     class Meta(PropertySerializer.Meta):
 
-        model   = POTL
+        model   = House
         fields  = FreeholdSerializer.Meta.fields
    
     ''' Overrides parent by passing a House model as the 'property_class'. '''
     def create(self, validated_data):
 
-        return super(POTLSerializer, self).create(POTL().__class__, validated_data)
+        return super(HouseSerializer, self).create(House().__class__, validated_data)
 
 
-'''   Serializer for Multiplex models. '''
-class MultiplexSerializer(FreeholdSerializer):
+'''   Serializer for Townhouse models. '''
+class TownhouseSerializer(FreeholdSerializer):
 
     class Meta(FreeholdSerializer.Meta):
 
-        model   = Multiplex
+        model   = Townhouse
         fields  = FreeholdSerializer.Meta.fields + ('degree', )
 
     ''' Overrides parent by passing a House model as the 'property_class'. '''
     def create(self, validated_data):
 
-        return super(MultiplexSerializer, self).create(Multiplex().__class__, validated_data)
+        return super(TownhouseSerializer, self).create(Townhouse().__class__, validated_data)
 

@@ -1,6 +1,6 @@
 from .property import Property, \
                       CoOp, Condo, \
-                      Freehold, POTL, Multiplex
+                      Freehold, House, Townhouse
 from .property_fields import Location, Features, TaxRecords, Historical, \
                              Images
 
