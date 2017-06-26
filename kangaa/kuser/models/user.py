@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import re
+
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
@@ -58,61 +60,51 @@ class CustomUserManager(BaseUserManager):
                                  is_staff=True, is_superuser=True,
                                  **extra_fields)
 
-
 def generate_id():
-    
-    import time
-    import random
-
-    START_TIME = 34781902734
-    '''
-    t = int(time.time() * 1000) - START_TIME
-    u = random.SystemRandom().getrandbits(32)
-    id = (t << 32) | u
-    '''
-    id = int(random.SystemRandom().getrandbits(32))
-    return id
+    return 1
 
 
 '''   Custom Kangaa user class. '''
 class KUser(AbstractBaseUser, PermissionsMixin):
     
-    email           = models.EmailField(unique=True, db_index=True)
-    uuid            = models.BigIntegerField(default=generate_id)#, unique=True)
-                        #primary_key=True)
-    
-    is_staff        = models.BooleanField(default=False)
-    is_admin        = models.BooleanField(default=False)
-    is_active       = models.BooleanField(default=True)
-    join_date       = models.DateTimeField(auto_now_add=True)
+    email     = models.EmailField(unique=True, db_index=True)
+    is_staff  = models.BooleanField(default=False)
+    is_admin  = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    join_date = models.DateTimeField(auto_now_add=True)
 
     USERNAME_FIELD  = 'email'
     REQUIRED_FIELDS = []
 
-    objects         = CustomUserManager()
+    objects = CustomUserManager()
 
     class Meta:
         verbose_name = _('user')
         verbose_name_plural = _('users')
 
+    ''' Field validation. '''
+    def clean(self, *args, **kwargs):
+
+        # Check that a valid email was provided.
+        email_regex = '(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$)'
+        if not re.match(email_regex, self.email):
+            raise ValidationError('error: invalid email provided.')
+        
+        super(KUser, self).clean(*args, **kwargs)
 
     ''' Returns the full name of the user. '''
     def get_fullname(self):
-
         return self.profile.first_name + ' ' + self.profile.last_name
 
     def get_short_name():
-
         return self.email
 
     ''' Returns the user's email. '''
     def get_email(self):
-
         return self.email
     
     ''' Unicode / String representation of a user. '''
     def __unicode__(self):
-
         return self.email
 
 
