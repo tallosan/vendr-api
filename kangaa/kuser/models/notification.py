@@ -7,6 +7,8 @@ from __future__ import unicode_literals
 
 import uuid
 
+import redis
+
 from django.db import models
 from django.db.models.signals import post_save, post_delete, pre_delete
 from django.conf import settings
@@ -17,30 +19,37 @@ from django.dispatch import receiver
 from transaction.models import Transaction, Offer, Contract
 
 
-
 ''' [Static] Handler for creating notifications. We determine the type of
     notification (creation or deletion) first, then route the signal instance
     off to the appropriate Notification class.
-    N.b. -- The actual creating is deferred to the routed class's create_() method.
+    N.b. -- The actual creating is deferred to the routed class's create_*() method.
     Args:
         sender: The class responsible for sending the signal.
         instance: The instance of the class that was saved.
 '''
 @staticmethod
-@receiver(signal=[post_save, post_delete], sender=Transaction)
+#@receiver(signal=[post_save, post_delete], sender=Transaction)
 @receiver(signal=[post_save, post_delete], sender=Offer)
-@receiver(signal=[post_save, post_delete], sender=Contract)
+#@receiver(signal=[post_save, post_delete], sender=Contract)
 def handler(sender, instance, **kwargs):
 
     # Creation notification. Note, we need to ensure that the sender was just created.
     if (kwargs['signal'] == post_save) and (kwargs['created']):
         notification_type = resolve_type(instance.__class__)
-        notification_type.objects.create_creation_notification(instance)
+        notification = notification_type.objects.create_creation_notification(instance)
 
     # Deletion notification.
     elif kwargs['signal'] == post_delete:
         notification_type = resolve_type(instance.__class__)
-        notification_type.objects.create_deletion_notification(instance)
+        notification = notification_type.objects.create_deletion_notification(instance)
+
+    # Publish to our Redis server.
+    channel = 'notifications.{}.{}'.format(notification.recipient.pk,
+                notification.recipient.get_fullname())
+    notification_json = notification.serialized
+    
+    r = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0)
+    r.publish(channel, notification_json)
     
 
 ''' Determine the notification type for the given sender.
@@ -51,8 +60,8 @@ def resolve_type(sender_class):
 
     class_mappings = {
                         Transaction: TransactionNotification,
-                        Offer: OfferNotification#,
-                        #Contract: ContractNotification
+                        Offer: OfferNotification,
+                        Contract: 'ContractNotification'
     }
 
     return class_mappings[sender_class]
@@ -211,8 +220,14 @@ class TransactionNotification(BaseNotification):
     ''' Returns the serializer for transaction notifications. '''
     @staticmethod
     def get_serializer():
-        
         return 'TransactionNotificationSerializer'
+
+    ''' Return an Transaction notification serialized. '''
+    @property
+    def serialized(self):
+        
+        from kuser.serializers import TransactionNotificationSerializer
+        return TransactionNotificationSerializer(self).data
 
 
 '''   A notification on a transaction's offers. '''
@@ -227,6 +242,13 @@ class OfferNotification(TransactionNotification):
     def get_serializer():
         
         return 'OfferNotificationSerializer'
+
+    ''' Return an offer notification serialized. '''
+    @property
+    def serialized(self):
+        
+        from kuser.serializers import OfferNotificationSerializer
+        return OfferNotificationSerializer(self).data
 
 
 '''   A notification on a transaction's contracts.
