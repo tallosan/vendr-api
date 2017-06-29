@@ -23,7 +23,7 @@ SECRET_KEY = 'w^bbsqn0y6lra9xt30idw)^dkle!ej&eytp+j(3m!m2s0qb$m7'
 DEBUG = False
 
 ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '192.168.0.17',
-                 'api.kangaa.xyz']
+                 'api.zappme.xyz', 'notify.zappme.xyz']
 
 # Application definition
 BASE_APPS = [
@@ -87,15 +87,17 @@ WSGI_APPLICATION = 'kangaa.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'kangaa',
-        'USER': 'admin',
-        'PASSWORD': 'kangaaem123!',
+        'NAME': 'zapp',
+        'USER': 'dier',
+        'PASSWORD': 'spurs',
         'HOST': 'localhost',
         'PORT': '',
     }
 }
 
 # Redis cache.
+REDIS_HOST = 'localhost'
+REDIS_PORT = 9200
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
@@ -126,7 +128,10 @@ REST_FRAMEWORK = {
         'oauth2_provider.ext.rest_framework.OAuth2Authentication',
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
-    )
+    ),
+    #'DEFAULT_PAGINATION_CLASS': {
+        #'rest_framework.pagination.LimitOffsetPagination'
+    #},
 }
 
 PASSWORD_HASHERS = [
@@ -164,6 +169,9 @@ USE_L10N = True
 
 USE_TZ = True
 
+# Base URL for hyperlinking resources.
+VERSION  = 1
+BASE_URL = 'http://api.zappme.xyz/v{}/'.format(VERSION)
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
