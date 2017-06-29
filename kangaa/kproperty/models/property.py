@@ -102,3 +102,19 @@ class Townhouse(Freehold):
         from kproperty.serializers import TownhouseSerializer
         return TownhouseSerializer
 
+
+class Manufactured(Property):
+
+    def get_serializer(self):
+
+        from kproperty.serializers import ManufacturedSerializer
+        return ManufacturedSerializer
+
+
+class VacantLand(Property):
+
+    def get_serializer(self):
+
+        from kproperty.serializers import VacantLandSerializer
+        return VacantLandSerializer
+
