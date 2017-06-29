@@ -34,7 +34,7 @@ class PropertyList(APIView):
             serializer_type = self.resolve_serializer(ptype.lower())
             serializer = serializer_type(data=request.data)
         except KeyError as key_error:
-            key_error_exc = APIException(detail={'error': 'invalid property type.'})
+            key_error_exc = APIException(detail={'error': 'no property type given.'})
             key_error_exc.status_code = status.HTTP_400_BAD_REQUEST
 
             raise key_error_exc
@@ -55,8 +55,10 @@ class PropertyList(APIView):
 
         types = {
                     'condo': CondoSerializer,
-                    'potl': POTLSerializer,
-                    'multiplex': MultiplexSerializer
+                    'house': HouseSerializer,
+                    'townhouse': TownhouseSerializer,
+                    'manufactured': ManufacturedSerializer,
+                    'vacant_land': VacantLandSerializer
                 }
 
         return types[ptype]
@@ -86,7 +88,7 @@ class PropertyDetail(APIView):
             self.check_object_permissions(self.request, kproperty)
             
             # TODO: Refactor this.
-            for model in [Condo, POTL, Multiplex]:
+            for model in [House, Condo, Townhouse, Manufactured, VacantLand]:
                 try:
                     if model.objects.get(pk=kproperty.pk):
                         kproperty = model.objects.get(pk=kproperty.pk)
