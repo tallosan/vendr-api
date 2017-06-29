@@ -12,6 +12,8 @@ from rest_framework import status, permissions
 
 from transaction.models import Transaction, StaticClause
 from transaction.serializers import ContractSerializer, StaticClauseSerializer
+from transaction.exceptions import BadTransactionRequest
+from transaction.permissions import TransactionAccessPermission
 
 import transaction.serializers as serializers
 
@@ -22,6 +24,7 @@ User = get_user_model()
 class ContractList(APIView):
 
     serializer_class = ContractSerializer
+    permission_classes = ( permissions.IsAuthenticated, )
    
     ''' Returns a tuple of the transaction, and the actual contracts being queryed.
         Args:
@@ -59,8 +62,12 @@ class ContractList(APIView):
         # Get the contract type.
         try:
             ctype = request.data.pop('ctype')
+            if ctype not in ['condo', 'house', 'townhouse', 'manufactured', 'land']:
+                error_msg = {'error': 'invalid ctype {}'.format(ctype) }
+                raise BadTransactionRequest(error_msg)
         except KeyError:
-            pass
+            error_msg = {'error': 'contract type must be specified! none given.'}
+            raise BadTransactionRequest(error_msg)
         
         transaction = Transaction.objects.get(pk=transaction_pk)
         serializer  = self.serializer_class(data=request.data)
@@ -73,6 +80,11 @@ class ContractList(APIView):
 
 '''   Contract detail view. '''
 class ContractDetail(APIView):
+
+    permission_classes = (
+                            permissions.IsAuthenticated,
+                            TransactionAccessPermission
+    )
 
     ''' Return the Contract object if it exists.
         Args:

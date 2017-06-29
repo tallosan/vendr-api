@@ -49,11 +49,11 @@ class Transaction(models.Model):
                         editable=False, db_index=True)
     
     # The buyer, seller, and the property this transaction is on.
-    buyer       = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='buyer',
+    buyer     = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='buyer',
                     editable=False, on_delete=models.CASCADE)
-    seller      = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='seller',
+    seller    = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='seller',
                     editable=False, on_delete=models.CASCADE)
-    kproperty   = models.ForeignKey(Property, related_name='kproperty',
+    kproperty = models.ForeignKey(Property, related_name='kproperty',
                     editable=False, on_delete=models.CASCADE)
 
     buyer_accepted_offer  = models.UUIDField(blank=True, null=True)
@@ -114,11 +114,9 @@ class Transaction(models.Model):
         if self.stage == 0:
             seller_resource = self.seller_accepted_offer
             buyer_resource  = self.buyer_accepted_offer
-            resource = 'offer'
         elif self.stage == 1:
             seller_resource = self.seller_accepted_contract
             buyer_resource  = self.buyer_accepted_contract
-            resource = 'contract'
         
         # Ensure that both the buyer and seller have accepted the resource.
         if (seller_resource is None) or (seller_resource != buyer_resource):
