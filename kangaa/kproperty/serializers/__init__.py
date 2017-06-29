@@ -1,7 +1,8 @@
 from .property_serializers import PropertySerializer, \
                                   CoOpSerializer, CondoSerializer, \
                                   FreeholdSerializer, HouseSerializer, \
-                                                      TownhouseSerializer
+                                  TownhouseSerializer, \
+                                  ManufacturedSerializer, VacantLandSerializer
 from .property_field_serializers import LocationSerializer, FeaturesSerializer, \
                                         TaxRecordsSerializer, HistoricalSerializer, \
                                         ImagesSerializer

@@ -154,7 +154,6 @@ class CoOpSerializer(PropertySerializer):
 
         fields  = PropertySerializer.Meta.fields + ('unit_num', )
 
-
 '''   Serializer for Condo models. '''
 class CondoSerializer(CoOpSerializer):
 
@@ -167,14 +166,12 @@ class CondoSerializer(CoOpSerializer):
 
         return super(CondoSerializer, self).create(Condo().__class__, validated_data)
 
-
 '''   Serializer for freehold properties. '''
 class FreeholdSerializer(PropertySerializer):
 
     class Meta(PropertySerializer.Meta):
         
-        fields  = PropertySerializer.Meta.fields #+ ('freehold_contract', )
-
+        fields  = PropertySerializer.Meta.fields
 
 '''   Serializer for House models. '''
 class HouseSerializer(FreeholdSerializer):
@@ -189,7 +186,6 @@ class HouseSerializer(FreeholdSerializer):
 
         return super(HouseSerializer, self).create(House().__class__, validated_data)
 
-
 '''   Serializer for Townhouse models. '''
 class TownhouseSerializer(FreeholdSerializer):
 
@@ -202,4 +198,18 @@ class TownhouseSerializer(FreeholdSerializer):
     def create(self, validated_data):
 
         return super(TownhouseSerializer, self).create(Townhouse().__class__, validated_data)
+
+'''   Serializer for Manufactured properties. '''
+class ManufacturedSerializer(PropertySerializer):
+
+    class Meta(PropertySerializer.Meta):
+        
+        fields  = PropertySerializer.Meta.fields
+
+'''   Serializer for Vacant Land properties. '''
+class VacantLandSerializer(PropertySerializer):
+
+    class Meta(PropertySerializer.Meta):
+        
+        fields  = PropertySerializer.Meta.fields
 
