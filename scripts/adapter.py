@@ -46,30 +46,68 @@ class BaseAdapter(object):
                             'images': self.get_images(tree)
         }
     
-    def get_city(self, tree): pass        
+    ''' [Abstract] Get the city from the given HTML tree. '''
+    def get_city(self, tree):
+        raise NotImplementedError('error: all children must implement this.')
 
-    def get_province(self, tree): pass
+    ''' [Abstract] Get the province from the given HTML tree. '''
+    def get_province(self, tree):
+        raise NotImplementedError('error: all children must implement this.')
 
-    def get_country(self, tree): pass
+    ''' [Abstract] Get the country from the given HTML tree. '''
+    def get_country(self, tree):
+        raise NotImplementedError('error: all children must implement this.')
 
-    def get_address(self, tree): pass
+    ''' [Abstract] Get the address from the given HTML tree. '''
+    def get_address(self, tree):
+        raise NotImplementedError('error: all children must implement this.')
 
-    def get_postal_code(self, tree): pass
+    ''' [Abstract] Get the postal code from the given HTML tree. '''
+    def get_postal_code(self, tree):
+        raise NotImplementedError('error: all children must implement this.')
 
-    def get_geocoordinates(self, tree): pass
+    ''' [Abstract] Get the longitude and latitude from the given HTML tree. '''
+    def get_geocoordinates(self, tree):
+        raise NotImplementedError('error: all children must implement this.')
 
-    def get_price(self, tree): pass
+    ''' [Abstract] Get the asking price from the given HTML tree. '''
+    def get_price(self, tree):
+        raise NotImplementedError('error: all children must implement this.')
 
-    def get_bedrooms(self, tree): pass
+    ''' [Abstract] Get the number of bedrooms from the given HTML tree. '''
+    def get_bedrooms(self, tree):
+        raise NotImplementedError('error: all children must implement this.')
 
-    def get_bathrooms(self, tree): pass
+    ''' [Abstract] Get the number of bathrooms from the given HTML tree. '''
+    def get_bathrooms(self, tree):
+        raise NotImplementedError('error: all children must implement this.')
 
-    def get_description(self, tree): pass
+    ''' [Abstract] Get the property description from the given HTML tree. '''
+    def get_description(self, tree):
+        raise NotImplementedError('error: all children must implement this.')
 
     ''' Format the listing data into the Zapp listing JSON structure. '''
     def zapp_format(self):
 
-        print self.listing
+        json = {}
+        json['location'] = {
+                "address": self.listing['address'],
+                "city": self.listing['city'],
+                "country": self.listing['country'],
+                "province": self.listing['province'],
+                "longitude": self.listing['longitude'],
+                "latitude": self.listing['latitude'],
+                "postal_code": self.listing['postal_code']
+        }
+        
+        json['n_bedrooms'] = self.listing['n_bedrooms']
+        json['n_bathrooms'] = self.listing['n_bathrooms']
+        json['price'] = self.listing['price']
+        json['description'] = self.listing['description']
+
+        json['images'] = self.listing['images']
+        
+        return json
 
 
 '''   Adapter for ComFree.com listings. '''
@@ -168,7 +206,6 @@ class ComFreeAdapter(BaseAdapter):
 
         return images
 
-
         
 #
 # ============================================================================
@@ -185,4 +222,9 @@ listing_b = adapter_b.parse_listing()
 
 zapp_a = adapter_a.zapp_format()
 zapp_b = adapter_b.zapp_format()
+
+print zapp_a
+print
+print zapp_b
+print
 
