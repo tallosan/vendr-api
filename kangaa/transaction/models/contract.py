@@ -90,7 +90,7 @@ class BaseContractManager(models.Manager):
         self.add_static_clauses(contract)
 
         # Create clauses.
-        deposit_clause = DepositClause.objects.create(contract=contract, value=2)
+        deposit_clause = DepositClause.objects.create(contract=contract)
         completion_date = CompletionDateClause.objects.create(contract=contract)
         irrevocability_clause = IrrevocabilityClause.objects.create(contract=contract)
         payment_clause = PaymentMethodClause.objects.create(contract=contract,
