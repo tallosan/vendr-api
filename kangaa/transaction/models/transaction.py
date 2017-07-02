@@ -45,8 +45,8 @@ class TransactionManager(models.Manager):
       with a set of Offers and a Contract. Each Transaction has 3 stages. '''
 class Transaction(models.Model):
 
-    id          = models.UUIDField(primary_key=True, default=uuid.uuid4,
-                        editable=False, db_index=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4,
+            editable=False, db_index=True)
     
     # The buyer, seller, and the property this transaction is on.
     buyer     = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='buyer',
@@ -59,8 +59,9 @@ class Transaction(models.Model):
     buyer_accepted_offer  = models.UUIDField(blank=True, null=True)
     seller_accepted_offer = models.UUIDField(blank=True, null=True)
     
-    buyer_accepted_contract  = models.UUIDField(blank=True, null=True)
-    seller_accepted_contract = models.UUIDField(blank=True, null=True)
+    contracts_equal = models.BooleanField(default=False)
+    buyer_accepted_contract  = models.BooleanField(default=False)
+    seller_accepted_contract = models.BooleanField(default=False)
 
     # The transaction stage we're in.
     STAGES     = (
@@ -101,7 +102,8 @@ class Transaction(models.Model):
 
         return True
 
-    ''' Advance to the next stage in the transaction. '''
+    ''' Advance the transaction to the next stage. This is really just a bunch of
+        conditionals that need to be passed depending on the stage we're in. '''
     def advance_stage(self):
         
         # Ensure that we are not already at the last stage.
@@ -110,19 +112,18 @@ class Transaction(models.Model):
                     "error: 'advance_stage()' cannot be called on a stage 3 transaction."
         )
 
-        # Determine the resource we are checking.
+        # Offers. Ensure that both the buyer and seller have accepted the resource.
         if self.stage == 0:
-            seller_resource = self.seller_accepted_offer
-            buyer_resource  = self.buyer_accepted_offer
-        elif self.stage == 1:
-            seller_resource = self.seller_accepted_contract
-            buyer_resource  = self.buyer_accepted_contract
-        
-        # Ensure that both the buyer and seller have accepted the resource.
-        if (seller_resource is None) or (seller_resource != buyer_resource):
-            raise ValueError("error: the buyer and seller resources are not equal.")
+            if self.buyer_accepted_offer == self.seller_accepted_offer:
+                raise ValueError("error: the buyer and seller are not equal.")
 
-        # Increment the transaction stage.
+        # Contracts. Ensure that the contracts are equal, & both parties have accepted.
+        elif self.stage == 1:
+            if not self.contracts_equal:
+                raise ValueError('error: contracts must be equal.')
+            if self.buyer_accepted_contract != self.seller_accepted_contract:
+                raise ValueError('error: buyer and seller must both accepted.')
+            
         self.stage += 1
 
     ''' Returns a queryset for the given user's offers.
