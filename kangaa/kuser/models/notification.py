@@ -45,7 +45,7 @@ def handler(sender, instance, **kwargs):
 
     # Publish to our Redis server.
     channel = 'notifications.{}.{}'.format(notification.recipient.pk,
-                notification.recipient.get_fullname())
+                notification.recipient.email)
     notification_json = notification.serialized
     
     r = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0)
@@ -101,7 +101,7 @@ class TransactionNotificationManager(BaseNotificationManager):
 
         notification = self.create(recipient=recipient, sender=sender,
                                    description=description,
-                                   transaction=instance,
+                                   transaction=instance.pk,
         )
 
         return notification
@@ -128,8 +128,8 @@ class OfferNotificationManager(BaseNotificationManager):
         # Create the notification.
         notification = self.create(recipient=recipient, sender=sender,
                                    description=description,
-                                   transaction=transaction,
-                                   offer=instance
+                                   transaction=transaction.pk,
+                                   offer=instance.pk
         )
         
         return notification
@@ -150,8 +150,8 @@ class OfferNotificationManager(BaseNotificationManager):
 
         notification = self.create(recipient=recipient, sender=sender,
                                    description=description,
-                                   transaction=transaction,
-                                   offer=instance
+                                   transaction=transaction.pk,
+                                   offer=instance.pk
         )
 
         return notification
@@ -213,9 +213,8 @@ class BaseNotification(models.Model):
 '''   A notification on a transaction. '''
 class TransactionNotification(BaseNotification):
 
-    transaction = models.ForeignKey(Transaction, related_name='notifications',
-                    on_delete=models.SET_NULL, null=True)
-    objects = TransactionNotificationManager()
+    transaction = models.UUIDField()
+    objects     = TransactionNotificationManager()
     
     ''' Returns the serializer for transaction notifications. '''
     @staticmethod
@@ -233,8 +232,7 @@ class TransactionNotification(BaseNotification):
 '''   A notification on a transaction's offers. '''
 class OfferNotification(TransactionNotification):
 
-    offer = models.ForeignKey(Offer, related_name='notifications',
-                on_delete=models.SET_NULL, null=True)
+    offer   = models.UUIDField()
     objects = OfferNotificationManager()
 
     ''' Returns the serializer for this notification type. '''
@@ -257,9 +255,8 @@ class ContractNotification(TransactionNotification):
     contract = models.ForeignKey(Contract, related_name='notifications',
                 on_delete=models.SET_NULL, null=True)
     objects  = ContractNotificationManager()
-    '''''' Returns the serializer for this notification type.
+    Returns the serializer for this notification type.
     @staticmethod
     def get_serializer():
         
-        return 'ContractNotificationSerializer'
-'''
+        return 'ContractNotificationSerializer'''
