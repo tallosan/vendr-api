@@ -72,6 +72,10 @@ class Transaction(models.Model):
     stage      = models.IntegerField(choices=STAGES, default=0)
     start_date = models.DateTimeField(auto_now_add=True)
     
+    # Signal handler.
+    _dampen = models.BooleanField(default=False)
+    _fired  = models.BooleanField(default=False)
+    
     objects = TransactionManager()
 
     class Meta:
@@ -89,9 +93,11 @@ class Transaction(models.Model):
         restricted_fields = {
                                 self.buyer.pk: [ 'seller_accepted_offer',
                                                  'seller_accepted_contract',
+                                                 'contracts_equal'
                                 ],
                                 self.seller.pk: [ 'buyer_accepted_offer',
-                                                  'buyer_accepted_contract'
+                                                  'buyer_accepted_contract',
+                                                  'contracts_equal'
                                 ]
         }
         
@@ -113,8 +119,7 @@ class Transaction(models.Model):
         )
 
         # Offers. Ensure that both the buyer and seller have accepted the resource.
-        if self.stage == 0:
-            if self.buyer_accepted_offer == self.seller_accepted_offer:
+        if self.stage == 0 and (self.buyer_accepted_offer == self.seller_accepted_offer):
                 raise ValueError("error: the buyer and seller are not equal.")
 
         # Contracts. Ensure that the contracts are equal, & both parties have accepted.
@@ -133,6 +138,14 @@ class Transaction(models.Model):
     def get_offers(self, user_id):
 
         return self.offers.filter(owner=user_id).order_by('-timestamp')
+
+    ''' Check the state of the contracts. '''
+    def save(self, *args, **kwargs):
+        
+        if self.contracts.all().count() == 2:
+            self.contracts_equal = self.contracts.all()[0] == self.contracts.all()[1]
+
+        super(Transaction, self).save(*args, **kwargs)
 
     ''' String representation for Transaction models. '''
     def __str__(self):

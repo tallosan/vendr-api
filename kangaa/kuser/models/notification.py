@@ -28,9 +28,8 @@ from transaction.models import Transaction, Offer, Contract
         instance: The instance of the class that was saved.
 '''
 @staticmethod
-#@receiver(signal=[post_save, post_delete], sender=Transaction)
 @receiver(signal=[post_save, post_delete], sender=Offer)
-#@receiver(signal=[post_save, post_delete], sender=Contract)
+@receiver(signal=[post_save, post_delete], sender=Contract)
 def handler(sender, instance, **kwargs):
 
     # Creation notification. Note, we need to ensure that the sender was just created.
@@ -42,8 +41,9 @@ def handler(sender, instance, **kwargs):
     elif kwargs['signal'] == post_delete:
         notification_type = resolve_type(instance.__class__)
         notification = notification_type.objects.create_deletion_notification(instance)
-
-    # Publish to our Redis server.
+    
+    # Publish to our Redis server iff a notification was created.
+    if not notification: return
     channel = 'notifications.{}.{}'.format(notification.recipient.pk,
                 notification.recipient.email)
     notification_json = notification.serialized
@@ -59,9 +59,8 @@ def handler(sender, instance, **kwargs):
 def resolve_type(sender_class):
 
     class_mappings = {
-                        Transaction: TransactionNotification,
                         Offer: OfferNotification,
-                        Contract: 'ContractNotification'
+                        Contract: ContractNotification
     }
 
     return class_mappings[sender_class]
@@ -71,40 +70,12 @@ def resolve_type(sender_class):
 class BaseNotificationManager(models.Manager):
 
     ''' [Abstract] Notification for instance creation. Children must implement this. '''
-    def create_creation_notification(self):
+    def create_creation_notification(self, instance):
         raise NotImplementedError('error: all notifications must implement this.')
 
     ''' [Abstract] Notification for instance deletion. Children must implement this. '''
-    def create_deletion_notification(self):
-        raise NotImplementedError('error: all notifications must implement this.')
-
-
-'''   Responsible for creating all types of transaction notifications.'''
-class TransactionNotificationManager(BaseNotificationManager):
-
-    ''' Notification on Transaction creation. '''
-    def create_creation_notification(self, instance):
-        return
-
-    ''' Notification on Transaction deletion.
-        Args:
-            instance: The Transaction that was just deleted.
-    '''
     def create_deletion_notification(self, instance):
-        
-        curr_user = instance._current_user
-        recipient = instance.buyer if (curr_user == instance.seller) \
-                                      else instance.seller
-        sender = curr_user.profile.first_name
-        description = sender + ' has ended his transaction with you on property ' + \
-                      str(instance.kproperty) + '.'
-
-        notification = self.create(recipient=recipient, sender=sender,
-                                   description=description,
-                                   transaction=instance.pk,
-        )
-
-        return notification
+        raise NotImplementedError('error: all notifications must implement this.')
 
 
 '''   Responsible for creating all types of offer notifications.'''
@@ -140,8 +111,15 @@ class OfferNotificationManager(BaseNotificationManager):
     '''
     def create_deletion_notification(self, instance):
         
-        # TODO: Prevent this from firing on Transaction delete.
+        # Determine if the transaction is dampening the signal. We dampen signals
+        # because we only want to send one notification, however the cascading delete
+        # on offers will make us send a notification for each offer on the transaction.
         transaction = instance.transaction
+        if transaction._dampen and transaction._fired:
+            return
+        elif transaction._dampen and (not transaction._fired):
+            transaction._fired = True; transaction.save()
+
         recipient   = transaction.buyer if (instance.owner == transaction.seller) \
                                         else transaction.seller
         sender      = instance.owner.profile.first_name
@@ -153,6 +131,9 @@ class OfferNotificationManager(BaseNotificationManager):
                                    transaction=transaction.pk,
                                    offer=instance.pk
         )
+        print instance
+        print instance.owner.profile
+        print notification, notification.description
 
         return notification
 
@@ -160,12 +141,35 @@ class OfferNotificationManager(BaseNotificationManager):
 '''   Contract notification manager. '''
 class ContractNotificationManager(models.Manager):
 
-    ''' [Abstract] Notification for instance creation. Children must implement this. '''
-    def create_creation_notification(self):
-        raise NotImplementedError('error: all notifications must implement this.')
-
-    ''' [Abstract] Notification for instance deletion. Children must implement this. '''
-    def create_deletion_notification(self):
+    ''' Notification on Contract creation.
+        Args:
+            instance: The Contract that was just created.
+    '''
+    def create_creation_notification(self, instance):
+        
+        transaction = instance.transaction
+        
+        # Deterimine the notification's recipient, and format its description.
+        recipient   = transaction.buyer if (instance.owner == transaction.seller) \
+                                      else transaction.seller
+        sender      = instance.owner.profile.first_name
+        description = sender + ' has sent you a new contract for ' + \
+                        str(transaction.kproperty) + '.'
+        
+        # Create the notification.
+        notification = self.create(recipient=recipient, sender=sender,
+                                   description=description,
+                                   transaction=transaction.pk,
+                                   contract=instance.pk
+        )
+        
+        return notification
+     
+    ''' Notification on Transaction deletion.
+        Args:
+            instance: The Transaction that was just deleted.
+    '''
+    def create_deletion_notification(self, instance):
         raise NotImplementedError('error: all notifications must implement this.')
 
 
@@ -214,20 +218,7 @@ class BaseNotification(models.Model):
 class TransactionNotification(BaseNotification):
 
     transaction = models.UUIDField()
-    objects     = TransactionNotificationManager()
-    
-    ''' Returns the serializer for transaction notifications. '''
-    @staticmethod
-    def get_serializer():
-        return 'TransactionNotificationSerializer'
-
-    ''' Return an Transaction notification serialized. '''
-    @property
-    def serialized(self):
-        
-        from kuser.serializers import TransactionNotificationSerializer
-        return TransactionNotificationSerializer(self).data
-
+  
 
 '''   A notification on a transaction's offers. '''
 class OfferNotification(TransactionNotification):
@@ -249,14 +240,22 @@ class OfferNotification(TransactionNotification):
         return OfferNotificationSerializer(self).data
 
 
-'''   A notification on a transaction's contracts.
+'''   A notification on a transaction's contracts. '''
 class ContractNotification(TransactionNotification):
  
-    contract = models.ForeignKey(Contract, related_name='notifications',
-                on_delete=models.SET_NULL, null=True)
+    contract = models.UUIDField()
     objects  = ContractNotificationManager()
-    Returns the serializer for this notification type.
+    
+    ''' Returns the serializer for this notification type. '''
     @staticmethod
     def get_serializer():
         
-        return 'ContractNotificationSerializer'''
+        return 'ContractNotificationSerializer'
+
+    ''' Return an offer notification serialized. '''
+    @property
+    def serialized(self):
+        
+        from kuser.serializers import ContractNotificationSerializer
+        return ContractNotificationSerializer(self).data
+
