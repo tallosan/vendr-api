@@ -17,7 +17,45 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.dispatch import receiver
 
 from transaction.models import Transaction, Offer, Contract
+from transaction.models import HouseContract, CoOpContract, CondoContract, \
+        TownhouseContract, ManufacturedContract, VacantLandContract
+from transaction.models import CompletionDateClause, IrrevocabilityClause, \
+        MortgageDeadlineClause, SurveyDeadlineClause, DepositClause, \
+        ChattelsAndFixsClause, BuyerArrangesMortgageClause, EquipmentClause, \
+        EnvironmentClause, MaintenanceClause, UFFIClause, PaymentMethodClause, \
+        ChattelsIncludedClause, FixturesExcludedClause, RentalItemsClause
 
+CONTRACTS = [HouseContract, CoOpContract, CondoContract, TownhouseContract,
+        ManufacturedContract, VacantLandContract]
+CLAUSES = [CompletionDateClause, IrrevocabilityClause, MortgageDeadlineClause,
+        SurveyDeadlineClause, DepositClause, ChattelsAndFixsClause,
+        BuyerArrangesMortgageClause, EquipmentClause, EnvironmentClause,
+        MaintenanceClause, UFFIClause, PaymentMethodClause, ChattelsIncludedClause,
+        FixturesExcludedClause, RentalItemsClause]
+
+
+''' An augmented version of the @receiver decorator that can attach multiple
+    signals to multiple senders. Really useful for attaching models belonging to
+    any sized inheritance scheme.
+    Args:
+        signals -- A list of signals that we want to connect.
+        senders -- A list of entities (models, functions, etc.) that we want to
+                   connect to.
+'''
+def receiver_adapter(signals, senders, **kwargs):
+
+    ''' Attach the signals to each sender.
+        Args:
+            func -- The function handler (i.e. the function using the decorator).
+    '''
+    def _decorator(func):
+        for signal in signals:
+            for sender in senders:
+                signal.connect(receiver=func, sender=sender, **kwargs)
+        
+        return func
+
+    return _decorator
 
 ''' [Static] Handler for creating notifications. We determine the type of
     notification (creation or deletion) first, then route the signal instance
@@ -29,13 +67,19 @@ from transaction.models import Transaction, Offer, Contract
 '''
 @staticmethod
 @receiver(signal=[post_save, post_delete], sender=Offer)
-@receiver(signal=[post_save, post_delete], sender=Contract)
+@receiver_adapter(signals=[post_save, post_delete], senders=CONTRACTS)
+@receiver_adapter(signals=[post_save, post_delete], senders=CLAUSES)
 def handler(sender, instance, **kwargs):
-
+    
     # Creation notification. Note, we need to ensure that the sender was just created.
     if (kwargs['signal'] == post_save) and (kwargs['created']):
         notification_type = resolve_type(instance.__class__)
         notification = notification_type.objects.create_creation_notification(instance)
+    
+    # Update notification.
+    if (kwargs['signal'] == post_save) and (not kwargs['created']):
+        #TODO: Implement clause updates.
+        pass
 
     # Deletion notification.
     elif kwargs['signal'] == post_delete:
@@ -47,10 +91,9 @@ def handler(sender, instance, **kwargs):
     channel = 'notifications.{}.{}'.format(notification.recipient.pk,
                 notification.recipient.email)
     notification_json = notification.serialized
-    
     r = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0)
     r.publish(channel, notification_json)
-    
+
 
 ''' Determine the notification type for the given sender.
     Args:
@@ -58,15 +101,18 @@ def handler(sender, instance, **kwargs):
 '''
 def resolve_type(sender_class):
 
+    if sender_class in CONTRACTS: return ContractNotification
+
     class_mappings = {
                         Offer: OfferNotification,
-                        Contract: ContractNotification
+                        Contract: ContractNotification,
+                        DynamicClause: DynamicClauseNotification
     }
 
     return class_mappings[sender_class]
 
 
-'''   Base notification manager. '''
+'''   Abstract Base notification manager. '''
 class BaseNotificationManager(models.Manager):
 
     ''' [Abstract] Notification for instance creation. Children must implement this. '''
@@ -78,13 +124,12 @@ class BaseNotificationManager(models.Manager):
         raise NotImplementedError('error: all notifications must implement this.')
 
 
-'''   Responsible for creating all types of offer notifications.'''
-class OfferNotificationManager(BaseNotificationManager):
- 
-    ''' Notification on Offer creation.
-        Args:
-            instance: The Offer that was just created.
-    '''
+'''   Abstract manager for transaction related notifications. '''
+class TransactionNotificationManager(BaseNotificationManager):
+    
+    resource = None
+
+    ''' [Abstract] Create a creation transaction notification for a given resource. '''
     def create_creation_notification(self, instance):
         
         transaction = instance.transaction
@@ -93,85 +138,89 @@ class OfferNotificationManager(BaseNotificationManager):
         recipient   = transaction.buyer if (instance.owner == transaction.seller) \
                                       else transaction.seller
         sender      = instance.owner.profile.first_name
-        description = sender + ' has sent you a new offer on your property ' + \
-                      str(transaction.kproperty) + '.'
+        description = '{} has sent you a new {} on your property {}.'.format(
+                       sender, self.resource, str(transaction.kproperty))
         
         # Create the notification.
-        notification = self.create(recipient=recipient, sender=sender,
-                                   description=description,
-                                   transaction=transaction.pk,
-                                   offer=instance.pk
-        )
+        create_kwargs = {
+                            'recipient': recipient, 'sender': sender,
+                            'description': description,
+                            'transaction': transaction.pk,
+                            self.resource: instance.pk
+        }
+        notification = self.create(**create_kwargs)
         
         return notification
-       
-    ''' Notification on Offer deletion.
+    
+    ''' [Abstract] Create a deletion transaction notification for a given resource. '''
+    def create_deletion_notification(self, instance):
+        
+        transaction = instance.transaction
+        recipient   = transaction.buyer if (instance.owner == transaction.seller) \
+                                        else transaction.seller
+        sender      = instance.owner.profile.first_name
+        description = '{} has withdrawn their {} on your property {}.'.format(
+                       sender, self.resource, str(transaction.kproperty))
+        
+        # Create the notification.
+        create_kwargs = {
+                            'recipient': recipient, 'sender': sender,
+                            'description': description,
+                            'transaction': transaction.pk,
+                            self.resource: instance.pk
+        }
+        
+        notification = self.create(**create_kwargs)
+
+        return notification
+
+
+'''   Responsible for creating all types of offer notifications.'''
+class OfferNotificationManager(TransactionNotificationManager):
+
+    resource = 'offer'
+    
+    ''' Notification on Offer deletion. Note, we will need to determine if the offer's
+        transaction is dampening the signal. As we use a cascading delete for
+        transaction offers, the default signal behavior will create a new deletion offer
+        for each offer in the transaction. What we want is for ONLY the most recent
+        offer to send a notification, with the others deleting silently. To do this,
+        we check if an offer has fired a signal and, if it has, we dampen the signal
+        so that subsequent offer deletions do not create notifications.
         Args:
             instance: The Offer that was just deleted.
     '''
     def create_deletion_notification(self, instance):
         
-        # Determine if the transaction is dampening the signal. We dampen signals
-        # because we only want to send one notification, however the cascading delete
-        # on offers will make us send a notification for each offer on the transaction.
         transaction = instance.transaction
         if transaction._dampen and transaction._fired:
             return
         elif transaction._dampen and (not transaction._fired):
             transaction._fired = True; transaction.save()
 
-        recipient   = transaction.buyer if (instance.owner == transaction.seller) \
-                                        else transaction.seller
-        sender      = instance.owner.profile.first_name
-        description = sender + ' has withdrawn their offer on your property ' + \
-                      str(transaction.kproperty) + '.'
-
-        notification = self.create(recipient=recipient, sender=sender,
-                                   description=description,
-                                   transaction=transaction.pk,
-                                   offer=instance.pk
-        )
-        print instance
-        print instance.owner.profile
-        print notification, notification.description
-
-        return notification
+        return super(OfferNotificationManager, self).\
+               create_deletion_notification(instance)
 
 
 '''   Contract notification manager. '''
-class ContractNotificationManager(models.Manager):
+class ContractNotificationManager(TransactionNotificationManager):
 
-    ''' Notification on Contract creation.
-        Args:
-            instance: The Contract that was just created.
-    '''
+    resource = 'contract'
+
+    def create_update_notification(self, instance):
+        pass
+
+
+class DynamicClauseNotificationManager(BaseNotificationManager):
+
+    resource = 'clause'
+    ''' [Abstract] Notification for instance creation. Children must implement this. '''
     def create_creation_notification(self, instance):
-        
-        transaction = instance.transaction
-        
-        # Deterimine the notification's recipient, and format its description.
-        recipient   = transaction.buyer if (instance.owner == transaction.seller) \
-                                      else transaction.seller
-        sender      = instance.owner.profile.first_name
-        description = sender + ' has sent you a new contract for ' + \
-                        str(transaction.kproperty) + '.'
-        
-        # Create the notification.
-        notification = self.create(recipient=recipient, sender=sender,
-                                   description=description,
-                                   transaction=transaction.pk,
-                                   contract=instance.pk
-        )
-        
-        return notification
-     
-    ''' Notification on Transaction deletion.
-        Args:
-            instance: The Transaction that was just deleted.
-    '''
+        return
+    ''' [Abstract] Notification for instance deletion. Children must implement this. '''
     def create_deletion_notification(self, instance):
-        raise NotImplementedError('error: all notifications must implement this.')
-
+        return
+   
 
 '''   [Abstract] Base notification model. '''
 class BaseNotification(models.Model):
@@ -189,7 +238,7 @@ class BaseNotification(models.Model):
 
     # Meta data for child classes.
     _content_type = models.ForeignKey(ContentType, editable=False)
-    actual_type  = GenericForeignKey('_content_type', 'id')
+    actual_type   = GenericForeignKey('_content_type', 'id')
 
     class Meta:
         abstract = True
@@ -258,4 +307,16 @@ class ContractNotification(TransactionNotification):
         
         from kuser.serializers import ContractNotificationSerializer
         return ContractNotificationSerializer(self).data
+
+
+'''   A notification on a transaction contract's clause. '''
+class DynamicClauseNotification(ContractNotification):
+
+    clause  = models.UUIDField()
+    objects = DynamicClauseNotificationManager()
+
+    ''' Return a clause notification serialized. '''
+    @property
+    def serialized(self):
+        pass
 
