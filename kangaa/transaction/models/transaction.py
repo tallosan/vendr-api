@@ -147,6 +147,18 @@ class Transaction(models.Model):
 
         super(Transaction, self).save(*args, **kwargs)
 
+    ''' Overrides the default signal handling on related models. '''
+    def delete(self, *args, **kwargs):
+
+        # Handle signals. If we're in the offer stage then we want to create an
+        # offer notification. If we're in the contract stage then we do not.
+        if self.stage == 0:
+            self._dampen = True; self.save()
+        else:
+            self._dampen = True; self._fired = True; self.save()
+
+        super(Transaction, self).delete(*args, **kwargs)
+
     ''' String representation for Transaction models. '''
     def __str__(self):
 

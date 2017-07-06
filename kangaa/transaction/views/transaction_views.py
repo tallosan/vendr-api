@@ -126,14 +126,6 @@ class TransactionDetail(APIView):
     def delete(self, request, transaction_pk, format=None):
 
         transaction = self.get_object(transaction_pk)
-        
-        # Handle signals. If we're in the offer stage then we want to create an
-        # offer notification. If we're in the contract stage then we do not.
-        if transaction.stage == 0:
-            transaction._dampen = True; transaction.save()
-        else:
-            transaction._dampen = True; transaction._fired = True; transaction.save()
-        
         transaction.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
