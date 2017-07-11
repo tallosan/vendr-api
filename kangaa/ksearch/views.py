@@ -3,6 +3,8 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import FieldError
 from django.contrib.auth import get_user_model
+from django.db.models import Q
+from django.contrib.gis.geos import Polygon
 
 from rest_framework import generics, status
 from rest_framework.views import APIView
@@ -53,24 +55,30 @@ class PropertySearch(generics.ListAPIView):
 
     ''' Filters the queryset according to the specified parameters. '''
     def get_queryset(self):
-        
-        # Construct a filter chain from the given parameters.
-        try:
-            filter_args = self.gen_filter_chain(self.request.GET)
-        except IndexError:
-            filter_args = {}
-       
+         
         # Get the Property types arguments, if any are given.
         try:
-            ptypes = filter_args.pop('ptypes')
+            ptypes = self.request.GET.pop('ptypes')[0]
+            ptypes = self.parse_multikey(ptypes)
         except KeyError:
             ptypes = []
-
+               
+        # Construct a filter chain from the given parameters.
+        filter_args = self.gen_filter_chain(self.request.GET)
+        
+        #TODO: Refactor this for the love of god. ARGGHHHH!
+        queryset = []
+        if not filter_args:
+            for model in self.get_models(ptypes): queryset += model.objects.all()
+            return queryset
+        
+        import operator
+        
         # Build the query set by querying each model type.
         queryset = []
         for model in self.get_models(ptypes):
             try:
-                queryset += model.objects.filter(**filter_args)
+                queryset += model.objects.filter(reduce(operator.and_, filter_args))
             except FieldError:
                 pass
         
@@ -83,19 +91,46 @@ class PropertySearch(generics.ListAPIView):
     '''
     def gen_filter_chain(self, filters):
 
+        filter_args = []
+        
+        # Parse any map filters.
+        map_filters = {}; map_coordinates = ['ne_lng', 'ne_lat', 'sw_lng', 'sw_lat']
+        if any(map_filter in filters.keys() for map_filter in map_coordinates):
+            if not all(map_filter in filters.keys() for map_filter in map_coordinates):
+                exc = APIException(detail={'error': 'incomplete map query.'})
+                exc.status_code = 401; raise exc
+        
+            for coordinate in map_coordinates:
+                map_filters[coordinate] = filters.pop(coordinate)[0]
+            
+            filter_args.append(self.parse_mapkey(map_filters))
+        
         # Construct the filter chain. We have both multi-value, and single-value cases.
         # If our data is in a list, we assume it's multi-value. If not, single.
-        filter_args = {}
         for kfilter in filters.keys():
             if (filters[kfilter][0] == '[') and (filters[kfilter][-1] == ']'):
                 next_filter = self.parse_multikey(filters[kfilter])
             else:
-                next_filter = filters[kfilter]
+                next_filter = Q((kfilter, filters[kfilter]))
             
-            filter_args[kfilter] = next_filter
+            filter_args.append(next_filter)
 
         return filter_args
- 
+
+    ''' Create and return a bounding box, given a set of coordinate pairs.
+        Args:
+            map_keys -- Map coordinates for the north east and south west.
+    '''
+    def parse_mapkey(self, map_keys):
+
+        # Create a bounding box from the given longitude & latitude.
+        lng = (float(map_keys['ne_lng']), float(map_keys['sw_lng']))
+        lat = (float(map_keys['ne_lat']), float(map_keys['sw_lat']))
+        box = Polygon.from_bbox((min(lng), min(lat), max(lng), max(lat)))
+        
+        return Q(location__geo_point__intersects=box)
+
+
     ''' (Helper Function) Parses a multi-key value into something we can pass
         through a Django filter.
         Args:
@@ -132,7 +167,7 @@ class PropertySearch(generics.ListAPIView):
         
         # No models specified, so we'll just return all types.
         if not models:
-            models = [Condo, POTL, Multiplex]
+            models = [House, Condo, Townhouse, Manufactured, VacantLand]
         
         return models
 
@@ -142,7 +177,7 @@ class PropertySearch(generics.ListAPIView):
     def list(self, request):
         
         queryset = self.get_queryset()
-
+        
         # Construct our response by serializing each object in the queryset.
         response = []
         for kproperty in queryset:
