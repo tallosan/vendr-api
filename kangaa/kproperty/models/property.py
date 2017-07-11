@@ -44,22 +44,34 @@ class Property(models.Model):
     def get_serializer(self):
         raise NotImplementedError("'get_serializer()' must be implemented.")
 
-    ''' Custom string representation. '''
-    def __str__(self):
+    ''' Custom field validation. '''
+    def clean(self, *args, **kwargs):
+    
+        # Ensure that we have no negative values.
+        if any((field < 0) for field in [self.price, sqr_ftg, n_bedrooms, n_bathrooms]):
+            raise ValidationError('error: field cannot have a negative value.')
 
-        return self.location.address + ', ' + self.location.city + ' ' + \
-                self.location.province
+        super(Property, self).clean(*args, **kwargs)
 
 
 '''   Parent for all cooperative ownership properties. '''
 class CoOp(Property):
     
-    unit_num   = models.IntegerField()
-    
+    unit_num = models.CharField(max_length=8)
+
     ''' (Abstract) Raises a NotImplementedError, as this should be implemented
         in the child models. '''
     def get_serializer(self):
         raise NotImplementedError("no 'get_serializer()' method for parent Freehold.")
+
+    ''' Custom field validation. '''
+    def clean(self, *args, **kwargs):
+
+        # Ensure the unit number is valid.
+        if self.unit_num < 0:
+            raise ValidationError('error: unit number cannot be negative.')
+
+        super(CoOp, self).clean(*args, **kwargs)
 
 
 '''   Condo model. '''
