@@ -7,6 +7,8 @@
 from __future__ import unicode_literals
 
 from django.db import models
+from django.contrib.gis.db import models as geo_models
+from django.contrib.gis.geos import Point
 from django.conf import settings
 
 from hashlib import sha256
@@ -28,8 +30,17 @@ class Location(models.Model):
     address     = models.CharField(max_length=100, blank=False, db_index=True)
     postal_code = models.CharField(max_length=10, blank=False, db_index=True)
     
-    longitude   = models.DecimalField(max_digits=9, decimal_places=6, blank=False)
-    latitude    = models.DecimalField(max_digits=9, decimal_places=6, blank=False)
+    longitude   = models.DecimalField(max_digits=9, decimal_places=6, blank=False,
+                    db_index=True)
+    latitude    = models.DecimalField(max_digits=9, decimal_places=6, blank=False,
+                    db_index=True)
+    geo_point   = geo_models.PointField(null=True)
+
+    ''' Custom save to format geo-point. '''
+    def save(self, *args, **kwargs):
+
+        if not self.pk: self.geo_point = Point((self.longitude, self.latitude))
+        super(Location, self).save(*args, **kwargs)
 
 
 '''   Features model. Contains the property features (e.g. fireplace, garden, etc). '''
@@ -83,7 +94,7 @@ class Images(models.Model):
     #thumbnail = models.ImageField(upload_to=listing_file_name,
                     #storage=ZappMediaStorage())
     image = models.ImageField(upload_to=listing_file_name, storage=ZappMediaStorage(),
-                max_length=150)
+                max_length=150, blank=True, null=True)
     timestamp = models.DateField(auto_now_add=True)
     #low_resolution = models.ImageField(upload_to=listing_file_name,
                     #storage=ZappMediaStorage())
