@@ -100,7 +100,6 @@ class BaseContractManager(models.Manager):
 
         return contract
 
-
     ''' (Helper) Adds the appropriate static clauses to the given contract. '''
     def add_static_clauses(self, contract):
 
@@ -434,8 +433,9 @@ class Contract(models.Model):
 
     def save(self, *args, **kwargs):
 
-        if self.transaction.contracts.filter(owner=self.owner).count() >= 1:
-            raise ValueError('error: this user already has a contract.')
+        if not self.pk:
+            if self.transaction.contracts.filter(owner=self.owner).count() >= 1:
+                raise ValueError('error: this user already has a contract.')
 
         super(Contract, self).save(*args, **kwargs)
 
@@ -529,8 +529,20 @@ class DynamicClause(Clause):
 
         if not self.pk:
             self.actual_type = self
-
+ 
         super(DynamicClause, self).save(*args, **kwargs)
+
+        # Check for contract equality.
+        _transaction = self.contract.transaction
+        if _transaction.contracts.all().count() == 2:
+            _c0 = { clause.title: clause.actual_type.value
+                    for clause in _transaction.contracts.all()[0].dynamic_clauses.all()
+            }
+            _c1 = { clause.title: clause.actual_type.value
+                    for clause in _transaction.contracts.all()[1].dynamic_clauses.all()
+            }
+            
+            _transaction.contracts_equal = _c0 == _c1; _transaction.save()
 
     @property
     def preview(self):
