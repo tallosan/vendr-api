@@ -7,8 +7,11 @@ from django.conf import settings
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
+from django.contrib.postgres.fields import ArrayField
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager,\
                                        PermissionsMixin, UserManager
+
+from custom_storage import ZappMediaStorage
 
 
 '''   Custom Kangaa user manager. '''
@@ -73,6 +76,8 @@ class KUser(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     join_date = models.DateTimeField(auto_now_add=True)
 
+    favourites = ArrayField(models.UUIDField(blank=True), default=[])
+
     USERNAME_FIELD  = 'email'
     REQUIRED_FIELDS = []
 
@@ -108,17 +113,29 @@ class KUser(AbstractBaseUser, PermissionsMixin):
         return self.email
 
 
+''' (Helper) Generates a file name for a user's profile pic. '''
+def prof_pic_file_name(instance, filename):
+
+    BASE_URL = 'users/prof_pic/'
+    ID = instance.kuser.pk
+
+    return BASE_URL + ID
+
 '''   Profile model for user. '''
 class Profile(models.Model):
 
-    kuser           = models.OneToOneField(settings.AUTH_USER_MODEL,
+    kuser      = models.OneToOneField(settings.AUTH_USER_MODEL,
                         related_name='profile', on_delete=models.CASCADE)
 
-    first_name      = models.CharField(max_length=25, blank=True)
-    last_name       = models.CharField(max_length=25, blank=True)
-    bio             = models.CharField(max_length=250, blank=True)
-    location        = models.CharField(max_length=50, blank=True)
-
+    first_name = models.CharField(max_length=25, blank=True)
+    last_name  = models.CharField(max_length=25, blank=True)
+    bio        = models.CharField(max_length=250, blank=True)
+    location   = models.CharField(max_length=50, blank=True)
+    
     prof_pic        = models.ImageField(upload_to='profiles/',
-                        default='profiles/default.svg', blank=True)
-
+                    default='profiles/default.svg', blank=True)
+    ''''prof_pic   = models.ImageField(upload_to=prof_pic_file_name, 
+                        storage=ZappMediaStorage(), max_length=150,
+                        blank=True, null=True
+    )
+    '''

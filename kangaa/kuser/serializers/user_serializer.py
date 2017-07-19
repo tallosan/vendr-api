@@ -31,23 +31,22 @@ class UserSerializer(serializers.ModelSerializer):
     #TODO: Send password in plaintext.
     properties = serializers.PrimaryKeyRelatedField(many=True, required=False,
                     queryset=Property.objects.select_subclasses())
-
+    
     # Custom notification queryset.
     notification_qs  = []
-    notification_qs += TransactionNotification.objects.all()
-    notification_qs += OfferNotification.objects.all()
+    #notification_qs += OfferNotification.objects.all()
     #notification_qs += ContractNotification.objects.all()
     
     notifications = serializers.PrimaryKeyRelatedField(many=True, required=False,
                         queryset=notification_qs)
-
+    
     class Meta:
         model   = KUser
         fields  = ('id', #'href',
-                   'uuid',
                    'email', 'password',
                    'profile',
                    'properties',
+                   'favourites',
                    'notifications',
                    'join_date')
     
