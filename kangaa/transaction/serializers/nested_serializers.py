@@ -7,9 +7,8 @@ from django.contrib.auth import get_user_model
 
 from rest_framework import serializers
 
-from transaction.models import *#Transaction, Offer, Contract, StaticClause,\
-    #AbstractContractFactory
-
+from transaction.models import *
+from transaction.exceptions import BadTransactionRequest
 
 User = get_user_model()
 
@@ -88,6 +87,7 @@ class DynamicClauseSerializer(ClauseSerializer):
         model  = DynamicClause
         fields = ClauseSerializer.Meta.fields + ('generator', )
         validators = []
+    
     #TODO: This should be done better.
     def to_internal_value(self, data):
         return data
@@ -138,8 +138,14 @@ class ContractSerializer(serializers.ModelSerializer):
         owner       = validated_data.pop('owner')
         transaction = validated_data.pop('transaction')
         
-        contract = AbstractContractFactory.create_contract(ctype, owner=owner,
-                    transaction=transaction)
+        try:
+            contract = AbstractContractFactory.create_contract(ctype,
+                        owner=owner, transaction=transaction)
+        except ValueError:
+            error_msg = { 'error': '{} already has a contract for this transaction'.\
+                                   format(owner.email)
+            }
+            raise BadTransactionRequest(error_msg)
         
         return contract
 

@@ -6,8 +6,8 @@
 from __future__ import unicode_literals
 
 import uuid
-
 import redis
+import json
 
 from django.db import models
 from django.db.models.signals import post_save, post_delete, pre_delete
@@ -42,7 +42,7 @@ CLAUSES = [CompletionDateClause, IrrevocabilityClause, MortgageDeadlineClause,
         senders -- A list of entities (models, functions, etc.) that we want to
                    connect to.
 '''
-def receiver_adapter(signals, senders, **kwargs):
+def receiver_extended(signals, senders, **kwargs):
 
     ''' Attach the signals to each sender.
         Args:
@@ -57,6 +57,7 @@ def receiver_adapter(signals, senders, **kwargs):
 
     return _decorator
 
+
 ''' [Static] Handler for creating notifications. We determine the type of
     notification (creation or deletion) first, then route the signal instance
     off to the appropriate Notification class.
@@ -67,30 +68,31 @@ def receiver_adapter(signals, senders, **kwargs):
 '''
 @staticmethod
 @receiver(signal=[post_save, post_delete], sender=Offer)
-@receiver_adapter(signals=[post_save, post_delete], senders=CONTRACTS)
-@receiver_adapter(signals=[post_save, post_delete], senders=CLAUSES)
+@receiver_extended(signals=[post_save, post_delete], senders=CONTRACTS)
+@receiver_extended(signals=[post_save, post_delete], senders=CLAUSES)
 def handler(sender, instance, **kwargs):
     
+    notification_type = resolve_type(instance.__class__)
+
     # Creation notification. Note, we need to ensure that the sender was just created.
     if (kwargs['signal'] == post_save) and (kwargs['created']):
-        notification_type = resolve_type(instance.__class__)
         notification = notification_type.objects.create_creation_notification(instance)
     
     # Update notification.
-    if (kwargs['signal'] == post_save) and (not kwargs['created']):
-        #TODO: Implement clause updates.
-        pass
+    elif (kwargs['signal'] == post_save) and (not kwargs['created']):
+        #notification = notification_type.objects.create_update_notifiation(instance)
+        return
 
     # Deletion notification.
     elif kwargs['signal'] == post_delete:
-        notification_type = resolve_type(instance.__class__)
         notification = notification_type.objects.create_deletion_notification(instance)
     
     # Publish to our Redis server iff a notification was created.
     if not notification: return
+
     channel = 'notifications.{}.{}'.format(notification.recipient.pk,
                 notification.recipient.email)
-    notification_json = notification.serialized
+    notification_json = json.dumps(notification.serialized)
     r = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0)
     r.publish(channel, notification_json)
 
@@ -102,11 +104,10 @@ def handler(sender, instance, **kwargs):
 def resolve_type(sender_class):
 
     if sender_class in CONTRACTS: return ContractNotification
+    elif sender_class in CLAUSES: return DynamicClauseNotification
 
     class_mappings = {
                         Offer: OfferNotification,
-                        Contract: ContractNotification,
-                        DynamicClause: DynamicClauseNotification
     }
 
     return class_mappings[sender_class]
@@ -139,7 +140,7 @@ class TransactionNotificationManager(BaseNotificationManager):
                                       else transaction.seller
         sender      = instance.owner.profile.first_name
         description = '{} has sent you a new {} on your property {}.'.format(
-                       sender, self.resource, str(transaction.kproperty))
+                       sender, self.resource, transaction.kproperty.location.address)
         
         # Create the notification.
         create_kwargs = {
@@ -188,7 +189,7 @@ class OfferNotificationManager(TransactionNotificationManager):
         we check if an offer has fired a signal and, if it has, we dampen the signal
         so that subsequent offer deletions do not create notifications.
         Args:
-            instance: The Offer that was just deleted.
+            instance: The Offer being deleted.
     '''
     def create_deletion_notification(self, instance):
         
@@ -207,16 +208,15 @@ class ContractNotificationManager(TransactionNotificationManager):
 
     resource = 'contract'
 
-    def create_update_notification(self, instance):
-        pass
-
 
 class DynamicClauseNotificationManager(BaseNotificationManager):
 
     resource = 'clause'
+
     ''' [Abstract] Notification for instance creation. Children must implement this. '''
     def create_creation_notification(self, instance):
         return
+
     ''' [Abstract] Notification for instance deletion. Children must implement this. '''
     def create_deletion_notification(self, instance):
         return

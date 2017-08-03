@@ -15,7 +15,7 @@ from hashlib import sha256
 import uuid
 
 from .property import Property
-from custom_storage import ZappMediaStorage
+from custom_storage import VendrMediaStorage
 
 
 '''   Location model. Contains locational data for a particular listing. '''
@@ -39,6 +39,8 @@ class Location(models.Model):
     ''' Custom save to format geo-point. '''
     def save(self, *args, **kwargs):
 
+        # Create a Point object from the lng-lat coordinate. We'll use this
+        # for geo-queries.
         if not self.pk: self.geo_point = Point((self.longitude, self.latitude))
         super(Location, self).save(*args, **kwargs)
 
@@ -92,18 +94,12 @@ class Images(models.Model):
     kproperty = models.ForeignKey('Property', related_name='images',
                     on_delete=models.CASCADE)
     #thumbnail = models.ImageField(upload_to=listing_file_name,
-                    #storage=ZappMediaStorage())
-    image = models.ImageField(upload_to=listing_file_name, storage=ZappMediaStorage(),
+                    #storage=VendrMediaStorage())
+    image = models.ImageField(upload_to=listing_file_name, storage=VendrMediaStorage(),
                 max_length=150, blank=True, null=True)
     timestamp = models.DateField(auto_now_add=True)
     #low_resolution = models.ImageField(upload_to=listing_file_name,
-                    #storage=ZappMediaStorage())
+                    #storage=VendrMediaStorage())
     #standard_resolution = models.ImageField(upload_to=listing_file_name,
-                    #storage=ZappMediaStorage())
-
-
-'''   Open house model. Contains scheduling info about open house / showing times. '''
-class OpenHouse(models.Model):
-
-    pass
+                    #storage=VendrMediaStorage())
 

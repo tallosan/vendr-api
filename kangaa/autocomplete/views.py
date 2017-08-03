@@ -44,7 +44,7 @@ class LocationSearch(generics.ListAPIView):
         serializes each entry as a dictionary containing the city name, and the
         number of properties in the database (count) in that city. '''
     def list(self, request, *args, **kwargs):
-
+        
         queryset = self.get_queryset()
 
         # Get the city name and overall count for each city.

@@ -21,6 +21,8 @@ urlpatterns = [
 
     # OAuth.
     url(r'^o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
+
+    # Web sockets.
     
     # API.
     url(r'^v1/search', include('ksearch.urls')),

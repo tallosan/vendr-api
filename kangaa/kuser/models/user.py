@@ -11,7 +11,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager,\
                                        PermissionsMixin, UserManager
 
-from custom_storage import ZappMediaStorage
+from custom_storage import VendrMediaStorage
 
 
 '''   Custom Kangaa user manager. '''
@@ -76,7 +76,7 @@ class KUser(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     join_date = models.DateTimeField(auto_now_add=True)
 
-    favourites = ArrayField(models.UUIDField(blank=True), default=[])
+    favourites = ArrayField(models.IntegerField(blank=True), default=[])
 
     USERNAME_FIELD  = 'email'
     REQUIRED_FIELDS = []
@@ -135,7 +135,7 @@ class Profile(models.Model):
     prof_pic        = models.ImageField(upload_to='profiles/',
                     default='profiles/default.svg', blank=True)
     ''''prof_pic   = models.ImageField(upload_to=prof_pic_file_name, 
-                        storage=ZappMediaStorage(), max_length=150,
+                        storage=VendrMediaStorage(), max_length=150,
                         blank=True, null=True
     )
     '''

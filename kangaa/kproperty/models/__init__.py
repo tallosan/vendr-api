@@ -4,4 +4,5 @@ from .property import Property, \
                       Manufactured, VacantLand
 from .property_fields import Location, Features, TaxRecords, Historical, \
                              Images
+from .open_house import OpenHouse, RSVP
 

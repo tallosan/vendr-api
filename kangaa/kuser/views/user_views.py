@@ -29,7 +29,9 @@ class UserList(APIView):
     def get(self, request, format=None):
         
         response = []
-        for user in User.objects.all():
+        
+        # Paginate the queryset if necessary.
+        for user in self.paginate_queryset(User.objects.all()):
             response.append(self.serializer_class(user, context={'request': request}).data)
 
         return Response(response)
@@ -109,7 +111,7 @@ class UserDetail(APIView):
         serializer_data = serializer.data
        
         # Remove any restricted fields if necessary.
-        restricted_fields = ('password', )
+        restricted_fields = ('password', 'notifications')
         if restrict_access:
             for restricted_field in restricted_fields:
                 serializer_data.pop(restricted_field)

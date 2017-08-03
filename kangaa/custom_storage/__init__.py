@@ -1,1 +1,1 @@
-from .zapp_storage import ZappMediaStorage
+from .vendr_storage import VendrMediaStorage

@@ -81,6 +81,7 @@ class ContractList(APIView):
 '''   Contract detail view. '''
 class ContractDetail(APIView):
 
+    serializer_class = ContractSerializer
     permission_classes = (
                             permissions.IsAuthenticated,
                             TransactionAccessPermission
@@ -111,9 +112,8 @@ class ContractDetail(APIView):
     '''
     def get(self, request, transaction_pk, pk, format=None):
         
-        self.serializer = ContractSerializer
         contract = self.get_object(transaction_pk, pk)
-        serializer = self.serializer(contract)
+        serializer = self.serializer_class(contract)
 
         return Response(serializer.data)
     
@@ -125,7 +125,14 @@ class ContractDetail(APIView):
             *format: Specified data format (e.g. JSON).
     '''
     def put(self, request, transaction_pk, pk, format=None):
-        pass
+        
+        contract = self.get_object(transaction_pk, pk)
+        serializer = self.serializer_class(contract, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     ''' Handles DELETE requests on Contract models.
         Args:

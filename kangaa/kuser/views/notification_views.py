@@ -19,6 +19,22 @@ from kuser.exceptions import NotificationNotFound, InvalidFieldRequest
 User = get_user_model()
 
 
+class NotificationWSAuth(APIView):
+
+    permission_classes =  ( permissions.IsAuthenticated, IsNotificationOwner,)
+    
+    def get(self, request, user_pk):
+
+        # Ensure the user has permission.
+        if request.user.pk != int(user_pk):
+            error_msg = 'error: you do not have permission to view this resource'
+            no_auth_exc = APIException(detail=error_msg)
+            no_auth_exc.status_code = status.HTTP_403_FORBIDDEN
+            raise no_auth_exc
+
+        return Response(status=status.HTTP_200_OK)
+
+
 ''' Return the actual serializer class given a serializer class string. Note, we
     can do this simply by querying over our user serializer module.
     Args:
@@ -43,7 +59,7 @@ class NotificationList(APIView):
     def get_queryset(self, user_pk):
 
         user = self.request.user
-        return user.notifications.all()
+        return user.notifications.all().order_by('-timestamp')
 
     ''' Get a list of notifications for a given user.
         Args:

@@ -1,0 +1,55 @@
+# Proxy servers. Will use round-robin by default.
+upstream zapp {
+	#server unix:/home/john/Documents/em2/em2.sock fail_timeout=0;
+	server 192.168.0.12:8824;
+}
+
+# API Server.
+server {
+	listen 80;
+	client_max_body_size 10M;
+	server_name api.kangaa.xyz api.zappme.xyz;
+	
+	access_log /var/log/nginx/access.log;
+	error_log /var/log/nginx/error.log;
+	
+	# Proxy upstream.
+	location / {
+		try_files $uri @proxy_to_app;
+	}
+
+	# Serve static files.
+	location /static {
+		alias /home/john/Documents/kangaa-api/kangaa/static;
+	}
+	
+	# Serve media files.
+	location /media {
+		autoindex on;
+		alias /home/john/Documents/kangaa-api/kangaa/media;
+	}
+
+	# Perform proxy.
+	location @proxy_to_app {
+		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_set_header Host $http_host;
+		proxy_redirect off;
+		proxy_pass http://zapp;
+	}
+}
+
+# WWW Server.
+server {
+
+	listen 80;
+	server_name www.zappme.xyz;
+
+	#root /home/john/Documents/kangaa-frontend/Kangaa/public;
+	root /home/john/Documents/kangaa-frontend/Kangaa/build;
+	index index.html;
+	location / {
+		auth_basic "Restricted Content";
+		auth_basic_user_file /etc/nginx/.htpasswd;
+	}
+}
+

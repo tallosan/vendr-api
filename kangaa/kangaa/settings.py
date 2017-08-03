@@ -23,7 +23,8 @@ SECRET_KEY = 'w^bbsqn0y6lra9xt30idw)^dkle!ej&eytp+j(3m!m2s0qb$m7'
 DEBUG = False
 
 ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '192.168.0.17',
-                 'api.zappme.xyz', 'notify.zappme.xyz']
+                 'api.zappme.xyz', 'notify.zappme.xyz',
+                 'api.vendr.xyz', 'notify.vendr.xyz']
 
 # Application definition
 BASE_APPS = [
@@ -114,6 +115,12 @@ CACHES = {
 # Cache time to live.
 CACHE_TTL = ( 60 ) * 30
 
+# Celery.
+BROKER_URL = 'reddis://localhost:6379'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+
 
 # Authorized user model.
 AUTH_USER_MODEL = 'kuser.KUser'
@@ -131,9 +138,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
-    #'DEFAULT_PAGINATION_CLASS': {
-        #'rest_framework.pagination.LimitOffsetPagination'
-    #},
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination'
 }
 
 PASSWORD_HASHERS = [

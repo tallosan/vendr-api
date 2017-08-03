@@ -7,8 +7,8 @@ from django.contrib.auth import get_user_model
 
 from rest_framework import serializers
 
-from kuser.models import TransactionNotification, OfferNotification#, \
-                                #ContractNotification
+from kuser.models import TransactionNotification, OfferNotification, \
+                            ContractNotification
 
 
 class NotificationSerializer(serializers.ModelSerializer):
@@ -37,10 +37,10 @@ class OfferNotificationSerializer(TransactionNotificationSerializer):
         model  = OfferNotification
         fields = TransactionNotificationSerializer.Meta.fields + ('offer', )
 
-'''
+
 class ContractNotificationSerializer(TransactionNotificationSerializer):
 
     class Meta(TransactionNotificationSerializer.Meta):
         model  = ContractNotification
         fields = TransactionNotificationSerializer.Meta.fields + ('contract', )
-'''
+

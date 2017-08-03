@@ -24,11 +24,11 @@ class TransactionManager(models.Manager):
         
         # Ensure that the buyer, seller, and property are specified.
         if any(arg is None for arg in {buyer, seller, kproperty}):
-            raise ValueError('error: buyer, seller, or kproperty not specified.')
+            raise ValueError('buyer, seller, or kproperty not specified.')
         
         # Ensure that the seller actually owns the property.
         if seller.id != kproperty.owner.id:
-            raise ValueError('error: seller id does not match property owner id.')
+            raise ValueError('seller id does not match property owner id.')
 
         # Create the transaction.
         now = timezone.now()
@@ -59,7 +59,7 @@ class Transaction(models.Model):
     buyer_accepted_offer  = models.UUIDField(blank=True, null=True)
     seller_accepted_offer = models.UUIDField(blank=True, null=True)
     
-    contracts_equal = models.BooleanField(default=False)
+    contracts_equal = models.BooleanField(default=True)
     buyer_accepted_contract  = models.BooleanField(default=False)
     seller_accepted_contract = models.BooleanField(default=False)
 
@@ -115,19 +115,19 @@ class Transaction(models.Model):
         # Ensure that we are not already at the last stage.
         if self.stage == 2:
             raise ValueError(
-                    "error: 'advance_stage()' cannot be called on a stage 3 transaction."
+                    "'advance_stage()' cannot be called on a stage 3 transaction."
         )
 
         # Offers. Ensure that both the buyer and seller have accepted the resource.
-        if self.stage == 0 and (self.buyer_accepted_offer == self.seller_accepted_offer):
-                raise ValueError("error: the buyer and seller are not equal.")
+        if self.stage == 0 and (self.buyer_accepted_offer != self.seller_accepted_offer):
+                raise ValueError('the buyer and seller offers are not equal.')
 
         # Contracts. Ensure that the contracts are equal, & both parties have accepted.
         elif self.stage == 1:
             if not self.contracts_equal:
-                raise ValueError('error: contracts must be equal.')
+                raise ValueError('contracts must be equal.')
             if self.buyer_accepted_contract != self.seller_accepted_contract:
-                raise ValueError('error: buyer and seller must both accepted.')
+                raise ValueError('buyer and seller must both accepted.')
             
         self.stage += 1
 
@@ -138,14 +138,6 @@ class Transaction(models.Model):
     def get_offers(self, user_id):
 
         return self.offers.filter(owner=user_id).order_by('-timestamp')
-
-    ''' Check the state of the contracts. '''
-    def save(self, *args, **kwargs):
-        
-        if self.contracts.all().count() == 2:
-            self.contracts_equal = self.contracts.all()[0] == self.contracts.all()[1]
-
-        super(Transaction, self).save(*args, **kwargs)
 
     ''' Overrides the default signal handling on related models. '''
     def delete(self, *args, **kwargs):

@@ -1,0 +1,7 @@
+django
+django-rest-framework
+django-model-utils
+postgres
+
+gevent-socketio-0.3.6
+
