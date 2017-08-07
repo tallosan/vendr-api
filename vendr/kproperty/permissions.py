@@ -16,18 +16,14 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
         return obj.owner == request.user
 
 
-'''   Ensures that only the property owner can create and view any open houses
-      for a given property. '''
+'''   Ensures that only the property owner can create open houses for a
+      given property. '''
 class OpenHouseListPermissions(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj):
         
-        user = request.user; open_house_owner = obj.owner
-        print 'checking permission'
-        kproperty = request.data.GET('kproperty')
-        print kproperty
-        
-        return kproperty in [user_property.pk for user_property in user.properties]
+        if request.method == 'POST':
+            return request.user == obj.owner
 
 
 '''   Ensure that only the open house owner can view, update, and delete
@@ -49,7 +45,7 @@ class RSVPListPermissions(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj):
         
-        user = request.user; open_house_owner = obj.open_house.owner
+        user = request.user; open_house_owner = obj.owner
         
         # Ensure the open house owner is not scheduling an appointment on their
         # own home.
@@ -67,5 +63,9 @@ class RSVPDetailPermissions(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj):
         
+        if request.method in permissions.SAFE_METHODS:
+            return True
+
         user = request.user; rsvp_owner = obj.owner
         return user == rsvp_owner
+
