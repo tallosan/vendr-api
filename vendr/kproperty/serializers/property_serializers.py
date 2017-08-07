@@ -3,7 +3,8 @@ from rest_framework import serializers
 from django.core.files.uploadedfile import UploadedFile
 
 from kproperty.models import *
-from .property_field_serializers import *       
+from .property_field_serializers import *
+from .open_house_serializers import RSVPSerializer, OpenHouseSerializer
 
 
 '''   Serializer for Property models. '''
@@ -19,6 +20,7 @@ class PropertySerializer(serializers.ModelSerializer):
     tax_records = TaxRecordsSerializer(TaxRecords.objects.all(), many=True)
     history     = HistoricalSerializer()
     images      = ImagesSerializer(Images.objects.all(), many=True)
+    open_houses  = OpenHouseSerializer(OpenHouse.objects.all(), many=True, required=False)
 
     class Meta:
         model   = Property
@@ -31,6 +33,7 @@ class PropertySerializer(serializers.ModelSerializer):
                    'tax_records',
                    'history',
                    'images',
+                   'open_houses',
                    'created_time',
                    'is_featured',
                    'views',
