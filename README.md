@@ -1,4 +1,4 @@
-# Kangaa.xyz
+# Vendr.xyz
 
 The following rules should be followed when using this repo.
 
