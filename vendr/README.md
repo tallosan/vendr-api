@@ -193,7 +193,6 @@ Sellers -- Create a new Open House.
 ```javascript
 BODY
 {
-	"kproperty": 1,
 	"start": "2017-08-06T18:38:39.069638Z",
 	"end": "2017-08-06T20:38:39.069638Z"
 }
@@ -206,7 +205,7 @@ Buyers -- RSVP to an Open House.
 ```javascript
 BODY
 {
-	"open_house": "cb84a0c4-3ee2-4a0e-8ee3-2ef096d034c0"
+
 }
 
 POST	http://api.vendr.xyz/v1/properties/<property_id>/openhouse/<openhouse_id>/rsvp/    (Authentication Required)
