@@ -14,7 +14,7 @@ class RSVPSerializer(serializers.ModelSerializer):
 
 class OpenHouseSerializer(serializers.ModelSerializer):
     
-    rsvp_list = RSVPSerializer(RSVP.objects.all(), many=True)
+    rsvp_list = RSVPSerializer(RSVP.objects.all(), many=True, required=False)
 
     class Meta:
         model = OpenHouse
