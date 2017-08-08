@@ -5,7 +5,7 @@
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, permissions
 
 from kproperty.models import Property, OpenHouse, RSVP
 from kproperty.serializers import OpenHouseSerializer, RSVPSerializer
@@ -16,13 +16,25 @@ class OpenHouseList(APIView):
     
     queryset = OpenHouse.objects.all()
     serializer_class = OpenHouseSerializer
-    permission_classes = ( kproperty_permissions.OpenHouseListPermissions, )
+    permission_classes = ( permissions.IsAuthenticated,
+                           kproperty_permissions.OpenHouseListPermissions
+    )
 
+    ''' Gets all Open Houses that a given user has created.
+        Args:
+            pk -- The primary key of the user we're querying over.
+    '''
     def get_queryset(self, pk):
 
         queryset = Property.objects.get(pk=pk).open_houses.all()
         return queryset
 
+    ''' Handles LIST / GET requests.
+        Args:
+            request: The GET request.
+            pk: The primary key of the user we're querying over.
+            *format: Specified data format.
+    '''
     def get(self, request, pk, format=None):
 
         queryset = self.get_queryset(pk)
@@ -32,6 +44,12 @@ class OpenHouseList(APIView):
 
         return Response(response)
 
+    ''' Handles POST requests.
+        Args:
+            request: The POST request.
+            pk: The primary key of the user we're querying over.
+            *format: Specified data format.
+    '''
     def post(self, request, pk, format=None):
         
         kproperty = Property.objects.get(pk=pk)
@@ -51,6 +69,11 @@ class OpenHouseDetail(APIView):
     serializer_class = OpenHouseSerializer
     permission_classes = ( kproperty_permissions.OpenHouseDetailPermissions, )
 
+    ''' Return the Open House object with the given pk. Raises an exception if
+        none exists.
+        Args:
+            oh_pk -- The open house object's primary key.
+    '''
     def get_object(self, oh_pk):
 
         try:
@@ -63,14 +86,28 @@ class OpenHouseDetail(APIView):
             dne_exc = APIException(detail=error_msg)
             dne_exc.status_code = status.HTTP_400_BAD_REQUEST
             raise dne_exc
-
+    
+    ''' Handles GET requests on Open House models.
+        Args:
+            request: The GET request.
+            pk: The user that the open house belongs to.
+            oh_pk: The primary key of the open house to get.
+            *format: Specified data format (e.g. JSON).
+    '''
     def get(self, request, pk, oh_pk, format=None):
 
         open_house = self.get_object(oh_pk)
         serializer = self.serializer_class(open_house)
         
         return Response(serializer.data)
-
+ 
+    ''' Handles PUT requests on Open House models.
+        Args:
+            request: The GET request.
+            pk: The user that the open house belongs to.
+            oh_pk: The primary key of the open house to update.
+            *format: Specified data format (e.g. JSON).
+    '''
     def put(self, request, pk, oh_pk, format=None):
 
         open_house = self.get_object(pk, oh_pk)
@@ -82,6 +119,13 @@ class OpenHouseDetail(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    ''' Handles DELETE requests on Open House models.
+        Args:
+            request: The GET request.
+            pk: The user that the open house belongs to.
+            oh_pk: The primary key of the open house to delete.
+            *format: Specified data format (e.g. JSON).
+    '''
     def delete(self, request, pk, oh_pk, format=None):
 
         open_house = self.get_object(pk, oh_pk)
@@ -94,24 +138,42 @@ class RSVPList(APIView):
     queryset = RSVP.objects.all()
     serializer_class = RSVPSerializer
     permission_classes = ( kproperty_permissions.RSVPListPermissions, )
- 
+  
+    ''' Gets all RSVPs to a given Open House.
+        Args:
+            oh_pk -- The primary key of the open house we're querying over.
+    '''
     def get_queryset(self, oh_pk):
 
-        open_house = OpenHouse.objects.get(pk=oh_pk)
-        queryset = open_house.rsvp_list.all()
-        return queryset, open_house
-
+        queryset = OpenHouse.objects.get(pk=oh_pk).rsvp_list.all()
+        return queryset
+    
+    ''' Handles LIST / GET requests.
+        Args:
+            request: The GET request.
+            pk: The primary key of the user we're querying over.
+            oh_pk: The primary key of the open house we're querying over.
+            *format: Specified data format.
+    '''
     def get(self, request, pk, oh_pk, format=None):
 
-        queryset, open_house = self.get_queryset(oh_pk)
+        self.check_object_permissions(self.request,
+                OpenHouse.objects.get(pk=oh_pk))
+        queryset = self.get_queryset(oh_pk)
         
-        self.check_object_permissions(self.request, open_house)
         response = []
         for rsvp in queryset:
             response.append(self.serializer_class(rsvp).data)
 
         return Response(response)
 
+    ''' Handles POST requests.
+        Args:
+            request: The POST request.
+            pk: The primary key of the user we're querying over.
+            oh_pk: The primary key of the open house we're querying over.
+            *format: Specified data format.
+    '''
     def post(self, request, pk, oh_pk, format=None):
 
         open_house = OpenHouse.objects.get(pk=oh_pk)
@@ -128,8 +190,15 @@ class RSVPDetail(APIView):
 
     queryset = RSVP.objects.all()
     serializer_class = RSVPSerializer
-    permission_classes = ( kproperty_permissions.RSVPDetailPermissions, )
+    permission_classes = ( permissions.IsAuthenticated,
+                           kproperty_permissions.RSVPDetailPermissions
+    )
 
+    ''' Return the RSVP object with the given pk. Raises an exception if
+        none exists.
+        Args:
+            rsvp_pk -- The RSVP object's primary key.
+    '''
     def get_object(self, rsvp_pk):
 
         try:
@@ -142,23 +211,29 @@ class RSVPDetail(APIView):
             dne_exc.status_code = status.HTTP_400_BAD_REQUEST
             raise dne_exc
 
+    ''' Handles GET requests on RSVP models.
+        Args:
+            request: The GET request.
+            pk: The user that the open house belongs to.
+            oh_pk: The primary key of the open house we're querying over.
+            rsvp_pk: The primary key of the RSVP we're getting.
+            *format: Specified data format (e.g. JSON).
+    '''
     def get(self, request, pk, oh_pk, rsvp_pk, format=None):
 
         rsvp = self.get_object(rsvp_pk)
         serializer = self.serializer_class(rsvp)
 
         return Response(serializer.data)
-
-    def put(self, request, pk, oh_pk, rsvp_pk, format=None):
-
-        rsvp = self.get_object(rsvp_pk)
-        serializer = self.serializer_class(rsvp, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+   
+    ''' Handles DELETE requests on RSVP models.
+        Args:
+            request: The GET request.
+            pk: The user that the open house belongs to.
+            oh_pk: The primary key of the open house we're querying over.
+            rsvp_pk: The primary key of the RSVP we're deleting
+            *format: Specified data format (e.g. JSON).
+    '''
     def delete(self, request, pk, oh_pk, rsvp_pk, format=None):
 
         rsvp = self.get_object(rsvp_pk)
