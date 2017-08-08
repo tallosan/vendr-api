@@ -1,4 +1,11 @@
+#
+# Permissions for User models & all user associated sub-models, like
+# Notifications, Chats, & Messages.
+#
+# ========================================================================
+
 from rest_framework import permissions
+
 from kuser.exceptions import BadUserRequest
 
 
@@ -28,3 +35,54 @@ class IsNotificationOwner(permissions.BasePermission):
 
         return True
 
+
+class ChatListPermissions(permissions.BasePermission):
+
+    ''' A user simply needs to prove that they are the one owning this
+        endpoint. Anyone can read or create on THEIR OWN chat list.
+        Args:
+            request -- The request object.
+            view -- The ChatList view.
+            obj -- The KUser object that owns the endpoint.
+    '''
+    def has_object_permission(self, request, view, obj):
+        
+        return request.user == obj
+
+
+class ChatDetailPermissions(permissions.BasePermission):
+
+    ''' Only chat participants can view and update an chat.
+        Args:
+            request -- The request object.
+            view -- The ChatDetail view.
+            obj -- The Chat object we're acting on.
+    '''
+    def has_object_permission(self, request, view, obj):
+        
+        # If the user is accessing a chat they're part of on another user's
+        # endpoint then we should decline their request.
+        if int(view.kwargs['pk']) != request.user.pk:
+            return False
+       
+        return request.user in obj.participants.all()
+
+
+class MessageListPermissions(permissions.BasePermission):
+    
+    ''' Only a convo participant can read, and/or create a message on
+        a chat.
+        Args:
+            request -- The request object.
+            view -- The MessageList view.
+            obj -- The Chat object we're acting on.
+    '''
+    def has_object_permission(self, request, view, obj):
+        
+        # If the user is accessing a chat they're part of on another user's
+        # endpoint then we should decline their request.
+        if int(view.kwargs['pk']) != request.user.pk:
+            return False
+
+        return request.user in obj.participants.all()
+        
