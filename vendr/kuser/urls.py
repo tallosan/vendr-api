@@ -12,5 +12,12 @@ urlpatterns = [
         url(r'^(?P<user_pk>[0-9]+)/notifications/$', views.NotificationList.as_view()),
         url(r'^(?P<user_pk>[0-9]+)/notifications/(?P<pk>[0-9a-f-]+)/$',
             views.NotificationDetail.as_view()),
+
+        # Chat views.
+        url(r'^(?P<pk>[0-9]+)/chat/$', views.ChatList.as_view()),
+        url(r'^(?P<pk>[0-9]+)/chat/(?P<chat_pk>[0-9a-f-]+)/$',
+            views.ChatDetail.as_view()),
+        url(r'^(?P<pk>[0-9]+)/chat/(?P<chat_pk>[0-9a-f-]+)/messages/$',
+            views.MessageList.as_view()),
 ]
 
