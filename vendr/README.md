@@ -211,7 +211,6 @@ BODY
 POST	http://api.vendr.xyz/v1/properties/<property_id>/openhouse/<openhouse_id>/rsvp/    (Authentication Required)
 ```
 
-
 ---
 ### Users Endpoint [POST, GET, PUT, DELETE]:
 
@@ -285,6 +284,99 @@ DELETE	http://api.vendr.xyz/v1/users/<id>/    (Authentication Required)
     }
 ]
 ```
+
+### Chat & Message Endpoint:
+
+Chat & Message objects exist as sub-models on User objects.
+To send a message, a User first creates (POST) a Chat with the intended recipient/s. Then, assuming
+this is successful, they can both start sending (POST) messages to the Chat object created.
+
+The chat flow is like this:
+
+User 0 likes a house being sold by users 1 & 3. He wants to schedule an open house with them, but
+unfortunately none are taking place during his spare time. Thus, he wants to message them to set
+something up.
+0 creates a Chat object with participants = 1, 3.
+
+Now, all 3 users have access to the created Chat.
+
+They can now send messages by posting to it, which will subsequently be readable by all participants.
+
+Any member can delete the Chat, thereby ending the conversation.
+
+
+0 creates the chat. N.B. -- The chat MUST be CREATED on the user's own
+endpoint (in this case /users/0/chat/). After this, all users will have access to the chat on their OWN respective endpoints.
+
+***Chat [POST, GET, DELETE]***
+```javascript
+BODY
+{
+	"participants": [1, 3]
+}
+
+POST	http://api.vendr.xyz/v1/users/<user_id>/chat/    (Authentication Required)
+```
+
+The Chat will look like this ...
+
+```javascript
+RESPONSE
+{
+    "participants": [
+    	0,
+        1,
+        3
+    ], 
+    "pk": "4398f64f-6aaa-47cc-9c65-b3c1daefb4d6"
+}
+
+GET	http://api.vendr.xyz/v1/users/<user_id>/chat/<chat_id>/    (Authentication Required)
+```
+
+Again, it is accessible to each participant ONLY on their respective endpoints, and all further actions (message
+creations, chat deletions, etc.) must be done there.
+
+In this case, 0 operates on .../users/0/chat/, 1 on .../users/1/chat/, and 3 on .../users/3/chat/
+
+***Message [POST, GET]***
+```javascript
+BODY
+{
+	"content": "Hey, I love the house! Any chance I could come by to check it out tomorrow?"
+}
+
+POST	http://api.vendr.xyz/v1/users/<user_id>/chat/<chat_id>/messages/    (Authentication Required)
+```
+
+A user can POST a message to a chat. These messages are now accessible to all of the chat's participants.
+
+```javascript
+RESPONSE
+{
+    {
+	"content": "Hey, I love the house! Any chance I could come by to check it out tomorrow?",
+	"pk": "19f2036f-5f6b-45a8-a582-83efda6848e8", 
+        "sender": 0, 
+        "timestamp": "2017-08-08T20:01:38.517666Z"
+    }, 
+    {
+        "content": "Of course, I'll just double check with my wife.",
+        "pk": "48b94ad9-b8ef-4442-9403-997c7fed115c", 
+        "sender": 3, 
+        "timestamp": "2017-08-08T21:47:06.996285Z"
+    },
+    {
+        "content": "Fine with me!",
+        "pk": "48b94ad9-b8ef-4442-9403-997c7fed115c", 
+        "sender": 1, 
+        "timestamp": "2017-08-08T21:47:06.996285Z"
+    }
+}
+
+GET	http://api.vendr.xyz/v1/users/<user_id>/chat/<chat_id>/messages/    (Authentication Required)
+```
+
 ---
 ### Search Endpoint [GET]:
 
