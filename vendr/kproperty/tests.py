@@ -34,8 +34,8 @@ class TestPropertyList(APITestCase):
 
         self.user = User.objects.create_user(email='test@kanga.xyz', password='test')
         
-        self.condo_path = '/v1/properties/?model=condo'
-        self.house_path = '/v1/properties/?model=house'
+        self.condo_path = '/v1/properties/?ptype=condo'
+        self.house_path = '/v1/properties/?ptype=house'
         self.condo_data = {
                             "location": {
                                 "address": "60 Brian Harrison", 
@@ -50,7 +50,7 @@ class TestPropertyList(APITestCase):
                             "n_bedrooms": 2, 
                             "price": 250000.0, 
                             "sqr_ftg": 3000.0,
-                            "floor_num": 11,
+                            "unit_num": 11,
                             "tax_records": [
                              ],
                              "history": {
@@ -62,7 +62,7 @@ class TestPropertyList(APITestCase):
                                  { "feature": "Oven" },
                                  { "feature": "Pool" }
                              ],
-                            "images": {}
+                            "images": []
         }
 
         self.house_data = {
@@ -91,7 +91,7 @@ class TestPropertyList(APITestCase):
                                 "year_built": 2007
                             },
                             "features": [],
-                            "images": {}
+                            "images": []
         }
 
     ''' POST: Create a condo model with authentication. '''
@@ -111,7 +111,7 @@ class TestPropertyList(APITestCase):
         self.assertEquals(response.data['price'], self.condo_data['price'])
 
         # Ensure that condo specific values are set propery.
-        self.assertEquals(response.data['floor_num'], self.condo_data['floor_num'])
+        self.assertEquals(response.data['unit_num'], self.condo_data['unit_num'])
 
         # Ensure that nested one-to-one values are set properly.
         self.assertEquals(response.data['location'], self.condo_data['location'])
@@ -174,13 +174,13 @@ class TestPropertyDetail(APITestCase):
         # Condo model owned by user 1.
         self.user = User.objects.create_user(email='test@kanga.xyz', password='test')
         condo = Condo.objects.create(owner=self.user,
-                n_bathrooms=1, n_bedrooms=2, price=250000, sqr_ftg=3000, floor_num=11)
+                n_bathrooms=1, n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11)
         Location.objects.create(kproperty=condo,
                 address='60 Brian Harrison', city="Toronto", country="Canada",
                 province='Ontario', postal_code='M1P0B2',
                 latitude=43.773313, longitude=-79.258729
         )
-        TaxRecord.objects.create(kproperty=condo)
+        TaxRecords.objects.create(kproperty=condo)
         Historical.objects.create(kproperty=condo,
                 last_sold_price=2000000, last_sold_date='2011-08-14',
                 year_built=2010
@@ -197,7 +197,7 @@ class TestPropertyDetail(APITestCase):
                 province='Ontario', postal_code='M230B3',
                 latitude=43.773313, longitude=-79.258729
         )
-        TaxRecord.objects.create(kproperty=house,
+        TaxRecords.objects.create(kproperty=house,
                 assessment=4250000, assessment_year=2016)
         Historical.objects.create(kproperty=house,
                 last_sold_price=3200500, last_sold_date='2012-11-03', year_built=2007)
@@ -361,4 +361,460 @@ class TestPropertyDetail(APITestCase):
         self.delete_property(user=None,
                 path=self.house_path, pid=self.house_id,
                 expected_status=status.HTTP_401_UNAUTHORIZED)
+
+
+'''   Tests on the OpenHouseList view. '''
+class TestOpenHouseList(APITestCase):
+
+    def setUp(self):
+
+        self.view = OpenHouseList.as_view()
+        self.factory = APIRequestFactory()
+        
+        # Test user.
+        self.user = User.objects.create_user(email='test@kanga.xyz', password='test')
+        self.user_a = User.objects.create(email='alt@kangaa.xyz', password='alt')
+        
+        # Condo model owned by user 1.
+        self.condo = Condo.objects.create(owner=self.user,
+                n_bathrooms=1, n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11)
+        Location.objects.create(kproperty=self.condo,
+                address='60 Brian Harrison', city="Toronto", country="Canada",
+                province='Ontario', postal_code='M1P0B2',
+                latitude=43.773313, longitude=-79.258729
+        )
+        TaxRecords.objects.create(kproperty=self.condo)
+        Historical.objects.create(kproperty=self.condo,
+                last_sold_price=2000000, last_sold_date='2011-08-14',
+                year_built=2010
+        )
+        Features.objects.create(kproperty=self.condo, feature='Oven')
+        Features.objects.create(kproperty=self.condo, feature='Pool')
+
+        # House model owned by alt user.
+        self.house = House.objects.create(owner=self.user_a,
+                n_bathrooms=3, n_bedrooms=3, price=4500000, sqr_ftg=4200)
+        Location.objects.create(kproperty=self.house,
+                address='18 Bay Street', city='Toronto', country='Canada',
+                province='Ontario', postal_code='M230B3',
+                latitude=43.773313, longitude=-79.258729
+        )
+        TaxRecords.objects.create(kproperty=self.house,
+                assessment=4250000, assessment_year=2016)
+        Historical.objects.create(kproperty=self.house,
+                last_sold_price=3200500, last_sold_date='2012-11-03', year_built=2007)
+        Features.objects.create(kproperty=self.house, feature='House Oven')
+        Features.objects.create(kproperty=self.house, feature='Spa')
+
+        self.condo_oh_path = '/v1/properties/{}/openhouses/'.format(self.condo.pk)
+        self.house_oh_path = '/v1/properties/{}/openhouses/'.format(self.house.pk)
+
+        # Open house data.
+        self.oh_data = {
+                "start": "2017-08-06T18:38:39.069638Z",
+                "end": "2017-08-06T20:38:39.069638Z"
+        }
+ 
+    ''' Ensure users can create open houses on properties they own. '''
+    def test_create_openhouse_on_owned_property(self):
+
+        request = self.factory.post(self.condo_oh_path, self.oh_data, format='json')
+        force_authenticate(request, user=self.user)
+        response = self.view(request, self.condo.pk)
+        
+        self.assertEquals(response.status_code, 201)
+        self.assertEquals(response.data['start'], self.oh_data['start'])
+        self.assertEquals(response.data['end'], self.oh_data['end'])
+
+    ''' Ensure that users cannot create opne houses on properties they don't own. '''
+    def test_create_openhouse_on_unowned_property(self):
+
+        request = self.factory.post(self.house_oh_path, self.oh_data, format='json')
+        force_authenticate(request, user=self.user)
+        response = self.view(request, self.house.pk)
+
+        self.assertEquals(response.status_code, 403)
+
+    ''' Ensure that anyone can access a property's open houses. '''
+    def test_get_openhouse_on_owned_property(self):
+
+        request = self.factory.get(self.condo_oh_path, format='json')
+        force_authenticate(request, user=self.user)
+        response = self.view(request, self.condo.pk)
+
+        self.assertEquals(response.status_code, 200)
+    
+    ''' Ensure that anyone can access a property's open houses. '''
+    def test_get_openhouse_on_unowned_property(self):
+
+        request = self.factory.get(self.house_oh_path, format='json')
+        force_authenticate(request, user=self.user)
+        response = self.view(request, self.house.pk)
+
+        self.assertEquals(response.status_code, 200)
+     
+    ''' Ensure that anonymous users cannot create open houses. '''
+    def test_anon_create_openhouse(self):
+
+        request = self.factory.post(self.house_oh_path, self.oh_data, format='json')
+        force_authenticate(request, user=None)
+        response = self.view(request, self.house.pk)
+
+        self.assertEquals(response.status_code, 401)
+
+    ''' Ensure that anonymous users can access a property's open houses. '''
+    def test_anon_get_openhouse(self):
+
+        request = self.factory.get(self.house_oh_path, format='json')
+        force_authenticate(request, user=None)
+        response = self.view(request, self.house.pk)
+
+        self.assertEquals(response.status_code, 200)
+
+
+'''   Tests on the OpenHouseDetail view. '''
+class TestOpenHouseDetail(APITestCase):
+
+    def setUp(self):
+
+        self.view = OpenHouseDetail.as_view()
+        self.factory = APIRequestFactory()
+        
+        # Test user.
+        self.user = User.objects.create_user(email='test@kanga.xyz', password='test')
+        self.user_a = User.objects.create(email='alt@kangaa.xyz', password='alt')
+        
+        # Condo model owned by user 1.
+        self.condo = Condo.objects.create(owner=self.user,
+                n_bathrooms=1, n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11)
+        Location.objects.create(kproperty=self.condo,
+                address='60 Brian Harrison', city="Toronto", country="Canada",
+                province='Ontario', postal_code='M1P0B2',
+                latitude=43.773313, longitude=-79.258729
+        )
+        TaxRecords.objects.create(kproperty=self.condo)
+        Historical.objects.create(kproperty=self.condo,
+                last_sold_price=2000000, last_sold_date='2011-08-14',
+                year_built=2010
+        )
+        Features.objects.create(kproperty=self.condo, feature='Oven')
+        Features.objects.create(kproperty=self.condo, feature='Pool')
+
+        # House model owned by alt user.
+        self.house = House.objects.create(owner=self.user_a,
+                n_bathrooms=3, n_bedrooms=3, price=4500000, sqr_ftg=4200)
+        Location.objects.create(kproperty=self.house,
+                address='18 Bay Street', city='Toronto', country='Canada',
+                province='Ontario', postal_code='M230B3',
+                latitude=43.773313, longitude=-79.258729
+        )
+        TaxRecords.objects.create(kproperty=self.house,
+                assessment=4250000, assessment_year=2016)
+        Historical.objects.create(kproperty=self.house,
+                last_sold_price=3200500, last_sold_date='2012-11-03', year_built=2007)
+        Features.objects.create(kproperty=self.house, feature='House Oven')
+        Features.objects.create(kproperty=self.house, feature='Spa')
+
+        # Open house data.
+        self.oh_data = {
+                "start": "2017-08-06T18:38:39.069638Z",
+                "end": "2017-08-06T20:38:39.069638Z"
+        }
+        self.oh_a = OpenHouse.objects.create(owner=self.user,
+                kproperty=self.condo, **self.oh_data)
+        self.oh_b = OpenHouse.objects.create(owner=self.user_a,
+                kproperty=self.house, **self.oh_data)
+        
+        self.condo_oh_path = '/v1/properties/{}/openhouse/{}/'.\
+                             format(self.condo.pk, self.oh_a.pk)
+        self.house_oh_path = '/v1/properties/{}/openhouses/{}/'.\
+                             format(self.house.pk, self.oh_b.pk)
+
+    ''' Ensure the open house owner can view their open house. '''
+    def test_get_oh_on_owned_property(self):
+        
+        request = self.factory.get(self.condo_oh_path, format='json')
+        force_authenticate(request, self.user)
+        response = self.view(request, self.condo.pk, self.oh_a.pk)
+
+        self.assertEquals(response.status_code, 200)
+        self.assertEquals(response.data['start'], self.oh_data['start'])
+        self.assertEquals(response.data['end'], self.oh_data['end'])
+
+    ''' Ensure that users can view open houses that they don't own. '''
+    def test_get_oh_on_unowned_property(self):
+        
+        request = self.factory.get(self.house_oh_path, format='json')
+        force_authenticate(request, self.user)
+        response = self.view(request, self.house.pk, self.oh_b.pk)
+
+        self.assertEquals(response.status_code, 200)
+        self.assertEquals(response.data['start'], self.oh_data['start'])
+        self.assertEquals(response.data['end'], self.oh_data['end'])
+
+    ''' Ensure that anyone can view an open house. '''
+    def test_anonymous_oh_get(self):
+        
+        request = self.factory.get(self.house_oh_path, format='json')
+        force_authenticate(request, None)
+        response = self.view(request, self.house.pk, self.oh_b.pk)
+
+        self.assertEquals(response.status_code, 200)
+        self.assertEquals(response.data['start'], self.oh_data['start'])
+        self.assertEquals(response.data['end'], self.oh_data['end'])
+
+    ''' Ensure that open house owners can update their open houses. '''
+    def test_update_on_owned_openhouse(self):
+        
+        oh_update = {'start': '2017-08-06T20:38:39.069638Z'}
+        request = self.factory.put(self.condo_oh_path, oh_update, format='json')
+        force_authenticate(request, self.user)
+        response = self.view(request, self.condo.pk, self.oh_a.pk)
+
+        self.assertEquals(response.status_code, 200)
+        self.assertEquals(response.data['start'], oh_update['start'])
+
+    ''' Ensure that users cannot update open houses they don't own. '''
+    def test_update_on_unowned_openhouse(self):
+        
+        oh_update = {'start': '2017-08-06T20:38:39.069638Z'}
+        request = self.factory.put(self.house_oh_path, oh_update, format='json')
+        force_authenticate(request, self.user)
+        response = self.view(request, self.house.pk, self.oh_b.pk)
+
+        self.assertEquals(response.status_code, 403)
+
+    ''' Ensure that anonymous users cannot update open houses. '''
+    def test_anon_openhouse_update(self):
+        
+        oh_update = {'start': '2017-08-06T20:38:39.069638Z'}
+        request = self.factory.put(self.house_oh_path, oh_update, format='json')
+        force_authenticate(request, None)
+        response = self.view(request, self.house.pk, self.oh_b.pk)
+
+        self.assertEquals(response.status_code, 401)
+
+    ''' Ensure open house owners can delete their own open house. '''
+    def test_delete_on_owned_openhouse(self):
+        
+        request = self.factory.delete(self.condo_oh_path, format='json')
+        force_authenticate(request, self.user)
+        response = self.view(request, self.condo.pk, self.oh_a.pk)
+
+        self.assertEquals(response.status_code, 204)
+
+    ''' Ensure that users cannot delete open houses that they do not own. '''
+    def test_delete_on_unowned_openhouse(self):
+        
+        request = self.factory.delete(self.house_oh_path, format='json')
+        force_authenticate(request, self.user)
+        response = self.view(request, self.house.pk, self.oh_b.pk)
+
+        self.assertEquals(response.status_code, 403)
+
+    ''' Ensure that anonymous users cannot delete open houses. '''
+    def test_anon_openhouse_delete(self):
+        
+        request = self.factory.delete(self.house_oh_path, format='json')
+        force_authenticate(request, None)
+        response = self.view(request, self.house.pk, self.oh_b.pk)
+
+        self.assertEquals(response.status_code, 401)
+
+
+'''   Tests on the RSVPList view. '''
+class TestRSVPList(APITestCase):
+
+    def setUp(self):
+
+        self.view = RSVPList.as_view()
+        self.factory = APIRequestFactory()
+        
+        # Test user.
+        self.user = User.objects.create_user(email='test@kanga.xyz', password='test')
+        self.user_a = User.objects.create(email='alt@kangaa.xyz', password='alt')
+        
+        # Create a property
+        self.condo = Condo.objects.create(owner=self.user,
+                n_bathrooms=1, n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11)
+        Location.objects.create(kproperty=self.condo,
+                address='60 Brian Harrison', city="Toronto", country="Canada",
+                province='Ontario', postal_code='M1P0B2',
+                latitude=43.773313, longitude=-79.258729
+        )
+        TaxRecords.objects.create(kproperty=self.condo)
+        Historical.objects.create(kproperty=self.condo,
+                last_sold_price=2000000, last_sold_date='2011-08-14',
+                year_built=2010
+        )
+        Features.objects.create(kproperty=self.condo, feature='Oven')
+        Features.objects.create(kproperty=self.condo, feature='Pool')
+        
+        # Open house data.
+        self.oh_data = {
+                "start": "2017-08-06T18:38:39.069638Z",
+                "end": "2017-08-06T20:38:39.069638Z"
+        }
+        self.oh_a = OpenHouse.objects.create(owner=self.user,
+                kproperty=self.condo, **self.oh_data)
+
+        self.rsvp_data = {}
+        self.rsvp_path = '/v1/properties/{}/openhouse/{}/rsvp/'.\
+                             format(self.condo.pk, self.oh_a.pk)
+
+    ''' Ensure that open house owners cannot RSVP to their own event. '''
+    def test_create_rsvp_on_owned_property(self):
+
+        request = self.factory.post(self.rsvp_path, self.rsvp_data, format='json')
+        force_authenticate(request, self.user)
+        response = self.view(request, self.condo.pk, self.oh_a.pk)
+
+        self.assertEquals(response.status_code, 403)
+
+    ''' Ensure that users can RSVP to other open houses. '''
+    def test_create_rsvp_on_unowned_property(self):
+
+        request = self.factory.post(self.rsvp_path, self.rsvp_data, format='json')
+        force_authenticate(request, self.user_a)
+        response = self.view(request, self.condo.pk, self.oh_a.pk)
+        self.assertEquals(response.status_code, 201)
+
+    ''' Ensure that anonymous users cannot RSVP to their own event. '''
+    def test_anon_rsvp_create(self):
+
+        request = self.factory.post(self.rsvp_path, self.rsvp_data, format='json')
+        force_authenticate(request, None)
+        response = self.view(request, self.condo.pk, self.oh_a.pk)
+
+        self.assertEquals(response.status_code, 401)
+
+    ''' Ensure the open house owner can view their open house. '''
+    def test_get_rsvp_list_on_owned_property(self):
+        
+        request = self.factory.get(self.rsvp_path, format='json')
+        force_authenticate(request, self.user)
+        response = self.view(request, self.condo.pk, self.oh_a.pk)
+        
+        self.assertEquals(response.status_code, 200)
+    
+    ''' Ensure that users cannot view RSVP lists on open houses they don't own. '''
+    def test_get_rsvp_list_on_unowned_property(self):
+        
+        request = self.factory.get(self.rsvp_path, format='json')
+        force_authenticate(request, self.user_a)
+        response = self.view(request, self.condo.pk, self.oh_a.pk)
+        
+        self.assertEquals(response.status_code, 403)
+
+    ''' Ensure that anonymous users cannot access RSVP lists. '''
+    def test_get_rsvp_list(self):
+        
+        request = self.factory.get(self.rsvp_path, format='json')
+        force_authenticate(request, None)
+        response = self.view(request, self.condo.pk, self.oh_a.pk)
+        
+        self.assertEquals(response.status_code, 401)
+
+
+'''   Tests on the RSVPDetail view. '''
+class TestRSVPDetail(APITestCase):
+
+    def setUp(self):
+
+        self.view = RSVPDetail.as_view()
+        self.factory = APIRequestFactory()
+        
+        # Test user.
+        self.user = User.objects.create_user(email='test@kanga.xyz', password='test')
+        self.user_a = User.objects.create(email='alt@kangaa.xyz', password='alt')
+        
+        # Create a property
+        self.condo = Condo.objects.create(owner=self.user,
+                n_bathrooms=1, n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11)
+        Location.objects.create(kproperty=self.condo,
+                address='60 Brian Harrison', city="Toronto", country="Canada",
+                province='Ontario', postal_code='M1P0B2',
+                latitude=43.773313, longitude=-79.258729
+        )
+        TaxRecords.objects.create(kproperty=self.condo)
+        Historical.objects.create(kproperty=self.condo,
+                last_sold_price=2000000, last_sold_date='2011-08-14',
+                year_built=2010
+        )
+        Features.objects.create(kproperty=self.condo, feature='Oven')
+        Features.objects.create(kproperty=self.condo, feature='Pool')
+        
+        # Open house data.
+        self.oh_data = {
+                "start": "2017-08-06T18:38:39.069638Z",
+                "end": "2017-08-06T20:38:39.069638Z"
+        }
+        self.oh_a = OpenHouse.objects.create(owner=self.user,
+                kproperty=self.condo, **self.oh_data)
+
+        self.rsvp = RSVP.objects.create(open_house=self.oh_a, owner=self.user_a)
+        self.rsvp_path = '/v1/properties/{}/openhouse/{}/rsvp/{}/'.\
+                         format(self.condo.pk, self.oh_a.pk, self.rsvp.pk)
+
+    ''' Ensure that open house owners can view any RSVP on their event. '''
+    def test_get_on_unowned_rsvp_on_owned_open_house(self):
+
+        request = self.factory.get(self.rsvp_path, format='json')
+        force_authenticate(request, self.user)
+        response = self.view(request, self.condo.pk, self.oh_a.pk, self.rsvp.pk)
+        
+        self.assertEquals(response.status_code, 200)
+
+    ''' Ensure that users can view their own RSVPs. '''
+    def test_get_on_owned_rsvp_on_unowned_open_house(self):
+
+        request = self.factory.get(self.rsvp_path, format='json')
+        force_authenticate(request, self.user_a)
+        response = self.view(request, self.condo.pk, self.oh_a.pk, self.rsvp.pk)
+
+        self.assertEquals(response.status_code, 200)
+
+    ''' Ensure that anonymous users cannot view any RSVPs. '''
+    def test_get_on_owned_rsvp_on_unowned_open_house(self):
+
+        request = self.factory.get(self.rsvp_path, format='json')
+        force_authenticate(request, None)
+        response = self.view(request, self.condo.pk, self.oh_a.pk, self.rsvp.pk)
+
+        self.assertEquals(response.status_code, 401)
+
+    ''' Ensure that updates are not allowed on this endpoint. '''
+    def test_update_on_rsvp(self):
+
+        request = self.factory.put(self.rsvp_path, {}, format='json')
+        for user in [self.user, self.user_a, None]:
+            force_authenticate(request, user)
+            response = self.view(request, self.condo.pk, self.oh_a.pk, self.rsvp.pk)
+
+    ''' Ensure that open house owners can delete any RSVP on their event. '''
+    def test_delete_on_unowned_rsvp_on_owned_open_house(self):
+
+        request = self.factory.delete(self.rsvp_path, format='json')
+        force_authenticate(request, self.user)
+        response = self.view(request, self.condo.pk, self.oh_a.pk, self.rsvp.pk)
+        
+        self.assertEquals(response.status_code, 204)
+
+    ''' Ensure that users can delete their own RSVPs. '''
+    def test_delete_on_owned_rsvp_on_unowned_open_house(self):
+
+        request = self.factory.delete(self.rsvp_path, format='json')
+        force_authenticate(request, self.user_a)
+        response = self.view(request, self.condo.pk, self.oh_a.pk, self.rsvp.pk)
+
+        self.assertEquals(response.status_code, 204)
+
+    ''' Ensure that anonymous users cannot delete any RSVPs. '''
+    def test_get_on_owned_rsvp_on_unowned_open_house(self):
+
+        request = self.factory.delete(self.rsvp_path, format='json')
+        force_authenticate(request, None)
+        response = self.view(request, self.condo.pk, self.oh_a.pk, self.rsvp.pk)
+
+        self.assertEquals(response.status_code, 401)
 
