@@ -68,10 +68,9 @@ class RSVPListPermissions(permissions.BasePermission):
 class RSVPDetailPermissions(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj):
-        
-        if request.method in permissions.SAFE_METHODS:
-            return True
 
-        user = request.user; rsvp_owner = obj.owner
-        return user == rsvp_owner
+        user = request.user
+        open_house_owner = obj.open_house.owner; rsvp_owner = obj.owner
+        
+        return (user == rsvp_owner) or (user == open_house_owner)
 
