@@ -197,7 +197,7 @@ BODY
 	"end": "2017-08-06T20:38:39.069638Z"
 }
 
-POST	http://api.vendr.xyz/v1/properties/<property_id>/openhouse/    (Authentication Required)
+POST	http://api.vendr.xyz/v1/properties/<property_id>/openhouses/    (Authentication Required)
 ```
 
 Buyers -- RSVP to an Open House.
@@ -208,7 +208,7 @@ BODY
 
 }
 
-POST	http://api.vendr.xyz/v1/properties/<property_id>/openhouse/<openhouse_id>/rsvp/    (Authentication Required)
+POST	http://api.vendr.xyz/v1/properties/<property_id>/openhouses/<openhouse_id>/rsvp/    (Authentication Required)
 ```
 
 ---
