@@ -101,9 +101,9 @@ class PropertySerializer(serializers.ModelSerializer):
         for term in validated_data.keys():
             target_data = validated_data.pop(term)
             target      = getattr(instance, term)
-
+            
             # Unique Foreign Key model (i.e. one-to-one relation).
-            if type(target_data).__name__ == 'OrderedDict':
+            if type(target_data).__name__ in ['OrderedDict', 'dict']:
                 for field in target_data.keys():
                     setattr(target, field, target_data[field])
                 
