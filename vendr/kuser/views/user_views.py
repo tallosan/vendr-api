@@ -31,7 +31,8 @@ class UserList(APIView):
         response = []
         
         # Paginate the queryset if necessary.
-        for user in self.paginate_queryset(User.objects.all()):
+        #for user in self.paginate_queryset(User.objects.all()):
+        for user in User.objects.all():
             response.append(self.serializer_class(user, context={'request': request}).data)
 
         return Response(response)
