@@ -33,9 +33,12 @@ class OpenHouseDetailPermissions(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
 
         user = request.user; open_house_owner = obj.owner
+
+        if request.method in permissions.SAFE_METHODS:
+            return True
         
         # Ensure the user is the open house owner.
-        if request.method in ['GET', 'PUT', 'DELETE']:
+        elif request.method in ['PUT', 'DELETE']:
             return request.user == open_house_owner
 
 
