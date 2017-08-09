@@ -16,9 +16,7 @@ class OpenHouseList(APIView):
     
     queryset = OpenHouse.objects.all()
     serializer_class = OpenHouseSerializer
-    permission_classes = ( permissions.IsAuthenticated,
-                           kproperty_permissions.OpenHouseListPermissions
-    )
+    permission_classes = ( kproperty_permissions.OpenHouseListPermissions, )
 
     ''' Gets all Open Houses that a given user has created.
         Args:
@@ -110,7 +108,7 @@ class OpenHouseDetail(APIView):
     '''
     def put(self, request, pk, oh_pk, format=None):
 
-        open_house = self.get_object(pk, oh_pk)
+        open_house = self.get_object(oh_pk)
  
         serializer = self.serializer_class(open_house, data=request.data, partial=True)
         if serializer.is_valid():
@@ -128,7 +126,7 @@ class OpenHouseDetail(APIView):
     '''
     def delete(self, request, pk, oh_pk, format=None):
 
-        open_house = self.get_object(pk, oh_pk)
+        open_house = self.get_object(oh_pk)
         open_house.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -137,8 +135,10 @@ class RSVPList(APIView):
 
     queryset = RSVP.objects.all()
     serializer_class = RSVPSerializer
-    permission_classes = ( kproperty_permissions.RSVPListPermissions, )
-  
+    permission_classes = ( permissions.IsAuthenticated, 
+                           kproperty_permissions.RSVPListPermissions
+    )
+
     ''' Gets all RSVPs to a given Open House.
         Args:
             oh_pk -- The primary key of the open house we're querying over.
