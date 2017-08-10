@@ -14,7 +14,7 @@ User = get_user_model()
 
 
 '''   Tests for SearchList() view. '''
-class TestUserList(APITestCase):
+class TestPropertySearchList(APITestCase):
 
     def setUp(self):
         
@@ -24,13 +24,13 @@ class TestUserList(APITestCase):
         # Owner: self.user. Condo Model 0.
         self.user = User.objects.create_user(email='test@kanga.xyz', password='test')
         self.user_condo_0 = Condo.objects.create(owner=self.user,
-                n_bathrooms=4, n_bedrooms=4, price=250000, sqr_ftg=3000, floor_num=11)
+                n_bathrooms=4, n_bedrooms=4, price=250000, sqr_ftg=3000, unit_num=11)
         Location.objects.create(kproperty=self.user_condo_0,
-                address='60 Brian Harrison', city="Toronto", country="Canada",
+                address='Robarts', city="Toronto", country="Canada",
                 province='Ontario', postal_code='M1P0B2',
-                latitude=43.773313, longitude=-79.258729
+                latitude=43.664486, longitude=-79.399689
         )
-        TaxRecord.objects.create(kproperty=self.user_condo_0,
+        TaxRecords.objects.create(kproperty=self.user_condo_0,
                 assessment=4250000, assessment_year=2016)
         Historical.objects.create(kproperty=self.user_condo_0,
                 last_sold_price=2000000, last_sold_date='2011-08-14',
@@ -41,13 +41,13 @@ class TestUserList(APITestCase):
 
         # Owner: self.user. Condo Model 1.
         self.user_condo_1 = Condo.objects.create(owner=self.user,
-                n_bathrooms=4, n_bedrooms=4, price=10500000, sqr_ftg=8000, floor_num=100)
+                n_bathrooms=4, n_bedrooms=4, price=10500000, sqr_ftg=8000, unit_num=100)
         Location.objects.create(kproperty=self.user_condo_1,
                 address='CN Tower', city="Toronto", country="Canada",
                 province='Ontario', postal_code='M1P0B2',
                 latitude=43.773313, longitude=-79.258729
         )
-        TaxRecord.objects.create(kproperty=self.user_condo_1)
+        TaxRecords.objects.create(kproperty=self.user_condo_1)
         Historical.objects.create(kproperty=self.user_condo_1,
                 last_sold_price=9500000, last_sold_date='2011-08-14',
                 year_built=2010
@@ -63,7 +63,7 @@ class TestUserList(APITestCase):
                 province='Ontario', postal_code='M230B3',
                 latitude=43.773313, longitude=-79.258729
         )
-        TaxRecord.objects.create(kproperty=self.user_house_0,
+        TaxRecords.objects.create(kproperty=self.user_house_0,
                 assessment=4250000, assessment_year=2016)
         Historical.objects.create(kproperty=self.user_house_0,
                 last_sold_price=3200500, last_sold_date='2012-11-03', year_built=2007)
@@ -79,19 +79,20 @@ class TestUserList(APITestCase):
                 province='Ontario', postal_code='M230B3',
                 latitude=43.773313, longitude=-79.258729
         )
-        TaxRecord.objects.create(kproperty=self.user_a_house_0,
+        TaxRecords.objects.create(kproperty=self.user_a_house_0,
                 assessment=4250000, assessment_year=2016)
         Historical.objects.create(kproperty=self.user_a_house_0,
                 last_sold_price=3200500, last_sold_date='2012-11-03', year_built=2007)
         Features.objects.create(kproperty=self.user_a_house_0, feature='House Oven')
         Features.objects.create(kproperty=self.user_a_house_0, feature='Spa') 
         
-        self.path = '/v1/search/?type=property'
+        self.path = '/v1/search?stype=property'
 
     ''' (Helper Function) Search for a property with the given filters. '''
     def search_property(self, filters):
-    
-	request = self.factory.get(self.path + filters, format='json')
+	
+        request = self.factory.get(self.path + filters, format='json')
+        request.GET._mutable = True; request.GET.pop('stype')[0]
         force_authenticate(self.view)
         response = self.view(request)
         
@@ -139,6 +140,7 @@ class TestUserList(APITestCase):
 	
 	filters = '&penguins=0'
     	request = self.factory.get(self.path + filters, format='json')
+        request.GET._mutable = True; request.GET.pop('stype')[0]
         force_authenticate(self.view)
         response = self.view(request)
         
@@ -184,6 +186,7 @@ class TestUserList(APITestCase):
 	
 	filters = '&penguins__count=0'
     	request = self.factory.get(self.path + filters, format='json')
+        request.GET._mutable = True; request.GET.pop('stype')[0]
         force_authenticate(self.view)
         response = self.view(request)
         
@@ -231,4 +234,28 @@ class TestUserList(APITestCase):
             self.assertGreater(kproperty['n_bathrooms'], 1)
 	    self.assertGreater(kproperty['history']['year_built'], 2007)
 	    self.assertLess(kproperty['history']['last_sold_price'], 500000)
+
+    ''' Test a standard Geo query. '''
+    def test_standard_geoquery(self):
+
+        filters = '&ne_lat=43.66710833569532&ne_lng=-79.39544247525657&sw_lat=43.65322290778837&sw_lng=-79.4123940362307'
+        data = self.search_property(filters=filters)
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]['location']['address'], 'Robarts')
+    
+    ''' Test a Geo query chained with a standard filter. '''
+    def test_multiple_standard_geoquery(self):
+
+        filters = '&ne_lat=43.66710833569532&ne_lng=-79.39544247525657&sw_lat=43.65322290778837&sw_lng=-79.4123940362307&price__gt=0'
+        data = self.search_property(filters=filters)
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]['location']['address'], 'Robarts')
+    
+    ''' Test a Geo query with a nested value. '''
+    def test_nested_standard_geoquery(self):
+
+        filters = '&ne_lat=43.66710833569532&ne_lng=-79.39544247525657&sw_lat=43.65322290778837&sw_lng=-79.4123940362307&location__address=Robarts'
+        data = self.search_property(filters=filters)
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]['location']['address'], 'Robarts')
 
