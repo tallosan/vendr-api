@@ -13,7 +13,7 @@ const REDIS_NOTIFICATION_CHANNEL = 'notifications.*';
 const REDIS_MESSAGES_CHANNEL = 'users.[0-9]+.inbox';
 
 const BASE_AUTH_URL = 'http://api.vendr.xyz/v1/users/'
-const BASE_AUTH_END = '/notifications/ws_auth/'
+const BASE_AUTH_END = '/ws_auth/'
 
 // Setup socket.io server.
 var app	= require('express')()
@@ -46,7 +46,6 @@ function authenticate(token, pk) {
 			resolve(response.statusCode);
 		});
 	});
-
 }
 
 /* Handle incoming websocket connections. */
