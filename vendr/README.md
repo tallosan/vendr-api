@@ -1,5 +1,3 @@
-PI
-
 ```javascript
 BASE_URL = api.vendr.xyz/v1/
 ```
