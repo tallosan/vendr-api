@@ -90,8 +90,7 @@ def handler(sender, instance, **kwargs):
     # Publish to our Redis server iff a notification was created.
     if not notification: return
 
-    channel = 'notifications.{}.{}'.format(notification.recipient.pk,
-                notification.recipient.email)
+    channel = 'users.{}.notifications'.format(notification.recipient.pk)
     notification_json = json.dumps(notification.serialized)
     r = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0)
     r.publish(channel, notification_json)

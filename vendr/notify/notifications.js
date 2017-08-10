@@ -9,7 +9,7 @@ const REDIS_SERVER = 'localhost';
 const REDIS_PORT = 9200;
 
 // Our live channels cover both notifications, and messages.
-const REDIS_NOTIFICATION_CHANNEL = 'notifications.*';
+const REDIS_NOTIFICATION_CHANNEL = 'users.[0-9]+.notifications';
 const REDIS_MESSAGES_CHANNEL = 'users.[0-9]+.inbox';
 
 const BASE_AUTH_URL = 'http://api.vendr.xyz/v1/users/'

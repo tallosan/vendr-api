@@ -12,7 +12,7 @@
  * */
 
 var io = require('socket.io-client');
-var notifications_channel = 'notifications.' + USER_PK + '.' + USER_EMAIL;
+var notifications_channel = 'users.' + USER_PK + '.notifications';
 // var inbox_channel = 'users.' + USER_PK + '.inbox';
 
 var token = OAUTH_TOKEN;
@@ -26,7 +26,6 @@ var ws_config = {
 		'Authorization': 'Bearer ' + token,
 		'pk': pk
 	}
-
 };
 
 var socket = io.connect('http://notify.vendr.xyz', ws_config);
