@@ -1,4 +1,4 @@
-# Vendr API
+PI
 
 ```javascript
 BASE_URL = api.vendr.xyz/v1/
@@ -285,6 +285,30 @@ DELETE	http://api.vendr.xyz/v1/users/<id>/    (Authentication Required)
 ]
 ```
 
+### Notifications Endpoint [GET/LIST, PUT]:
+
+Notification objects exist as sub-models on User objects.
+These objects are created in response to events on other models in the system, but NEVER directly
+by a user.
+
+The only change a user can make is to the **is_viewed** field, which indictates whether
+or not a user has seen the notification.
+
+```javascript
+RESPONSE
+{
+	'transaction': 'e2f48a7a-af03-4254-86e0-0e0686294798',
+	'description': u'stone has sent you a new offer on your property 3000 Victoria Park Ave.',
+	'offer': '4427a4df-153e-4159-8e6f-ba48e7356f66',
+	'timestamp': u'2017-08-09T13:40:49.401360Z', 
+	'is_viewed': False,
+	'recipient': 2,
+	'id': 'cfbe6be2-0952-4edf-a775-83e84aafe764'
+}
+
+GET	http://api.vendr.xyz/v1/users/<user_id>/    (Authentication Required)
+```
+
 ### Chat & Message Endpoint:
 
 Chat & Message objects exist as sub-models on User objects.
@@ -375,6 +399,30 @@ RESPONSE
 }
 
 GET	http://api.vendr.xyz/v1/users/<user_id>/chat/<chat_id>/messages/    (Authentication Required)
+```
+
+### Live Endpoints -- Notifications, Messages [GET]:
+
+The Vendr API also allows for live updates. These updates exist on the following subdomain:
+
+```javascript
+BASE_URL = notify.vendr.xyz/
+```
+
+To access them, you will need to establish a websocket connection using Socket.IO.
+
+An example client can be found [here](https://github.com/tallosan/vendr-api/blob/master/vendr/notify/test_client.js)
+
+Currently our API supports live updates for notifications and messages.
+
+These endpoints are documented below. Note, a user will need to suppy their OAuth token (just like with any other resource) in order to connect. This is demonstrated in the test client linked above.
+
+
+```javascript
+Resource:	URL:				Channel:
+
+Notifications	http://notify.vendr.xyz/	users.<user_pk>.notifications    (Authentication Required)
+Messages	http://notify.vendr.xyz/	users.<user_pk>.inbox    	 (Authentication Required)
 ```
 
 ---
