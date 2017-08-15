@@ -36,7 +36,7 @@ class Message(models.Model):
     ''' A minimal message representation used for instant message alerts. '''
     @property
     def alert(self):
-        return { 'sender': self.sender, 'content': self.content }
+        return { 'chat': self.chat.pk, 'content': self.content }
 
     ''' There are two behaviors we need to enforce on message saves:
         1. Immutability (i.e. prevent any edits).
