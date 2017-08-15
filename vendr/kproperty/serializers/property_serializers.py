@@ -76,11 +76,11 @@ class PropertySerializer(serializers.ModelSerializer):
             
             #TODO: Condense this into just a for-loop.
             # Create a one-to-one model [e.g Location].
-            if type(data).__name__ == 'OrderedDict':
+            if issubclass(data.__class__, dict):
                 fkey_class.objects.create(kproperty=kproperty, **data)
             
             # Create multiple foreign key models [e.g Feature set].
-            elif type(data).__name__ == 'list':
+            elif issubclass(data.__class__, list):
                 for ins_data in data:
                     fkey_class.objects.create(kproperty=kproperty, **ins_data)
 
@@ -103,14 +103,14 @@ class PropertySerializer(serializers.ModelSerializer):
             target      = getattr(instance, term)
             
             # Unique Foreign Key model (i.e. one-to-one relation).
-            if type(target_data).__name__ in ['OrderedDict', 'dict']:
+            if issubclass(target_data.__class__, dict):
                 for field in target_data.keys():
                     setattr(target, field, target_data[field])
                 
                 target.save()
             
             # Nested Foreign Key models (i.e. one-to-many relation).
-            elif type(target_data).__name__ == 'list':
+            elif issubclass(target_data.__class__, list):
                 
                 # If we're given an empty list, we assume that the foreign keys should
                 # be deleted.
