@@ -19,26 +19,7 @@ class MessageSerializer(serializers.ModelSerializer):
         fields = ('pk', 'sender', 'content', 'timestamp')
 
 
-class ChatUserSerializer(serializers.RelatedField):
-    
-    ''' Custom representation of a User. For chat we only need the user's
-        pk & their profile pic URL.
-        Args:
-            instance -- The user to be serialized.
-    '''
-    def to_representation(self, instance):
-        
-        kuser = {
-                    'user_pk': instance.pk,
-                    'prof_pic': instance.profile.prof_pic.name
-        }
-
-        return kuser
-
-
 class ChatSerializer(serializers.ModelSerializer):
-    
-    participants = ChatUserSerializer(many=True, read_only=True)
     
     class Meta:
         model = Chat
@@ -54,3 +35,23 @@ class ChatSerializer(serializers.ModelSerializer):
             chat.participants.add(participant)
 
         return chat
+    
+    ''' Custom representation of a Chat. We want to serialize the user's
+        profile pic in addition to their pk.
+        Args:
+            instance -- The chat to be serialized.
+    '''
+    def to_representation(self, instance):
+        
+        chat = super(ChatSerializer, self).to_representation(instance)
+        
+        participants = []
+        for participant in instance.participants.all():
+            participants.append({
+                        'user_pk': participant.pk,
+                        'prof_pic': participant.profile.prof_pic.name
+            })
+
+        chat['participants'] = participants
+        return chat
+
