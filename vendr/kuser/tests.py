@@ -166,9 +166,9 @@ class TestChatList(APITestCase):
         self.factory = APIRequestFactory()
 
         # Create users.
-        self.user_a = User.objects.create(email='sender@vendr.xyz',
+        self.user_a = User.objects.create_user(email='sender@vendr.xyz',
                 password='sender')
-        self.user_b = User.objects.create(email='recipient@vendr.xyz',
+        self.user_b = User.objects.create_user(email='recipient@vendr.xyz',
                 password='recipient')
         self.chat_data = { 'participants': [self.user_b.pk] }
  
@@ -200,9 +200,14 @@ class TestChatList(APITestCase):
         force_authenticate(request, user=self.user_a)
         response = self.view(request, self.user_a.pk)
 
-        self.assertEquals(response.data[0]['pk'], chat_data['pk'])
-        self.assertEquals(response.data[0]['participants'],
-                chat_data['participants'])
+        chat_response = {
+                'pk': chat_data['pk'],
+                'participants': [
+                     {'user_pk': self.user_a.pk, 'prof_pic': u''},
+                     {'user_pk': self.user_b.pk, 'prof_pic': u''}
+                 ]
+        }
+        self.assertEquals(response.data[0], chat_response)
 
     ''' Ensure sender is included in participants implicitly. '''
     def test_sender_included_in_participants(self):
@@ -211,22 +216,23 @@ class TestChatList(APITestCase):
         force_authenticate(request, user=self.user_a)
         response = self.view(request, self.user_a.pk)
 
-        self.assertItemsEqual(response.data['participants'],
-                [self.user_a.pk, self.user_b.pk])
+        pks = [participant['user_pk'] for participant in response.data['participants']]
+        self.assertItemsEqual(pks, [self.user_a.pk, self.user_b.pk])
 
     ''' Ensure all desired participants are included. '''
-    def test_participants(self):
+    def test_all_participants(self):
 
         request = self.factory.post(self.path_a, self.chat_data, format='json')
         force_authenticate(request, user=self.user_a)
         response = self.view(request, self.user_a.pk)
         
+        pks = [participant['user_pk'] for participant in response.data['participants']]
+        
         # Ensure our recipient is included.
-        self.assertItemsEqual(response.data['participants'],
-                [self.user_a.pk, self.user_b.pk])
+        self.assertItemsEqual(pks, [self.user_a.pk, self.user_b.pk])
         
         # Ensure only our sender and recipient are included.
-        self.assertEqual(len(response.data['participants']), 2)
+        self.assertEqual(len(pks), 2)
 
     ''' Create a chat with another user on their endpoint. This should fail
         as all chat related activities must be performed on a user's own
@@ -264,9 +270,9 @@ class TestChatDetail(APITestCase):
         self.factory = APIRequestFactory()
 
         # Create users.
-        self.user_a = User.objects.create(email='sender@vendr.xyz',
+        self.user_a = User.objects.create_user(email='sender@vendr.xyz',
                 password='sender')
-        self.user_b = User.objects.create(email='recipient@vendr.xyz',
+        self.user_b = User.objects.create_user(email='recipient@vendr.xyz',
                 password='recipient')
  
         # Create our Chat.
@@ -306,9 +312,9 @@ class TestMessageList(APITestCase):
         self.factory = APIRequestFactory()
 
         # Create users.
-        self.user_a = User.objects.create(email='sender@vendr.xyz',
+        self.user_a = User.objects.create_user(email='sender@vendr.xyz',
                 password='sender')
-        self.user_b = User.objects.create(email='recipient@vendr.xyz',
+        self.user_b = User.objects.create_user(email='recipient@vendr.xyz',
                 password='recipient')
  
         # Create our Chat.
