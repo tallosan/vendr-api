@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import re
+import uuid
 
 from django.db import models
 from django.conf import settings
@@ -75,7 +76,7 @@ class KUser(AbstractBaseUser, PermissionsMixin):
     is_admin  = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     join_date = models.DateTimeField(auto_now_add=True)
-
+    
     favourites = ArrayField(models.IntegerField(blank=True), default=[])
 
     USERNAME_FIELD  = 'email'
@@ -116,10 +117,11 @@ class KUser(AbstractBaseUser, PermissionsMixin):
 ''' (Helper) Generates a file name for a user's profile pic. '''
 def prof_pic_file_name(instance, filename):
 
-    BASE_URL = 'users/prof_pic/'
-    ID = instance.kuser.pk
+    BASE_URL = 'users/prof_pics/'
+    ID       = str(uuid.uuid4())
 
     return BASE_URL + ID
+
 
 '''   Profile model for user. '''
 class Profile(models.Model):
@@ -131,11 +133,8 @@ class Profile(models.Model):
     last_name  = models.CharField(max_length=25, blank=True)
     bio        = models.CharField(max_length=250, blank=True)
     location   = models.CharField(max_length=50, blank=True)
-    
-    prof_pic        = models.ImageField(upload_to='profiles/',
-                    default='profiles/default.svg', blank=True)
-    ''''prof_pic   = models.ImageField(upload_to=prof_pic_file_name, 
-                        storage=VendrMediaStorage(), max_length=150,
-                        blank=True, null=True
+    prof_pic   = models.ImageField(upload_to=prof_pic_file_name, 
+                    storage=VendrMediaStorage(), max_length=150,
+                    blank=True, null=True
     )
-    '''
+
