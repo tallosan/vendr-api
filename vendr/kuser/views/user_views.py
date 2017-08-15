@@ -48,7 +48,7 @@ class UserList(APIView):
             user_exists_exc.status_code = status.HTTP_400_BAD_REQUEST
             raise user_exists_exc
 
-        serializer = self.serializer_class(data=request.data)
+        serializer = self.serializer_class(data=request.data, context=request.FILES)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -126,9 +126,10 @@ class UserDetail(APIView):
             *format: Specified data format (e.g. JSON).
     '''
     def put(self, request, pk, format=None):
-
+        
         kuser      = self.get_object(pk=pk)
-        serializer = self.serializer_class(kuser, data=request.data, partial=True)
+        serializer = self.serializer_class(kuser, data=request.data,
+                        context=request.FILES, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)

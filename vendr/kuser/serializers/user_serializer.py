@@ -14,7 +14,7 @@ User = get_user_model()
 '''   Serializer for Profile models. '''
 class ProfileSerializer(serializers.ModelSerializer):
 
-    prof_pic = serializers.ImageField(use_url=True, required=False)
+    prof_pic = serializers.ReadOnlyField(source='prof_pic.name')
     
     class Meta:
         model   = Profile
@@ -42,7 +42,7 @@ class UserSerializer(serializers.ModelSerializer):
     
     class Meta:
         model   = KUser
-        fields  = ('id', #'href',
+        fields  = ('id',
                    'email', 'password',
                    'profile',
                    'properties',
@@ -64,6 +64,7 @@ class UserSerializer(serializers.ModelSerializer):
         # Create the user profile if any data is given.
         try:
             prof = validated_data.pop('profile')
+            if self.context: validated_data.update(self.get_file_data())
             for key in prof.keys():
                 setattr(kuser.profile, key, prof.pop(key))
             
@@ -80,15 +81,19 @@ class UserSerializer(serializers.ModelSerializer):
     '''
     def update(self, instance, validated_data):
         
+        # Files are passed through the context.
+        if self.context:
+            validated_data.update(self.get_file_data())
+
         for term in validated_data.keys():
             target_data = validated_data.pop(term)
             target = getattr(instance, term)
-                      
+            
             # One-to-one relation update.
-            if type(target_data).__name__ == 'OrderedDict':
+            if issubclass(target_data.__class__, dict):
                 for field in target_data.keys():
                     setattr(target, field, target_data[field])
-
+                
                 target.save()
             
             # Handle password updates.
@@ -103,6 +108,16 @@ class UserSerializer(serializers.ModelSerializer):
 
         return instance
 
+    ''' Get file objects from the context. N.B. -- only the Profile object
+        contains a file (image) field.
+    '''
+    def get_file_data(self):
+
+        file_data = { 'profile': {} }
+        for file_key in self.context.keys():
+            file_data['profile'][file_key] = self.context[file_key]
+
+        return file_data
 
     ''' User representation. Returns the transaction data, with the incoming
         and outgoing transactions separated.
