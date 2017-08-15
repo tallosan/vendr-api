@@ -237,7 +237,24 @@ POST	http://api.vendr.xyz/v1/users/
 
 **GET, UPDATE, DELETE**:
 
-Get, Update, or Delete the property object with the given ID.
+Get, Update, or Delete the user object with the given ID.
+
+*Updating Image Fields*:
+
+We're using multipart/form-data encoding for images, and unfortunately nested updates are
+not supported. This is problematic here, as a user's profile pic is stored on their nested
+Profile model. The following workaround solves this problem:
+
+To update a file / image field, you ONLY pass the field's name in the multipart/form-data request.
+I.e. ignore the fact that the field is nested!
+
+For example, updating a user's profile pic is done like so:
+
+```javascript
+prof_pic=@my_image.jpg
+```
+
+Resolving the actual model to update (in this case, the Profile model) is all taken care of in the API.
 
 ```javascript
 GET	http://api.vendr.xyz/v1/users/<id>/
