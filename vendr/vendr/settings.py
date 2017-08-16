@@ -101,6 +101,7 @@ DATABASES = {
 # Redis cache.
 REDIS_HOST = 'localhost'
 REDIS_PORT = 9200
+'''
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
@@ -111,7 +112,7 @@ CACHES = {
         'KEY_PREFIX': 'k'
     }
 }
-
+'''
 # Cache time to live.
 CACHE_TTL = ( 60 ) * 30
 
@@ -178,7 +179,7 @@ USE_TZ = True
 
 # Base URL for hyperlinking resources.
 VERSION  = 1
-BASE_URL = 'http://api.zappme.xyz/v{}/'.format(VERSION)
+BASE_URL = 'http://api.vendr.xyz/v{}/'.format(VERSION)
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
