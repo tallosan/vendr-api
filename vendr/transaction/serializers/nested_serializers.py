@@ -69,21 +69,19 @@ class OfferSerializer(serializers.ModelSerializer):
 class ClauseSerializer(serializers.ModelSerializer):
 
     class Meta:
-        fields = ('id', 'title', 'is_active', 'preview')
+        fields = ('id', 'title', 'is_active', 'preview', 'explanation')
       
 
 '''   Serializer for static clauses. '''
 class StaticClauseSerializer(ClauseSerializer):
 
     class Meta(ClauseSerializer.Meta):
-        
         model = StaticClause
 
 
 class DynamicClauseSerializer(ClauseSerializer):
 
     class Meta(ClauseSerializer.Meta):
-    
         model  = DynamicClause
         fields = ClauseSerializer.Meta.fields + ('generator', )
         validators = []

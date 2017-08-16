@@ -107,7 +107,8 @@ class BaseContractManager(models.Manager):
         for static_clause in self.static_clauses:
             clause = StaticClause.objects.create(contract=contract,
                         title=static_clause['title'],
-                        preview=static_clause['preview']
+                        preview=static_clause['preview'],
+                        explanation=static_clause['explanation']
             )
 
 
@@ -468,6 +469,8 @@ class Clause(models.Model):
                     on_delete=models.CASCADE)
     title     = models.CharField(max_length=50)
     is_active = models.BooleanField(default=True)
+    preview   = models.TextField()
+    explanation = models.TextField()
 
     class Meta:
         abstract = True
@@ -484,7 +487,6 @@ class StaticClause(Clause):
     contract = models.ForeignKey(Contract, related_name='static_clauses',
                     on_delete=models.CASCADE)
 
-    preview   = models.TextField()
     is_active = models.BooleanField(default=True, editable=False)
 
     @property
@@ -498,7 +500,6 @@ class StaticClause(Clause):
 class DynamicClause(Clause):
 
     prompt    = models.CharField(max_length=75, editable=False)
-    preview   = models.TextField()
     contract  = models.ForeignKey(Contract, related_name='dynamic_clauses',
                     on_delete=models.CASCADE)
 
@@ -560,7 +561,6 @@ class DynamicClause(Clause):
 
         return generator
 
-    
     @property
     def serializer(self):
         return 'DynamicClauseSerializer'
@@ -625,6 +625,8 @@ class CompletionDateClause(DynamicDateClause):
             self.category = 'D'
             self.title = 'Completion Date'
             self.prompt = 'Sale Completion Date'
+            self.explanation = DYNAMIC_STANDARD_CLAUSES['completion_date']\
+                                                       ['explanation']
 
         super(CompletionDateClause, self).save(*args, **kwargs)
 
@@ -635,7 +637,7 @@ class CompletionDateClause(DynamicDateClause):
         month = self.value.month
         year = self.value.year
 
-        preview = DYNAMIC_STANDARD_CLAUSES['completion_date'].\
+        preview = DYNAMIC_STANDARD_CLAUSES['completion_date']['preview'].\
                   format(day, month, year)
         return preview
 
@@ -647,6 +649,8 @@ class IrrevocabilityClause(DynamicDateClause):
             self.category = 'D'
             self.title = 'Irrevocability'
             self.prompt = 'Cancellation Deadline'
+            self.explanation = DYNAMIC_STANDARD_CLAUSES['irrevocability']\
+                                                       ['explanation']
 
         super(IrrevocabilityClause, self).save(*args, **kwargs)
 
@@ -655,7 +659,7 @@ class IrrevocabilityClause(DynamicDateClause):
 
         deadline_month = self.value.month
         deadline_day   = self.value.day
-        preview = DYNAMIC_STANDARD_CLAUSES['irrevocability']. \
+        preview = DYNAMIC_STANDARD_CLAUSES['irrevocability']['preview']. \
                   format(deadline_month, deadline_day)
         
         return preview
@@ -668,13 +672,14 @@ class MortgageDeadlineClause(DynamicDateClause):
             self.category = 'D'
             self.title = 'Mortgage Date'
             self.prompt = 'Mortgage Deadline'
+            self.explanatino = DYNAMIC_STANDARD_CLAUSES['mortgage_date']['explanation']
 
         super(MortgageDeadlineClause, self).save(*args, **kwargs)
 
     @property
     def preview(self):
 
-        preview = DYNAMIC_STANDARD_CLAUSES['mortgage_date'].\
+        preview = DYNAMIC_STANDARD_CLAUSES['mortgage_date']['preview'].\
                   format(self.value)
         return preview
 
@@ -686,6 +691,7 @@ class SurveyDeadlineClause(DynamicDateClause):
             self.category = 'P'
             self.title = 'Survey'
             self.prompt = 'Request a Land Survey'
+            self.explanation = DYNAMIC_STANDARD_CLAUSES['survey_date']['explanation']
 
         super(SurveyDeadlineClause, self).save(*args, **kwargs)
 
@@ -698,7 +704,7 @@ class SurveyDeadlineClause(DynamicDateClause):
 
         date = ('{}/{}/{}').format(year, month, day)
 
-        preview = DYNAMIC_STANDARD_CLAUSES['survey_date'].\
+        preview = DYNAMIC_STANDARD_CLAUSES['survey_date']['preview'].\
                   format(date)
 
         return preview
@@ -713,6 +719,7 @@ class DepositClause(DynamicTextClause):
             self.title = 'Deposit Deadline'
             self.category = 'D'
             self.prompt = 'Number Of Days Until Buyer Delivers Deposit.'
+            self.explanation = DYNAMIC_STANDARD_CLAUSES['deposit']['explanation']
 
         super(DepositClause, self).save(*args, **kwargs)
     
@@ -726,7 +733,7 @@ class DepositClause(DynamicTextClause):
         seller_name = transaction.seller.full_name
         deposit_deadline = self.value
 
-        preview = DYNAMIC_STANDARD_CLAUSES['deposit'].\
+        preview = DYNAMIC_STANDARD_CLAUSES['deposit']['preview'].\
                   format(deposit, seller_name, deposit_deadline)
 
         return preview
@@ -739,13 +746,15 @@ class ChattelsAndFixsClause(DynamicToggleClause):
             self.title = 'Chattels and Fixtures'
             self.category = 'U'
             self.prompt = 'Ensure Chattels & Fixtures are in good working order'
+            self.explanation = DYNAMIC_STANDARD_CLAUSES['chattels_and_fixs']\
+                                                       ['explanation']
 
         super(ChattelsAndFixsClause, self).save(*args, **kwargs)
 
     @property
     def preview(self):
 
-        preview = DYNAMIC_STANDARD_CLAUSES['chattels_and_fixs']
+        preview = DYNAMIC_STANDARD_CLAUSES['chattels_and_fixs']['preview']
         return preview
 
 class BuyerArrangesMortgageClause(DynamicToggleClause):
@@ -756,13 +765,15 @@ class BuyerArrangesMortgageClause(DynamicToggleClause):
             self.title = 'Buyer Arranging Mortgage'
             self.category = 'F'
             self.prompt = 'Buyer Arranges Mortgage'
+            self.explanation = DYNAMIC_STANDARD_CLAUSES['buyer_mrtg_arrange']\
+                                                       ['explanation']
 
         super(BuyerArrangesMortgageClause, self).save(*args, **kwargs)
 
     @property
     def preview(self):
 
-        preview = DYNAMIC_STANDARD_CLAUSES['buyer_mrtg_arrange']
+        preview = DYNAMIC_STANDARD_CLAUSES['buyer_mrtg_arrange']['preview']
         return preview
 
 class EquipmentClause(DynamicToggleClause):
@@ -773,13 +784,14 @@ class EquipmentClause(DynamicToggleClause):
             self.title = 'Equipment'
             self.category = 'U'
             self.prompt = 'Equipment State'
+            self.explanation = DYNAMIC_STANDARD_CLAUSES['equipment']['explanation']
 
         super(EquipmentClause, self).save(*args, **kwargs)
 
     @property
     def preview(self):
 
-        preview = DYNAMIC_STANDARD_CLAUSES['equipment']
+        preview = DYNAMIC_STANDARD_CLAUSES['equipment']['preview']
         return preview
 
 class EnvironmentClause(DynamicToggleClause):
@@ -790,13 +802,14 @@ class EnvironmentClause(DynamicToggleClause):
             self.title = 'Environment'
             self.category = 'U'
             self.prompt = 'Environmental Clause'
+            self.explanation = DYNAMIC_STANDARD_CLAUSES['environmental']['explanation']
 
         super(EnvironmentClause, self).save(*args, **kwargs)
 
     @property
     def preview(self):
 
-        preview = DYNAMIC_STANDARD_CLAUSES['environmental']
+        preview = DYNAMIC_STANDARD_CLAUSES['environmental']['preview']
         return preview
 
 class MaintenanceClause(DynamicToggleClause):
@@ -808,12 +821,14 @@ class MaintenanceClause(DynamicToggleClause):
             self.category = 'U'
             self.prompt = 'Seller will provide maintenance on the property prior ' \
                           'to purchase'
+            self.explanation = DYNAMIC_STANDARD_CLAUSES['maintenance']['explanation']
+
         super(MaintenanceClause, self).save(*args, **kwargs)
 
     @property
     def preview(self):
 
-        preview = DYNAMIC_STANDARD_CLAUSES['maintenance']
+        preview = DYNAMIC_STANDARD_CLAUSES['maintenance']['preview']
         return preview
 
 class UFFIClause(DynamicToggleClause):
@@ -824,13 +839,14 @@ class UFFIClause(DynamicToggleClause):
             self.title = 'UFFI and Vermiculite'
             self.category = 'U'
             self.prompt = 'Void UFFI & Vermiculite Warning'
+            self.explanation = DYNAMIC_STANDARD_CLAUSES['uffi']['explanation']
 
         super(UFFIClause, self).save(*args, **kwargs)
 
     @property
     def preview(self):
 
-        preview = DYNAMIC_STANDARD_CLAUSES['uffi']
+        preview = DYNAMIC_STANDARD_CLAUSES['uffi']['preview']
         return preview
 
 class PaymentMethodClause(DynamicDropdownClause):
@@ -844,6 +860,8 @@ class PaymentMethodClause(DynamicDropdownClause):
             self.title = 'Payment Method'
             self.prompt = 'Payment Method'
             self.options = ['Credit Card', 'Cheque', 'Cash']
+            self.explanation = DYNAMIC_STANDARD_CLAUSES['payment_method']\
+                                                       ['explanation']
         
         super(PaymentMethodClause, self).save(*args, **kwargs)
     
@@ -851,8 +869,8 @@ class PaymentMethodClause(DynamicDropdownClause):
     def preview(self):
 
         payment_method = self.value
-        preview = 'The Buyer agrees to pay the Seller on completion of this ' + \
-                  'transaction via a ' + payment_method + ' payment.'
+        preview = DYNAMIC_STANDARD_CLAUSES['payment_method']['preview']
+        
         return preview
 
 class ChattelsIncludedClause(DynamicChipClause):
@@ -863,6 +881,7 @@ class ChattelsIncludedClause(DynamicChipClause):
             self.category = 'P'
             self.title = 'Chattels Included'
             self.prompt = 'Chattels Included'
+            self.explanation = DYNAMIC_STANDARD_CLAUSES['chattels_inc']['explanation']
         
         super(ChattelsIncludedClause, self).save(*args, **kwargs)
 
@@ -870,7 +889,7 @@ class ChattelsIncludedClause(DynamicChipClause):
     def preview(self):
         
         chattels = ', '.join(self.value)
-        preview = DYNAMIC_STANDARD_CLAUSES['chattels_inc'].\
+        preview = DYNAMIC_STANDARD_CLAUSES['chattels_inc']['preview'].\
                   format(chattels)
 
         return preview
@@ -883,6 +902,7 @@ class FixturesExcludedClause(DynamicChipClause):
             self.category = 'P'
             self.title = 'Fixtures Excluded'
             self.prompt = 'Fixtures Excluded'
+            self.explanation = DYNAMIC_STANDARD_CLAUSES['fixtures_exc']['explanation']
 
         super(FixturesExcludedClause, self).save(*args, **kwargs)
 
@@ -890,7 +910,7 @@ class FixturesExcludedClause(DynamicChipClause):
     def preview(self):
 
         fixtures = ', '.join(self.value)
-        preview = DYNAMIC_STANDARD_CLAUSES['fixtures_exc'].\
+        preview = DYNAMIC_STANDARD_CLAUSES['fixtures_exc']['preview'].\
                   format(fixtures)
 
         return preview
@@ -903,6 +923,7 @@ class RentalItemsClause(DynamicChipClause):
             self.category = 'P'
             self.title = 'Rental Items'
             self.prompt = 'Rented Items on Property'
+            self.explanation = DYNAMIC_STANDARD_CLAUSES['rented_items']['explanation']
 
         super(RentalItemsClause, self).save(*args, **kwargs)
 
@@ -910,7 +931,7 @@ class RentalItemsClause(DynamicChipClause):
     def preview(self):
 
         rented_items = ', '.join(self.value)
-        preview = DYNAMIC_STANDARD_CLAUSES['rented_items'].\
+        preview = DYNAMIC_STANDARD_CLAUSES['rented_items']['preview'].\
                   format(rented_items)
                   
         return preview
