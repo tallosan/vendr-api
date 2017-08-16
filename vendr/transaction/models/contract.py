@@ -710,9 +710,9 @@ class DepositClause(DynamicTextClause):
     def save(self, *args, **kwargs):
 
         if not self.pk:
-            self.title = 'Deposit'
+            self.title = 'Deposit Deadline'
             self.category = 'D'
-            self.prompt = 'Deposit Deadline'
+            self.prompt = 'Number Of Days Until Buyer Delivers Deposit.'
 
         super(DepositClause, self).save(*args, **kwargs)
     
@@ -722,10 +722,8 @@ class DepositClause(DynamicTextClause):
         transaction = self.contract.transaction
 
         # Fields: Deposit amount, Seller name, Deposit Deadline.
-        #deposit = transaction.seller_accepted_offer.deposit
-        #seller_name = transaction.seller.full_name
-        deposit = 3000
-        seller_name = 'macmasterrace101'
+        deposit = transaction.seller_accepted_offer.deposit
+        seller_name = transaction.seller.full_name
         deposit_deadline = self.value
 
         preview = DYNAMIC_STANDARD_CLAUSES['deposit'].\
