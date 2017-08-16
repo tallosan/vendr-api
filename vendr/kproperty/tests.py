@@ -688,6 +688,17 @@ class TestRSVPList(APITestCase):
 
         self.assertEquals(response.status_code, 401)
 
+    ''' Ensure a user cannot create duplicate RSVPs on a given open house. '''
+    def test_duplicate_rsvp(self):
+
+        for i in range(2):
+            request = self.factory.post(self.rsvp_path, self.rsvp_data,
+                        format='json')
+            force_authenticate(request, self.user_a)
+            response = self.view(request, self.condo.pk, self.oh_a.pk)
+
+        self.assertEquals(response.status_code, 400)
+    
     ''' Ensure the open house owner can view their open house. '''
     def test_get_rsvp_list_on_owned_property(self):
         
