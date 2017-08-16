@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
 from django.http import Http404
+from django.conf import settings
 
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
@@ -28,11 +29,10 @@ class UserList(APIView):
     ''' Get a list of users. '''
     def get(self, request, format=None):
         
-        response = []
-        
         # Paginate the queryset if necessary.
-        #for user in self.paginate_queryset(User.objects.all()):
+        response = []
         for user in User.objects.all():
+        #for user in self.get_queryset():
             response.append(self.serializer_class(user, context={'request': request}).data)
 
         return Response(response)
