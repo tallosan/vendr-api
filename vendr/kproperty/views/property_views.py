@@ -113,7 +113,7 @@ class PropertyDetail(APIView):
     '''
     def get(self, request, pk, format=None):
         
-        kproperty       = self.get_object(pk)
+        kproperty = self.get_object(pk)
         self.serializer = self.serializer(kproperty)
         
         return Response(self.serializer.data)
@@ -127,11 +127,8 @@ class PropertyDetail(APIView):
     def put(self, request, pk, format=None):
         
         kproperty = self.get_object(pk)
-        
-        # TODO: Refactor this. The context hack is not ideal.
-        self.serializer = self.serializer(kproperty,
-                            data=request.data, context=request.data,
-                            partial=True)
+        self.serializer = self.serializer(kproperty, data=request.data,
+                            context=request.data, partial=True)
         if self.serializer.is_valid(raise_exception=True):
             self.serializer.save()
             return Response(self.serializer.data)

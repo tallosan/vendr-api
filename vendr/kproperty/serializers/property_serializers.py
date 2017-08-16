@@ -16,11 +16,13 @@ class PropertySerializer(serializers.ModelSerializer):
     location    = LocationSerializer()
 
     # Secondary fields.
-    features    = FeaturesSerializer(Features.objects.all(), many=True)
+    features    = FeaturesSerializer(Features.objects.all(), many=True,
+                    required=False)
     tax_records = TaxRecordsSerializer(TaxRecords.objects.all(), many=True)
     history     = HistoricalSerializer()
     images      = ImagesSerializer(Images.objects.all(), many=True)
-    open_houses  = OpenHouseSerializer(OpenHouse.objects.all(), many=True, required=False)
+    open_houses = OpenHouseSerializer(OpenHouse.objects.all(), many=True,
+                    required=False)
 
     class Meta:
         model   = Property
@@ -74,7 +76,6 @@ class PropertySerializer(serializers.ModelSerializer):
             fkey_class = foreign_key_buf[fkey][0].__class__
             data       = foreign_key_buf[fkey][1]
             
-            #TODO: Condense this into just a for-loop.
             # Create a one-to-one model [e.g Location].
             if issubclass(data.__class__, dict):
                 fkey_class.objects.create(kproperty=kproperty, **data)
@@ -97,7 +98,7 @@ class PropertySerializer(serializers.ModelSerializer):
         validated_data = self.adapt_context(validated_data)
         
         # For each term, perform the necessary updates on the target field.
-        # Special cases exist for nested objects, & foreign key objects.
+        # Special cases exist for nested objects & foreign key objects.
         for term in validated_data.keys():
             target_data = validated_data.pop(term)
             target      = getattr(instance, term)
@@ -110,25 +111,17 @@ class PropertySerializer(serializers.ModelSerializer):
                 target.save()
             
             # Nested Foreign Key models (i.e. one-to-many relation).
+            # If we're given an empty list, we assume that the foreign keys should
+            # be deleted. Otherwise, check if the foreign key already exists. If
+            # not, then we can create it.
             elif issubclass(target_data.__class__, list):
-                
-                # If we're given an empty list, we assume that the foreign keys should
-                # be deleted.
                 if len(target_data) == 0:
                     target.all().delete()
-                
-                # Otherwise, check if the foreign key already exists. If not, then
-                # we can create it.
                 else:
-
-                    #TODO: Refactor this! We are hard coding 'image'.
-                    for data in target_data:
+                    for data in target_data:    # TODO: Refactor.
                         model_class = target.all().model
                         if issubclass(data.__class__, UploadedFile):
-                        #if type(data).__name__ == 'InMemoryUploadedFile' or \
-                                #'TemporaryUploadedFile':
                             model_class.objects.create(kproperty=instance, image=data)
-                        
                         else:
                             if target.filter(**data).count() == 0:
                                 model_class.objects.create(kproperty=instance, **data)
@@ -143,11 +136,12 @@ class PropertySerializer(serializers.ModelSerializer):
         
     # TODO: Refactor this!
     def adapt_context(self, validated_data):
-
+        '''
         for key in self.context.keys():
             validated_data[key] = self.context.pop(key)
-
         return validated_data
+        '''
+        return self.context
 
 
 '''   Serializer for cooperative living properties. '''
