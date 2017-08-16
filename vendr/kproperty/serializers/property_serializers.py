@@ -17,12 +17,14 @@ class PropertySerializer(serializers.ModelSerializer):
 
     # Secondary fields.
     features    = FeaturesSerializer(Features.objects.all(), many=True,
-                    required=False)
-    tax_records = TaxRecordsSerializer(TaxRecords.objects.all(), many=True)
+                    ignore_unused_fields=True)
+    tax_records = TaxRecordsSerializer(TaxRecords.objects.all(), many=True,
+                    ignore_unused_fields=True)
     history     = HistoricalSerializer()
-    images      = ImagesSerializer(Images.objects.all(), many=True)
+    images      = ImagesSerializer(Images.objects.all(), many=True,
+                    ignore_unused_fields=True)
     open_houses = OpenHouseSerializer(OpenHouse.objects.all(), many=True,
-                    required=False)
+                    required=False, ignore_unused_fields=True)
 
     class Meta:
         model   = Property
@@ -136,12 +138,10 @@ class PropertySerializer(serializers.ModelSerializer):
         
     # TODO: Refactor this!
     def adapt_context(self, validated_data):
-        '''
         for key in self.context.keys():
             validated_data[key] = self.context.pop(key)
+        
         return validated_data
-        '''
-        return self.context
 
 
 '''   Serializer for cooperative living properties. '''
