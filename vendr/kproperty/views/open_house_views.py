@@ -3,6 +3,8 @@
 #
 # ======================================================================
 
+from django.db import IntegrityError
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
@@ -178,9 +180,15 @@ class RSVPList(APIView):
 
         open_house = OpenHouse.objects.get(pk=oh_pk)
         self.check_object_permissions(self.request, open_house)
+
+        # Create the RSVP if it is now a duplicate.
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            serializer.save(owner=request.user, open_house=open_house)
+            try:
+                serializer.save(owner=request.user, open_house=open_house)
+            except IntegrityError:
+                return Response({'error': 'cannot have duplicate'}, status=400)
+            
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

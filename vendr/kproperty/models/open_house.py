@@ -39,3 +39,6 @@ class RSVP(models.Model):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='+',
                 on_delete=models.CASCADE)
 
+    class Meta:
+        unique_together = ['open_house', 'owner']
+
