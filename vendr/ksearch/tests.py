@@ -259,3 +259,21 @@ class TestPropertySearchList(APITestCase):
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0]['location']['address'], 'Robarts')
 
+    ''' Test basic pagination. We should only get one result back. '''
+    def test_basic_pagination(self):
+
+        filters = '&limit=1&offset=0'
+        data = self.search_property(filters=filters)
+        self.assertEqual(len(data), 1)
+
+    ''' Test invalid pagination, with limit == 0. This should raise an error. '''
+    def test_invalid_pagination(self):
+
+        filters = '&limit=0&offset=0'
+        request = self.factory.get(self.path + filters, format='json')
+        request.GET._mutable = True; request.GET.pop('stype')[0]
+        force_authenticate(self.view)
+        response = self.view(request)
+
+        self.assertEqual(response.status_code, 401)
+        

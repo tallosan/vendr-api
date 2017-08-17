@@ -11,6 +11,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import APIException
+from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.settings import api_settings
 
 import kproperty.models
 from kproperty.models import *
@@ -53,9 +55,66 @@ def search_router(request):
 ''' Seach view for all Property models. '''
 class PropertySearch(generics.ListAPIView):
 
+    # We're using Limit Offset pagination by default, but this gives us a bit
+    # of flexibility if, for some inexplicable reason, we decide to use a different
+    # pagination scheme.
+    pagination_class = api_settings.DEFAULT_PAGINATION_CLASS
+    
+    ''' Overrides the default 'list()' method. We have a number of different model
+        types, and a number of different (optional) filters.
+        The first step is to parse the pagination parameters (if any) because we
+        don't want to mix them up with the Property filter parameters. Once this is
+        taken care of, we can construct our queryset. We then apply our paginator
+        to its results and return the serialized response.
+        Args:
+            request -- The GET request.
+    '''
+    def list(self, request):
+        
+        # Parse the pagination parameters (if any).
+        paginator = self.get_paginator(request)
+
+        # Get the queryset, and apply pagination if applicable.
+        queryset = self.get_queryset()
+        if paginator:
+            request.GET['limit'] = paginator.limit
+            request.GET['offset'] = paginator.offset
+            queryset = paginator.paginate_queryset(queryset, request, self)
+        
+        # Serialize queryset.
+        response = []
+        for kproperty in queryset:
+            serializer = kproperty.get_serializer()
+            response.append(serializer(kproperty).data)
+        
+        return Response(response)
+    
+    ''' Handle pagination, if any pagination parameters are passed in. If the
+        appropriate params are present and valid, then we'll return an instance
+        of our pagination class (we're using Limit Offset Pagination). Otherwise,
+        we'll return None.
+        Args:
+            request -- The GET request.
+    '''
+    def get_paginator(self, request):
+        
+        try:
+            limit, offset = request.GET.pop('limit')[0], request.GET.pop('offset')[0]
+            if (int(limit) <= 0) or (int(offset) < 0):
+                exc = APIException(detail={
+                    'error': 'pagination params cannot be negative.'
+                })
+                exc.status_code = 401; raise exc
+            
+            paginator = self.pagination_class()
+            paginator.limit = limit; paginator.offset = offset
+            return paginator
+        except KeyError:
+            return None
+ 
     ''' Filters the queryset according to the specified parameters. '''
     def get_queryset(self):
-         
+        
         # Get the Property types arguments, if any are given.
         try:
             ptypes = self.request.GET.pop('ptypes')[0]
@@ -66,7 +125,6 @@ class PropertySearch(generics.ListAPIView):
         # Construct a filter chain from the given parameters.
         filter_args = self.gen_filter_chain(self.request.GET)
         
-        #TODO: Refactor this for the love of god. ARGGHHHH!
         queryset = []
         if not filter_args:
             for model in self.get_models(ptypes): queryset += model.objects.all()
@@ -75,7 +133,6 @@ class PropertySearch(generics.ListAPIView):
         import operator
         
         # Build the query set by querying each model type.
-        queryset = []
         for model in self.get_models(ptypes):
             try:
                 queryset += model.objects.filter(reduce(operator.and_, filter_args))
@@ -83,9 +140,23 @@ class PropertySearch(generics.ListAPIView):
                 pass
         
         return queryset
+ 
+    ''' (Helper Function) Parses a multi-key value into something we can pass
+        through a Django filter.
+        Args:
+            multi_value: The multi-value key, contained in a list (e.g. [..., ...])
+    '''
+    def parse_multikey(self, multi_value):
+        
+        multi_value = [
+                            q.strip('[').strip(']').lstrip(' ')
+                            for q in multi_value.encode('utf8').split(',')
+        ]
+        
+        return multi_value
    
     ''' (Helper Function) Parses a set of filters and generate a filter
-        chain from them.
+        chain of Q objects from them.
         Args:
             filters: A dictionary of filter type-filter value, parameters.
     '''
@@ -130,25 +201,10 @@ class PropertySearch(generics.ListAPIView):
         
         return Q(location__geo_point__intersects=box)
 
-
-    ''' (Helper Function) Parses a multi-key value into something we can pass
-        through a Django filter.
-        Args:
-            multi_value: The multi-value key, contained in a list (e.g. [..., ...])
-    '''
-    def parse_multikey(self, multi_value):
-        
-        multi_value = [
-                            q.strip('[').strip(']').lstrip(' ')
-                            for q in multi_value.encode('utf8').split(',')
-        ]
-        
-        return multi_value
- 
     ''' (Helper Function) Using the property types parameter, return the
         specified model subclasses.
         Args:
-            ptypes: A list of strings specifying property types. 
+            ptypes: A list of strings specifying property types.
     '''
     def get_models(self, ptypes):
         
@@ -170,22 +226,7 @@ class PropertySearch(generics.ListAPIView):
             models = [House, Condo, Townhouse, Manufactured, VacantLand]
         
         return models
-
-    
-    ''' Overrides the default 'list()' method. Serializes each object according
-        to their type. '''
-    def list(self, request):
-        
-        queryset = self.get_queryset()
-        
-        # Construct our response by serializing each object in the queryset.
-        response = []
-        for kproperty in queryset:
-            serializer = kproperty.get_serializer()
-            response.append(serializer(kproperty).data)
-        
-        return Response(response)
-
+      
 
 '''   Search view for User objects. '''
 class UserSearch(generics.ListAPIView):
