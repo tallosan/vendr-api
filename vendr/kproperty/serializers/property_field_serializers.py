@@ -24,7 +24,7 @@ class FeaturesSerializer(serializers.ModelSerializer):
 
     class Meta:
         model   = Features
-        fields  = ('feature', )
+        fields  = ('pk', 'feature', )
 
 
 '''   Serializer for Tax Record models. '''
@@ -32,7 +32,7 @@ class TaxRecordsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model   = TaxRecords
-        fields  = ('assessment', 'assessment_year')
+        fields  = ('pk', 'assessment', 'assessment_year')
 
 
 '''   Serializer for Historical models. '''
@@ -50,6 +50,25 @@ class ImagesSerializer(serializers.ModelSerializer):
     image = serializers.ReadOnlyField(source='image.name')
     
     class Meta:
-        model   = Images
-        fields = ('image', 'timestamp')
+        model  = Images
+        fields = ('pk', 'image', 'timestamp')
+
+    ''' Create an Image object. Note, we are not handling batch creations. '''
+    def create(self, validated_data):
+
+        kproperty = validated_data.pop('kproperty')
+        image_data = self.context.pop('image')[0]
+        
+        image = Images.objects.create(kproperty=kproperty, image=image_data)
+
+        return image
+
+    ''' Update an Image object. Note, we're recieving files through the context. '''
+    def update(self, instance, validated_data):
+        
+        image = self.context.pop('image')[0]
+        instance.image = image
+        
+        instance.save()
+        return instance
 
