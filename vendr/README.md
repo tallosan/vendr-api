@@ -134,6 +134,9 @@ POST	http://api.vendr.xyz/v1/properties/<?ptype>	(Authentication Required)
 
 Get, Update, or Delete the property object with the given ID.
 
+*Note, nested models should be updated on their respective endpoints, as shown in the next section. Whilst
+they can be updated on the Property object directly, this may result in unexpected behaviour*.
+
 ```javascript
 GET	http://api.vendr.xyz/v1/properties/<id>/
 UPDATE	http://api.vendr.xyz/v1/properties/<id>/    (Authentication Required)
@@ -200,6 +203,50 @@ DELETE	http://api.vendr.xyz/v1/properties/<id>/    (Authentication Required)
     "views": 30
 }
 ```
+
+**Nested Model Updates**:
+
+Whilst nested models can be updated on the Property object directly, this may result in unexpected behaviour.
+Instead, they should be updated on their respective endpoints as follows:
+
+```javascript
+List Views:
+POST	http://api.vendr.xyz/v1/properties/<property_id>/nestedmodel/
+GET	http://api.vendr.xyz/v1/properties/<property_id>/nestedmodel/
+
+Detail Views:
+GET	http://api.vendr.xyz/v1/properties/<property_id>/nestedmodel/<nested_model_pk>/
+UPDATE	http://api.vendr.xyz/v1/properties/<property_id>/nestedmodel/<nested_model_pk>/   (Authentication Required)
+DELETE	http://api.vendr.xyz/v1/properties/<property_id>/nestedmodel/<nested_model_pk>/   (Authentication Required)
+```
+
+We currently have three nested models directly on Property objects: **Features, Tax Records, and Images**.
+
+*N.B. -- We don't count Open Houses & RSVPs, as they have enough of their own unique behaviours to warrant considering them separate*.
+
+Their respective endpoints are as follows:
+
+```javascript
+BASE = http://api.vendr.xyz/v1/properties/<property_id>
+
+Features:
+List View	BASE/features/
+Detail View	BASE/features/<feature_id>/
+
+Tax Records:
+List View	BASE/taxrecords/
+Detail View	BASE/taxrecords/<tax_record_id>/
+
+Images:
+List View	BASE/images/
+Detail View	BASE/images/<image_id>/
+```
+
+#### Request Parameters:
+
+| Parameter     | Description           | Values                  |
+| ------------- |-----------------------| ----------------------- |
+| id            | The property id.      | A valid property id	  |
 
 ### Open House & RSVP Endpoint [POST, GET, PUT, DELETE]:
 
