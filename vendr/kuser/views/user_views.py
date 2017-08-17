@@ -31,8 +31,7 @@ class UserList(APIView):
         
         # Paginate the queryset if necessary.
         response = []
-        for user in User.objects.all():
-        #for user in self.get_queryset():
+        for user in self.get_queryset():
             response.append(self.serializer_class(user, context={'request': request}).data)
 
         return Response(response)
@@ -102,18 +101,16 @@ class UserDetail(APIView):
 
         kuser = self.get_object(pk=pk)
         
-        # If the user is making a request on their own info, then we do not
-        # need to restrict access.
-        restrict_access = True
-        if request.user == kuser:
-            restrict_access = False
-
         serializer      = self.serializer_class(kuser)
         serializer_data = serializer.data
        
+        # If the user is making a request on their own info, then we do not
+        # need to restrict access.
+        allow_access = request.user == kuser
+        
         # Remove any restricted fields if necessary.
-        restricted_fields = ('password', 'notifications')
-        if restrict_access:
+        restricted_fields = ('password', 'notifications', 'transactions')
+        if not allow_access:
             for restricted_field in restricted_fields:
                 serializer_data.pop(restricted_field)
         
