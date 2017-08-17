@@ -46,6 +46,30 @@ We can now use the access token to query any of superdev0's protected resources 
 ```javascript
 http http://api.vendr.xyz/v1/transactions/8e4ae98c-f40a-4cfc-9e7b-6a6773149170/ 'Authorization:Bearer access_token'
 ```
+
+---
+
+## Pagination:
+
+Pagination is fairly straightforward. Currently, we're using a limit-offset scheme, which makes use of two parameters:
+
+```limit``` is the max number of results we want back. `limit` **must be** > 0, otherwise it makes no sense to include it.
+
+```offset``` indicates the starting position of the query in relation to the complete set of unpaginated items.
+
+If neither parameter is included in the query, then **all** possible results will be returned. This will also be the case
+if only one of the parameters is included, as it makes no sense to only include one. Thus, if you want all results
+then you should be omitting pagination terms.
+
+**Example**:
+```javascript
+
+// Get the first user in the user set.
+GET	api.vendr.xyz/v1/users/?limit=1&offset0
+
+// Get the second and third property.
+GET	api.vendr.xyz/v1/properties/?limit=2&offset=1
+```
 ---
 
 ## Endpoints:
@@ -292,9 +316,9 @@ DELETE	http://api.vendr.xyz/v1/users/<id>/    (Authentication Required)
         "transactions": {
             "incoming": [
 	    	"8367365d-5730-4096-9d92-efd7e778eae9"
-	], 
+	    ], 
             "outgoing": [
-	]
+	    ]
         }
     }
 ]
