@@ -50,6 +50,11 @@ class ChatList(APIView):
         for convo in queryset:
             response.append(self.serializer_class(convo).data)
 
+        # Add the number of uonpened chats to our response.
+        response.append(
+                {'unopened_chat_count': Chat.objects.filter(opened=False).count()}
+        )
+        
         return Response(response)
     
     ''' Handles POST requests.
@@ -88,6 +93,11 @@ class ChatDetail(APIView):
         try:
             chat = Chat.objects.get(pk=chat_pk)
             self.check_object_permissions(self.request, chat)
+            
+            # Update Chat status.
+            if not chat.opened:
+                chat.opened = True; chat.save()
+            
             return chat
 
         except Chat.DoesNotExist:
