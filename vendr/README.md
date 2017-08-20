@@ -422,23 +422,58 @@ endpoint (in this case /users/0/chat/). After this, all users will have access t
 ```javascript
 BODY
 {
-	"participants": [1, 3]
+	{
+	    "last_message": {
+		"content": "Hello, world!", 
+		"pk": "bc45d264-8ac7-46fe-8742-6e1192df5126", 
+		"sender": 1, 
+		"timestamp": "2017-08-20T23:18:26.316010Z"
+	    }, 
+	    "opened": false, 
+	    "participants": [
+		{
+		    "prof_pic": "https://s3.ca-central-1.amazonaws.com/media.vendr/users/prof_pics/62b1ad07-394f-4270-bb88-3d2ac046e29b", 
+		    "user_pk": 1
+		}, 
+		{
+		    "prof_pic": "", 
+		    "user_pk": 3
+		}
+	    ], 
+	    "pk": "7008de48-a08d-4c4e-886e-2a2bbd8fba27"
+	},
+    {
+        "unopened_chat_count": 1
+    }
 }
 
 POST	http://api.vendr.xyz/v1/users/<user_id>/chat/    (Authentication Required)
 ```
+Note the field '*unopened_chat_count*'. This is a count of the number of chats that have yet to be unopened.
 
 The Chat will look like this ...
 
 ```javascript
 RESPONSE
 {
+    "last_message": {
+        "content": "Hello, world!", 
+        "pk": "bc45d264-8ac7-46fe-8742-6e1192df5126", 
+        "sender": 1, 
+        "timestamp": "2017-08-20T23:18:26.316010Z"
+    }, 
+    "opened": true, 
     "participants": [
-    	0,
-        1,
-        3
+        {
+            "prof_pic": "https://s3.ca-central-1.amazonaws.com/media.vendr/users/prof_pics/62b1ad07-394f-4270-bb88-3d2ac046e29b", 
+            "user_pk": 1
+        }, 
+        {
+            "prof_pic": "", 
+            "user_pk": 3
+        }
     ], 
-    "pk": "4398f64f-6aaa-47cc-9c65-b3c1daefb4d6"
+    "pk": "7008de48-a08d-4c4e-886e-2a2bbd8fba27"
 }
 
 GET	http://api.vendr.xyz/v1/users/<user_id>/chat/<chat_id>/    (Authentication Required)

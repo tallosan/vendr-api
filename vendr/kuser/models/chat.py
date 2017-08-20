@@ -18,6 +18,7 @@ class Chat(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     participants = models.ManyToManyField(settings.AUTH_USER_MODEL)
+    opened = models.BooleanField(default=False)
 
 
 class Message(models.Model):
@@ -33,6 +34,9 @@ class Message(models.Model):
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ['-timestamp']
+
     ''' A minimal message representation used for instant message alerts. '''
     @property
     def alert(self):
@@ -45,6 +49,7 @@ class Message(models.Model):
     def save(self, *args, **kwargs):
         
         if self._state.adding:
+            self.chat.opened = False; self.chat.save()
             self.publish()
             super(Message, self).save(*args, **kwargs)
     

@@ -23,7 +23,7 @@ class ChatSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Chat
-        fields = ('pk', 'participants')
+        fields = ('pk', 'participants', 'opened')
 
     def create(self, validated_data):
         
@@ -44,14 +44,22 @@ class ChatSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         
         chat = super(ChatSerializer, self).to_representation(instance)
-        
         participants = []
         for participant in instance.participants.all():
             participants.append({
                         'user_pk': participant.pk,
                         'prof_pic': participant.profile.prof_pic.name
             })
-
+        
+        # Get the latest message (if any).
+        try:
+            last_message = MessageSerializer(instance.\
+                           messages.latest('timestamp')).data
+        except Message.DoesNotExist:
+            last_message = ''
+        
         chat['participants'] = participants
+        chat['last_message'] = last_message
+
         return chat
 
