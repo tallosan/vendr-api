@@ -202,6 +202,8 @@ class TestChatList(APITestCase):
 
         chat_response = {
                 'pk': chat_data['pk'],
+                'opened': False,
+                'last_message': '',
                 'participants': [
                      {'user_pk': self.user_a.pk, 'prof_pic': u''},
                      {'user_pk': self.user_b.pk, 'prof_pic': u''}
