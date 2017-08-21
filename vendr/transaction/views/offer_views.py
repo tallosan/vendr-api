@@ -22,7 +22,7 @@ class OfferList(APIView):
 
     serializer_class   = OfferSerializer
     permission_classes = ( permissions.IsAuthenticated,
-                           transaction_permissions.OfferListPermissions
+                           transaction_permissions.TransactionMemberPermission
     )
 
     ''' Custom 'get_queryset()' method to get only Offer models involved in
