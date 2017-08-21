@@ -39,7 +39,9 @@ class TransactionList(APIView):
             raise BadTransactionRequest(detail=error_msg)
     
         # Ensure that only one offer is being passed initially.
-        assert len(request.data.get('offers')) == 1, "more than one offer sent."
+        if len(request.data.get('offers')) != 1:
+            error_msg = {'error': 'more than one initial offer sent.'}
+            raise BadTransactionRequest(detail=error_msg)
 
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
