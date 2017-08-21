@@ -13,7 +13,7 @@ from rest_framework import status, permissions
 from transaction.models import Transaction, StaticClause
 from transaction.serializers import ContractSerializer, StaticClauseSerializer
 from transaction.exceptions import BadTransactionRequest
-from transaction.permissions import TransactionAccessPermission
+import transaction.permissions as transaction_permissions
 
 import transaction.serializers as serializers
 
@@ -24,7 +24,9 @@ User = get_user_model()
 class ContractList(APIView):
 
     serializer_class = ContractSerializer
-    permission_classes = ( permissions.IsAuthenticated, )
+    permission_classes = ( permissions.IsAuthenticated,
+                           transaction_permissions.TransactionMemberPermission
+    )
    
     ''' Returns a tuple of the transaction, and the actual contracts being queryed.
         Args:
@@ -33,6 +35,8 @@ class ContractList(APIView):
     def get_queryset(self, transaction_pk):
 
         transaction = Transaction.objects.get(pk=transaction_pk)
+        self.check_object_permissions(self.request, transaction)
+
         return transaction.contracts.all()
    
     ''' Handles LIST / GET requests.
@@ -62,7 +66,9 @@ class ContractList(APIView):
         # Get the contract type.
         try:
             ctype = request.data.pop('ctype')
-            if ctype not in ['condo', 'house', 'townhouse', 'manufactured', 'land']:
+            valid_contract_types = ['coop', 'condo', 'house', 'townhouse', \
+                    'manufactured', 'vacant_land']
+            if ctype not in valid_contract_types:
                 error_msg = {'error': 'invalid ctype {}'.format(ctype) }
                 raise BadTransactionRequest(error_msg)
         except KeyError:
@@ -70,6 +76,8 @@ class ContractList(APIView):
             raise BadTransactionRequest(error_msg)
         
         transaction = Transaction.objects.get(pk=transaction_pk)
+        self.check_object_permissions(self.request, transaction)
+
         serializer  = self.serializer_class(data=request.data)
         if serializer.is_valid():
             serializer.save(owner=self.request.user, transaction=transaction, ctype=ctype)
@@ -84,7 +92,7 @@ class ContractDetail(APIView):
     serializer_class = ContractSerializer
     permission_classes = (
                             permissions.IsAuthenticated,
-                            TransactionAccessPermission
+                            transaction_permissions.ContractDetailPermissions
     )
 
     ''' Return the Contract object if it exists.
@@ -97,6 +105,7 @@ class ContractDetail(APIView):
         try:
             transaction = Transaction.objects.get(pk=transaction_pk)
             contract = transaction.contracts.get(pk=pk)
+            self.check_object_permissions(self.request, contract)
 
             # TODO: Check permissions here.
             return contract
@@ -268,24 +277,6 @@ class ClauseDetail(APIView):
         
         return Response(serializer.data)
     
-    ''' Handles PUT requests on Clause models.
-        Args:
-            request: The PUT request.
-            transaction_pk: The transaction that the clause contract belongs to.
-            contract_pk: The primary key of the contract the clause belongs to.
-            pk: The primary key of the clause to update.
-            *format: Specified data format (e.g. JSON).
-    '''
-    def put(self, request, transaction_pk, contract_pk, pk, format=None):
-        
-        clause = self.get_object(transaction_pk, contract_pk, pk)
-        serializer = self.serializer_class(clause, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
     ''' Handles DELETE requests on Clause models.
         Args:
             request: The DELETE request.
