@@ -29,7 +29,7 @@ class Message(models.Model):
     
     # Soft reference to the sender. N.B. -- This is our chosen user
     # representation and, as such, is subject to change.
-    sender = models.PositiveIntegerField(editable=False)
+    sender = models.CharField(max_length=51, editable=False)
     
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)

@@ -421,12 +421,12 @@ endpoint (in this case /users/0/chat/). After this, all users will have access t
 ***Chat [POST, GET, DELETE]***
 ```javascript
 BODY
-{
+[
 	{
 	    "last_message": {
 		"content": "Hello, world!", 
 		"pk": "bc45d264-8ac7-46fe-8742-6e1192df5126", 
-		"sender": 1, 
+		"sender": Super Dev, 
 		"timestamp": "2017-08-20T23:18:26.316010Z"
 	    }, 
 	    "opened": false, 
@@ -445,7 +445,7 @@ BODY
     {
         "unopened_chat_count": 1
     }
-}
+]
 
 POST	http://api.vendr.xyz/v1/users/<user_id>/chat/    (Authentication Required)
 ```
@@ -459,7 +459,7 @@ RESPONSE
     "last_message": {
         "content": "Hello, world!", 
         "pk": "bc45d264-8ac7-46fe-8742-6e1192df5126", 
-        "sender": 1, 
+        "sender": Super Dev, 
         "timestamp": "2017-08-20T23:18:26.316010Z"
     }, 
     "opened": true, 

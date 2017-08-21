@@ -182,7 +182,9 @@ class MessageList(APIView):
 
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            serializer.save(sender=request.user.pk, chat=chat)
+            user_name = '{} {}'.format(request.user.profile.first_name,
+                                       request.user.profile.last_name)
+            serializer.save(sender=user_name, chat=chat)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
