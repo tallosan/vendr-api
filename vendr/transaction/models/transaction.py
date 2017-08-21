@@ -29,6 +29,10 @@ class TransactionManager(models.Manager):
         # Ensure that the seller actually owns the property.
         if seller.id != kproperty.owner.id:
             raise ValueError('seller id does not match property owner id.')
+        
+        # Ensure that the user is not starting a transaction on their own property.
+        if seller.pk == buyer.pk:
+            raise ValueError("transaction cannot created on user's own property.")
 
         # Create the transaction.
         now = timezone.now()
@@ -59,7 +63,7 @@ class Transaction(models.Model):
     buyer_accepted_offer  = models.UUIDField(blank=True, null=True)
     seller_accepted_offer = models.UUIDField(blank=True, null=True)
     
-    contracts_equal = models.BooleanField(default=True)
+    contracts_equal = models.BooleanField(default=False)
     buyer_accepted_contract  = models.BooleanField(default=False)
     seller_accepted_contract = models.BooleanField(default=False)
 
@@ -117,9 +121,11 @@ class Transaction(models.Model):
             raise ValueError(
                     "'advance_stage()' cannot be called on a stage 3 transaction."
         )
-
+        
         # Offers. Ensure that both the buyer and seller have accepted the resource.
-        if self.stage == 0 and (self.buyer_accepted_offer != self.seller_accepted_offer):
+        if self.stage == 0 and \
+           (self.buyer_accepted_offer != self.seller_accepted_offer) or \
+           (self.buyer_accepted_offer == None):
                 raise ValueError('the buyer and seller offers are not equal.')
 
         # Contracts. Ensure that the contracts are equal, & both parties have accepted.
