@@ -36,11 +36,9 @@ class TransactionAccessPermission(permissions.BasePermission):
         return transaction.check_field_permissions(request.user.id, request.data)
 
 
-class OfferListPermissions(permissions.BasePermission):
+class TransactionMemberPermission(permissions.BasePermission):
 
-    ''' Only users involved in the transaction should have any access to
-        the transaction object.
-    '''
+    ''' Ensure that the user is part of the transaction. '''
     def has_object_permission(self, request, view, transaction):
 
         return request.user in [transaction.buyer, transaction.seller]
@@ -62,4 +60,22 @@ class OfferDetailPermissions(permissions.BasePermission):
             return True
         else:
             return request.user == offer.owner
+
+
+class ContractDetailPermissions(permissions.BasePermission):
+
+    ''' Transaction participants can read any offer. However, only the offer
+        owner can delete it. '''
+    def has_object_permission(self, request, view, contract):
+
+        # Any transaction participant can read offers.
+        transaction = contract.transaction
+        if request.user not in [transaction.buyer, transaction.seller]:
+            return False
+
+        # Ensure that the user actually owns the offer.
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        else:
+            return request.user == contract.owner
 
