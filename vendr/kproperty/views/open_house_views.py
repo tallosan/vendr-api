@@ -82,7 +82,7 @@ class OpenHouseDetail(APIView):
             return open_house
 
         except OpenHouse.DoesNotExist:
-            error_msg = {'error': 'open house with id=' + str(pk) + ' does not exist.'}
+            error_msg = {'error': 'open house with id=' + str(oh_pk) + ' does not exist.'}
             dne_exc = APIException(detail=error_msg)
             dne_exc.status_code = status.HTTP_400_BAD_REQUEST
             raise dne_exc
