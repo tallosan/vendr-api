@@ -83,7 +83,6 @@ class TransactionSerializer(serializers.ModelSerializer):
                 try: instance.advance_stage()
                 except ValueError as msg:
                     raise BadTransactionRequest({ 'error': str(msg) })
-
             else:
                 setattr(instance, field, target_data)
 
