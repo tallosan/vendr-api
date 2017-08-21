@@ -10,9 +10,9 @@ from kproperty.models import Property
 
 from transaction.models import Transaction, Offer
 from transaction.serializers import OfferSerializer
-from transaction.permissions import TransactionAccessPermission
-
 from transaction.exceptions import BadTransactionRequest
+
+import transaction.permissions as transaction_permissions
 
 User = get_user_model()
 
@@ -21,7 +21,9 @@ User = get_user_model()
 class OfferList(APIView):
 
     serializer_class   = OfferSerializer
-    permission_classes = ( permissions.IsAuthenticated, )
+    permission_classes = ( permissions.IsAuthenticated,
+                           transaction_permissions.OfferListPermissions
+    )
 
     ''' Custom 'get_queryset()' method to get only Offer models involved in
         the given transaction. Note, we separate the offers by their respective owners.
@@ -31,10 +33,11 @@ class OfferList(APIView):
     def get_queryset(self, transaction_pk):
 
         transaction = Transaction.objects.get(pk=transaction_pk)
+        self.check_object_permissions(self.request, transaction)
         
         return {
-                    'buyer_offers': transaction.get_offers(user_id=transaction.buyer),
-                    'seller_offers': transaction.get_offers(user_id=transaction.seller)
+                'buyer_offers': transaction.get_offers(user_id=transaction.buyer),
+                'seller_offers': transaction.get_offers(user_id=transaction.seller)
         }
 
     ''' Get a list of offers associated with a given transaction.
@@ -47,7 +50,7 @@ class OfferList(APIView):
         
         queryset = self.get_queryset(transaction_pk)
         
-        buyer_offers  = self.serializer_class(queryset['buyer_offers'], many=True).data
+        buyer_offers = self.serializer_class(queryset['buyer_offers'], many=True).data
         seller_offers = self.serializer_class(queryset['seller_offers'], many=True).data
         
         response = {
@@ -66,9 +69,10 @@ class OfferList(APIView):
     def post(self, request, transaction_pk, format=None):
         
         # Create the new Offer and link it to the given transaction.
-        serializer  = self.serializer_class(data=request.data)
         transaction = Transaction.objects.get(pk=transaction_pk)
+        self.check_object_permissions(self.request, transaction)
         
+        serializer  = self.serializer_class(data=request.data)
         if serializer.is_valid():
             serializer.save(owner=self.request.user, transaction=transaction)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -82,7 +86,7 @@ class OfferDetail(APIView):
     serializer_class   = OfferSerializer
     permission_classes = (
                             permissions.IsAuthenticated,
-                            TransactionAccessPermission,
+                            transaction_permissions.OfferDetailPermissions
     )
 
     ''' Get the transaction model if the user has the requisite permissions.
@@ -97,6 +101,7 @@ class OfferDetail(APIView):
         try:
             transaction = Transaction.objects.get(pk=transaction_pk)
             offer = transaction.offers.all().get(pk=pk)
+            self.check_object_permissions(self.request, offer)
             
             return offer
 
