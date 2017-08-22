@@ -19,6 +19,7 @@ from collections import OrderedDict
 
 from kproperty.models import Property
 from .transaction import Transaction
+from .offer import Offer
 
 from .text.static_clauses import STATIC_CLAUSES, CONDO_STATIC_CLAUSES, \
         COOP_STATIC_CLAUSES, COOWNERSHIP_STATIC_CLAUSES, MOBILE_STATIC_CLAUSES
@@ -725,7 +726,8 @@ class DepositClause(DynamicTextClause):
         transaction = self.contract.transaction
 
         # Fields: Deposit amount, Seller name, Deposit Deadline.
-        deposit = transaction.seller_accepted_offer.deposit
+        accepted_offer_pk = transaction.seller_accepted_offer
+        deposit = Offer.objects.get(pk=accepted_offer_pk).deposit
         seller_name = transaction.seller.full_name
         deposit_deadline = self.value
 

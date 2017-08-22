@@ -99,7 +99,8 @@ class KUser(AbstractBaseUser, PermissionsMixin):
         super(KUser, self).clean(*args, **kwargs)
 
     ''' Returns the full name of the user. '''
-    def get_fullname(self):
+    @property
+    def full_name(self):
         return self.profile.first_name + ' ' + self.profile.last_name
 
     def get_short_name():
