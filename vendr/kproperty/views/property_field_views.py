@@ -6,10 +6,12 @@
 #
 # =======================================================================
 
+from django.core.exceptions import ObjectDoesNotExist
 
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
+from rest_framework.exceptions import APIException
 
 from kproperty.models import Property, Features, TaxRecords, Images
 from kproperty.serializers import FeaturesSerializer, TaxRecordsSerializer,\
@@ -57,10 +59,16 @@ class NestedRetrieveUpdateDestroyAPIView(object):
         on the given Property. '''
     def get_object(self):
 
-        kproperty = Property.objects.get(pk=self.kwargs['pk'])
-        instance = getattr(kproperty, self.field_name).\
-                   get(pk=self.kwargs[self.pk_field])
-        self.check_object_permissions(self.request, kproperty)
+        try:
+            kproperty = Property.objects.get(pk=self.kwargs['pk'])
+            instance = getattr(kproperty, self.field_name).\
+                       get(pk=self.kwargs[self.pk_field])
+            self.check_object_permissions(self.request, kproperty)
+        except ObjectDoesNotExist:
+            error_msg = {'error': 'nested model with pk {} does not exist.'.\
+                                  format(self.kwargs['pk'])}
+            dne_exc = APIException(detail=error_msg)
+            dne_exc.status = 404; raise dne_exc
         
         return instance
 

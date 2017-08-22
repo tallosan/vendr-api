@@ -7,6 +7,7 @@ from django.db import IntegrityError
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.exceptions import APIException
 from rest_framework import status, permissions
 
 from kproperty.models import Property, OpenHouse, RSVP
