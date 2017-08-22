@@ -117,6 +117,7 @@ class TestPropertyList(APITestCase):
         self.assertEquals(response.data['location'], self.condo_data['location'])
 
         # Ensure that nested foreign key values are set properly.
+        for feature in response.data['features']: feature.pop('pk')
         self.assertEquals(response.data['features'], self.condo_data['features'])
 
         # Ensure that empty foreign keys can be passed safely.
@@ -139,6 +140,7 @@ class TestPropertyList(APITestCase):
         self.assertEquals(response.data['price'], self.house_data['price'])
 
         # Ensure that nested one-to-one values are set properly.
+        for feature in response.data['features']: feature.pop('pk')
         self.assertEquals(response.data['location'], self.house_data['location'])
 
         # Ensure that nested foreign key values are set properly.
@@ -209,6 +211,13 @@ class TestPropertyDetail(APITestCase):
     
         self.condo_path = '/v1/properties/' + str(self.condo_id)
         self.house_path = '/v1/properties/' + str(self.house_id)
+        
+        self.feature_data = {'feature': 'Test Feature'}
+        self.taxrecord_data = {'assessment': 1000, 'assessment_year': 2017}
+        
+        self.features_path = self.condo_path + '/features/'
+        self.taxrecords_path = self.condo_path + '/taxrecords/'
+        self.images_path = self.condo_path + '/images/'
 
     ''' PUT: Update a property model with authentication. '''
     def update_property_with_auth(self, property_path, property_id, p_user):
@@ -249,6 +258,7 @@ class TestPropertyDetail(APITestCase):
         force_authenticate(request, user=p_user)
         response = self.view(request, property_id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for feature in response.data['features']: feature.pop('pk')
         self.assertEqual(response.data['features'][2],
                 foreign_key_update['features'][0])
         self.assertEqual(response.data['features'][3],
@@ -260,6 +270,7 @@ class TestPropertyDetail(APITestCase):
                 format='json')
         force_authenticate(request, user=p_user)
         response = self.view(request, property_id)
+        for feature in response.data['features']: feature.pop('pk')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['features'], foreign_key_empty_update['features'])
 
@@ -362,7 +373,68 @@ class TestPropertyDetail(APITestCase):
                 path=self.house_path, pid=self.house_id,
                 expected_status=status.HTTP_401_UNAUTHORIZED)
 
+         
+'''   Tests on the Nested Model List views. '''
+class TestNestedModelsList(APITestCase):
 
+    def setUp(self):
+
+        features_data = { 'feature': 'Oven' }
+        tr_data = { 'assessment': 120, 'assessment_year': 2017 }
+        self.nested_views = {
+                'features': {'view': FeaturesList.as_view(), 'data': features_data},
+                'taxrecords': {'view': TaxRecordsList.as_view(), 'data': tr_data}
+                #'images': {'view': ImagesList.as_view(), 'data': images_data
+        }
+        self.factory = APIRequestFactory()
+        
+        # Test user.
+        self.user = User.objects.create_user(email='test@kanga.xyz', password='test')
+        self.user_alt = User.objects.create(email='alt@kangaa.xyz', password='alt')
+        
+        # Condo model owned by user 1.
+        self.condo = Condo.objects.create(owner=self.user,
+                n_bathrooms=1, n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11)
+        Location.objects.create(kproperty=self.condo,
+                address='60 Brian Harrison', city="Toronto", country="Canada",
+                province='Ontario', postal_code='M1P0B2',
+                latitude=43.773313, longitude=-79.258729
+        )
+        Historical.objects.create(kproperty=self.condo,
+                last_sold_price=2000000, last_sold_date='2011-08-14',
+                year_built=2010
+        )
+
+        # House model owned by alt user.
+        self.house = House.objects.create(owner=self.user_alt,
+                n_bathrooms=3, n_bedrooms=3, price=4500000, sqr_ftg=4200)
+        Location.objects.create(kproperty=self.house,
+                address='18 Bay Street', city='Toronto', country='Canada',
+                province='Ontario', postal_code='M230B3',
+                latitude=43.773313, longitude=-79.258729
+        )
+        Historical.objects.create(kproperty=self.house,
+                last_sold_price=3200500, last_sold_date='2012-11-03', year_built=2007)
+
+        self.condo_path = '/v1/properties/{}/'.format(self.condo.pk)
+        self.house_path = '/v1/properties/{}/'.format(self.house.pk)
+
+    ''' Ensure users can create nested models on properties they own.
+    #TODO: Figure out how to pass KWARGS to the view.
+    def test_create_nested_model_on_owned_properties(self):
+
+        for view in self.nested_views.keys():
+            request = self.factory.post(self.condo_path,
+                    self.nested_views[view]['data'], format='json', kwargs={'pk': self.condo.pk})
+            force_authenticate(request, user=self.user)
+            response = self.nested_views[view]['view'](request, self.condo.pk)
+        
+            self.assertEquals(response.status_code, 201)
+            response.data.pop('pk')
+            self.assertEquals(response.data, view['data'])
+    '''
+
+       
 '''   Tests on the OpenHouseList view. '''
 class TestOpenHouseList(APITestCase):
 
