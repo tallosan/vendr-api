@@ -41,9 +41,6 @@ class AbstractContractFactory(object):
         if contract_type == 'coop':
             contract_factory = CoOpContract.objects
         
-        elif contract_type == 'coownership':
-            contract_factory = CoOwnershipContract.objects
-        
         elif contract_type == 'condo':
             contract_factory = CondoContract.objects
         
@@ -195,6 +192,7 @@ class CondoContractManager(CoOpContractManager):
         
         return contract
 
+'''   [** Abstract **] '''
 class CoOwnershipContractManager(BaseContractManager):
 
     ''' Initialize this manager with any necessary additional static clauses. '''
@@ -238,7 +236,6 @@ class CoOwnershipContractManager(BaseContractManager):
         chattels_and_fixs = ChattelsAndFixsClause.objects.create(contract=contract)
  
         return contract
-
 
 
 class HouseContractManager(BaseContractManager):
@@ -404,7 +401,6 @@ class VacantLandContractManager(BaseContractManager):
 
         return contract
 
-
 # ===========================================================================
 
 '''   [Abstract] Contract model. Each Contract is attached to a single Transaction,
@@ -456,7 +452,7 @@ class TownhouseContract(HouseContract):
     objects = TownhouseContractManager()
 
 class VacantLandContract(Contract):
-    objects = VacantLandContractManager
+    objects = VacantLandContractManager()
 
 # ===========================================================================
 

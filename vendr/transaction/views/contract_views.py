@@ -10,7 +10,7 @@ from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework import status, permissions
 
-from transaction.models import Transaction, StaticClause
+from transaction.models import Transaction, Contract, StaticClause, DynamicClause
 from transaction.serializers import ContractSerializer, StaticClauseSerializer
 from transaction.exceptions import BadTransactionRequest
 import transaction.permissions as transaction_permissions
@@ -106,11 +106,12 @@ class ContractDetail(APIView):
             transaction = Transaction.objects.get(pk=transaction_pk)
             contract = transaction.contracts.get(pk=pk)
             self.check_object_permissions(self.request, contract)
-
-            # TODO: Check permissions here.
+            
             return contract
-        except Exception as ex:
-            print str(ex)
+        except Contract.DoesNotExist:
+            error_msg = {'error': 'contract with pk {} does not exist.'}.\
+                         format(pk)
+            raise BadTransactionRequest(error_msg)
 
     ''' Handles GET requests on Contract models.
         Args:
@@ -125,24 +126,7 @@ class ContractDetail(APIView):
         serializer = self.serializer_class(contract)
 
         return Response(serializer.data)
-    
-    ''' Handles PUT requests on Contract models.
-        Args:
-            request: The PUT request.
-            transaction_pk: The transaction that the contract belongs to.
-            pk: The primary key of the contract to update.
-            *format: Specified data format (e.g. JSON).
-    '''
-    def put(self, request, transaction_pk, pk, format=None):
-        
-        contract = self.get_object(transaction_pk, pk)
-        serializer = self.serializer_class(contract, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+   
     ''' Handles DELETE requests on Contract models.
         Args:
             request: The DELETE request.
@@ -161,12 +145,15 @@ class ContractDetail(APIView):
 # Clause Views.
 
 def resolve_serializer(serializer_class):
-
     return getattr(serializers, serializer_class)
 
 
 '''   Clause list view. '''
 class ClauseList(APIView):
+
+    permission_classes = ( permissions.IsAuthenticated,
+                           transaction_permissions.TransactionMemberPermission
+    )
 
     ''' Returns a set of clauses belonging to the given transaction and contract.
         Args:
@@ -176,7 +163,9 @@ class ClauseList(APIView):
     def get_queryset(self, transaction_pk, contract_pk):
 
         transaction = Transaction.objects.get(pk=transaction_pk)
-        contract    = transaction.contracts.get(pk=contract_pk)
+        self.check_object_permissions(self.request, transaction)
+
+        contract = transaction.contracts.get(pk=contract_pk)
 
         return contract.clauses
 
@@ -224,7 +213,9 @@ class ClauseList(APIView):
             pass
         
         transaction = Transaction.objects.get(pk=transaction_pk)
-        serializer  = self.serializer_class(data=request.data)
+        self.check_object_permissions(transaction, self.request)
+
+        serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             serializer.save(owner=self.request.user, transaction=transaction, ctype=ctype)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -236,6 +227,9 @@ class ClauseList(APIView):
 class ClauseDetail(APIView):
 
     serializer_class = None
+    permission_classes = ( permissions.IsAuthenticated,
+                           transaction_permissions.ClauseDetailPermissions
+    )
 
     ''' Return the Clause object if it exists.
         Args:
@@ -244,22 +238,23 @@ class ClauseDetail(APIView):
     '''
     def get_object(self, transaction_pk, contract_pk, pk):
         
+        transaction = Transaction.objects.get(pk=transaction_pk)
+        contract = transaction.contracts.get(pk=contract_pk)
+        
+        # Attempt to get the clause in our static & dynamic sets respectively.
         try:
-            transaction = Transaction.objects.get(pk=transaction_pk)
-            contract = transaction.contracts.get(pk=contract_pk)
-            
-            # TODO: Refactor this!
-            for _clause in contract.clauses:
-                if str(_clause.pk) == pk: clause = _clause
+            clause = contract.static_clauses.get(pk=pk)
+        except StaticClause.DoesNotExist:
+            clause = contract.dynamic_clauses.get(pk=pk).actual_type
+        except DynamicClause.DoesNotExist:
+            error_msg = {'error': 'clause with pk {} does not exist.'}.\
+                         format(pk)
+            raise BadTransactionRequest(error_msg)
+        
+        self.check_object_permissions(self.request, clause)
+        self.serializer_class = resolve_serializer(clause.serializer)
 
-            # Set the serializer.
-            self.serializer_class = resolve_serializer(clause.serializer)
-
-            # TODO: Check permissions here.
-            return clause
-
-        except Exception as ex:
-            print str(ex)
+        return clause
 
     ''' Handles GET requests on Clause models.
         Args:
@@ -272,11 +267,29 @@ class ClauseDetail(APIView):
     '''
     def get(self, request, transaction_pk, contract_pk, pk, format=None):
         
-        clause     = self.get_object(transaction_pk, contract_pk, pk)
+        clause = self.get_object(transaction_pk, contract_pk, pk)
         serializer = self.serializer_class(clause)
         
         return Response(serializer.data)
     
+    ''' Handles PUT requests on Clause models.
+        Args:
+            request: The PUT request.
+            transaction_pk: The transaction that the clause contract belongs to.
+            contract_pk: The primary key of the contract the clause belongs to.
+            pk: The primary key of the clause to update.
+            *format: Specified data format (e.g. JSON).
+    '''
+    def put(self, request, transaction_pk, contract_pk, pk, format=None):
+        
+        clause = self.get_object(transaction_pk, contract_pk, pk)
+        serializer = self.serializer_class(clause, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     ''' Handles DELETE requests on Clause models.
         Args:
             request: The DELETE request.
