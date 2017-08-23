@@ -6,6 +6,10 @@ urlpatterns = [
         # Transaction views.
         url(r'^$', views.TransactionList.as_view()),
         url(r'^(?P<transaction_pk>[0-9a-f-]+)/$', views.TransactionDetail.as_view()),
+ 
+        # Advance Stage.
+        url(r'^(?P<transaction_pk>[0-9a-f-]+)/advance/$',
+            views.AdvanceStageList.as_view()),
 
         # Offer views.
         url(r'^(?P<transaction_pk>[0-9a-f-]+)/offers/$', views.OfferList.as_view()),

@@ -132,3 +132,28 @@ class TransactionDetail(APIView):
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
+'''   Advance Stage list view. '''
+class AdvanceStageList(APIView):
+
+    serializer_class   = TransactionSerializer
+    permission_classes = ( permissions.IsAuthenticated,
+                           TransactionAccessPermission
+    )
+
+    ''' Advance the Transaction stage if possible. '''
+    def post(self, request, transaction_pk, format=None):
+
+        transaction = Transaction.objects.get(pk=transaction_pk)
+        self.check_object_permissions(self.request, transaction)
+
+        # Attempt to advance the stage.
+        try:
+            transaction.advance_stage()
+        except ValueError as value_error:
+            error_msg = {'error': str(value_error)}
+            raise BadTransactionRequest(detail=error_msg)
+        
+        response = { 'stage': transaction.stage }
+        return Response(response, status=status.HTTP_200_OK)
+
