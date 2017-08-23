@@ -135,9 +135,12 @@ class Transaction(models.Model):
             if not self.buyer_accepted_contract or not self.seller_accepted_contract:
                 raise ValueError('buyer and seller must both accepted.')
 
-        # Closing. Note, we'll need to create the Closing stage here.
-        elif self.stage == 2:
+            # Create the closing stage.
             self.create_closing()
+
+        # Closing. Check the closing conditions are satisfied.
+        elif self.stage == 2:
+            pass
 
         self.stage += 1
         self.save()
@@ -149,6 +152,9 @@ class Transaction(models.Model):
     def get_offers(self, user_id):
 
         return self.offers.filter(owner=user_id).order_by('-timestamp')
+    
+    def create_closing(self):
+        pass
 
     ''' Overrides the default signal handling on related models. '''
     def delete(self, *args, **kwargs):
