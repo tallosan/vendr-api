@@ -117,7 +117,7 @@ class Transaction(models.Model):
     def advance_stage(self):
         
         # Ensure that we are not already at the last stage.
-        if self.stage == 2:
+        if self.stage == 3:
             raise ValueError(
                     "'advance_stage()' cannot be called on a stage 3 transaction."
         )
@@ -128,14 +128,19 @@ class Transaction(models.Model):
            (self.buyer_accepted_offer == None):
                 raise ValueError('the buyer and seller offers are not equal.')
 
-        # Contracts. Ensure that the contracts are equal, & both parties have accepted.
+        # Contracts. Ensure that contracts are equal, & both parties have accepted.
         elif self.stage == 1:
             if not self.contracts_equal:
                 raise ValueError('contracts must be equal.')
-            if self.buyer_accepted_contract != self.seller_accepted_contract:
+            if not self.buyer_accepted_contract or not self.seller_accepted_contract:
                 raise ValueError('buyer and seller must both accepted.')
-            
+
+        # Closing. Note, we'll need to create the Closing stage here.
+        elif self.stage == 2:
+            self.create_closing()
+
         self.stage += 1
+        self.save()
 
     ''' Returns a queryset for the given user's offers.
         Args:

@@ -262,13 +262,17 @@ class TestTransactionDetail(APITestCase):
         response = self.view(request, self.transaction.pk)
         self.assertEquals(response.status_code, 403)
 
-    ''' Ensure transactions in stage 0 can be updated. '''
+    ''' Ensure transactions in stage 0 can be updated. Note, we're actually
+        testing a sub-endpoint here -- AdvanceStageList(). '''
     def test_update_advance_stage_0(self):
 
         self.transaction.buyer_accepted_offer = self.offer.pk
          
+        self.view = AdvanceStageList.as_view()
+        self.path += 'advance/'
+
         # Attempt to advance stage when accepted offers are not equal.
-        request = self.factory.put(self.path, data={'stage': 1}, format='json')
+        request = self.factory.post(self.path, data={}, format='json')
         force_authenticate(request, user=self.buyer)
         response = self.view(request, self.transaction.pk)
         self.assertEquals(response.status_code, 400)
@@ -278,21 +282,25 @@ class TestTransactionDetail(APITestCase):
         self.transaction.save()
         
         # Advance stage when accepted offers are equal.
-        request = self.factory.put(self.path, data={'stage': 1}, format='json')
+        request = self.factory.post(self.path, data={}, format='json')
         force_authenticate(request, user=self.buyer)
         response = self.view(request, self.transaction.pk)
         self.assertEquals(response.status_code, 200)
         self.assertEquals(response.data['stage'], 1)
 
-    ''' Ensure transactions in stage 1 can be updated. '''
+    ''' Ensure transactions in stage 1 can be updated. Note, we're actually
+        testing a sub-endpoint here -- AdvanceStageList(). '''
     def test_update_advance_stage_1(self):
 
         self.transaction.buyer_accepted_offer = self.offer.pk
         self.transaction.seller_accepted_offer = self.offer.pk
         self.transaction.stage = 1; self.transaction.save()
         
+        self.view = AdvanceStageList.as_view()
+        self.path += 'advance/'
+
         # Attempt to advance stage when contracts are not equal.
-        request = self.factory.put(self.path, data={'stage': 2}, format='json')
+        request = self.factory.post(self.path, data={}, format='json')
         force_authenticate(request, user=self.buyer)
         response = self.view(request, self.transaction.pk)
         self.assertEquals(response.status_code, 400)
@@ -304,13 +312,14 @@ class TestTransactionDetail(APITestCase):
         self.transaction.contracts_equal = True
         self.transaction.save()
 
-        request = self.factory.put(self.path, data={'stage': 2}, format='json')
+        request = self.factory.post(self.path, data={}, format='json')
         force_authenticate(request, user=self.buyer)
         response = self.view(request, self.transaction.pk)
         self.assertEquals(response.status_code, 200)
         self.assertEquals(response.data['stage'], 2)
 
-    ''' Ensure transactions in stage 2 can be updated. '''
+    ''' Ensure transactions in stage 2 can be updated. Note, we're actually
+        testing a sub-endpoint here -- AdvanceStageList(). '''
     def test_update_advance_stage_2(self):
         
         #TODO: Implement this once Closing has been completed.
