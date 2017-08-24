@@ -149,7 +149,8 @@ class CoOpSerializer(PropertySerializer):
 
     class Meta(PropertySerializer.Meta):
 
-        fields  = PropertySerializer.Meta.fields + ('unit_num', )
+        fields  = PropertySerializer.Meta.fields + ('unit_num', 'parking_spaces',
+                    'corporation_name')
 
 '''   Serializer for Condo models. '''
 class CondoSerializer(CoOpSerializer):

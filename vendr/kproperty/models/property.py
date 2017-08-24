@@ -82,12 +82,14 @@ class Property(models.Model):
 '''   Parent for all cooperative ownership properties. '''
 class CoOp(Property):
     
-    unit_num = models.IntegerField()
+    unit_num = models.PositiveIntegerField()
+    parking_spaces = models.PositiveIntegerField()
+    corporation_name = models.CharField(max_length=20, blank=True, null=True)
 
     ''' (Abstract) Raises a NotImplementedError, as this should be implemented
         in the child models. '''
     def get_serializer(self):
-        raise NotImplementedError("no 'get_serializer()' method for parent Freehold.")
+        raise NotImplementedError("no 'get_serializer()' method for parent CoOp.")
 
     ''' Custom field validation. '''
     def clean(self):
@@ -114,9 +116,10 @@ class CoOp(Property):
 
         super(CoOp, self).validate_unique(exclude=exclude)
 
+
 '''   Condo model. '''
 class Condo(CoOp):
-    
+
     ''' Returns a CondoSerializer object. '''
     def get_serializer(self):
     
@@ -155,6 +158,7 @@ class Townhouse(Freehold):
         return TownhouseSerializer
 
 
+'''   Manufactured model. This includes properties such as mobile homes. '''
 class Manufactured(Property):
 
     def get_serializer(self):
@@ -163,6 +167,7 @@ class Manufactured(Property):
         return ManufacturedSerializer
 
 
+'''   Vacant Land model. '''
 class VacantLand(Property):
 
     def get_serializer(self):

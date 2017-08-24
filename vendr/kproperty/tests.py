@@ -51,6 +51,8 @@ class TestPropertyList(APITestCase):
                             "price": 250000.0, 
                             "sqr_ftg": 3000.0,
                             "unit_num": 11,
+                            "parking_spaces": 0,
+                            "corporation_name": "Superstar Condos",
                             "tax_records": [
                              ],
                              "history": {
@@ -176,7 +178,8 @@ class TestPropertyDetail(APITestCase):
         # Condo model owned by user 1.
         self.user = User.objects.create_user(email='test@kanga.xyz', password='test')
         condo = Condo.objects.create(owner=self.user,
-                n_bathrooms=1, n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11)
+                n_bathrooms=1, n_bedrooms=2, price=250000, sqr_ftg=3000,
+                unit_num=11, parking_spaces=1, corporation_name='Superstar Condos')
         Location.objects.create(kproperty=condo,
                 address='60 Brian Harrison', city="Toronto", country="Canada",
                 province='Ontario', postal_code='M1P0B2',
@@ -394,7 +397,8 @@ class TestNestedModelsList(APITestCase):
         
         # Condo model owned by user 1.
         self.condo = Condo.objects.create(owner=self.user,
-                n_bathrooms=1, n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11)
+                n_bathrooms=1, n_bedrooms=2, price=250000, sqr_ftg=3000,
+                unit_num=11, parking_spaces=1)
         Location.objects.create(kproperty=self.condo,
                 address='60 Brian Harrison', city="Toronto", country="Canada",
                 province='Ontario', postal_code='M1P0B2',
@@ -449,7 +453,8 @@ class TestOpenHouseList(APITestCase):
         
         # Condo model owned by user 1.
         self.condo = Condo.objects.create(owner=self.user,
-                n_bathrooms=1, n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11)
+                n_bathrooms=1, n_bedrooms=2, price=250000, sqr_ftg=3000,
+                unit_num=11, parking_spaces=1)
         Location.objects.create(kproperty=self.condo,
                 address='60 Brian Harrison', city="Toronto", country="Canada",
                 province='Ontario', postal_code='M1P0B2',
@@ -558,7 +563,8 @@ class TestOpenHouseDetail(APITestCase):
         
         # Condo model owned by user 1.
         self.condo = Condo.objects.create(owner=self.user,
-                n_bathrooms=1, n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11)
+                n_bathrooms=1, n_bedrooms=2, price=250000, sqr_ftg=3000,
+                unit_num=11, parking_spaces=1)
         Location.objects.create(kproperty=self.condo,
                 address='60 Brian Harrison', city="Toronto", country="Canada",
                 province='Ontario', postal_code='M1P0B2',
@@ -708,7 +714,8 @@ class TestRSVPList(APITestCase):
         
         # Create a property
         self.condo = Condo.objects.create(owner=self.user,
-                n_bathrooms=1, n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11)
+                n_bathrooms=1, n_bedrooms=2, price=250000, sqr_ftg=3000,
+                unit_num=11, parking_spaces=1)
         Location.objects.create(kproperty=self.condo,
                 address='60 Brian Harrison', city="Toronto", country="Canada",
                 province='Ontario', postal_code='M1P0B2',
@@ -813,7 +820,8 @@ class TestRSVPDetail(APITestCase):
         
         # Create a property
         self.condo = Condo.objects.create(owner=self.user,
-                n_bathrooms=1, n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11)
+                n_bathrooms=1, n_bedrooms=2, price=250000, sqr_ftg=3000,
+                unit_num=11, parking_spaces=1)
         Location.objects.create(kproperty=self.condo,
                 address='60 Brian Harrison', city="Toronto", country="Canada",
                 province='Ontario', postal_code='M1P0B2',
