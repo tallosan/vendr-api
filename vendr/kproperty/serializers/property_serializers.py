@@ -149,65 +149,67 @@ class CoOpSerializer(PropertySerializer):
 
     class Meta(PropertySerializer.Meta):
 
-        fields  = PropertySerializer.Meta.fields + ('unit_num', 'parking_spaces',
+        fields = PropertySerializer.Meta.fields + ('unit_num', 'parking_spaces',
                     'corporation_name')
 
 '''   Serializer for Condo models. '''
 class CondoSerializer(CoOpSerializer):
 
     class Meta(CoOpSerializer.Meta):
-
-        model   = Condo
+        model = Condo
 
     ''' Overrides parent by passing a Condo model as the 'property_class'. '''
     def create(self, validated_data):
 
         return super(CondoSerializer, self).create(Condo().__class__, validated_data)
 
+
 '''   Serializer for freehold properties. '''
 class FreeholdSerializer(PropertySerializer):
 
     class Meta(PropertySerializer.Meta):
-        
-        fields  = PropertySerializer.Meta.fields
+        fields = PropertySerializer.Meta.fields
+
 
 '''   Serializer for House models. '''
 class HouseSerializer(FreeholdSerializer):
 
     class Meta(PropertySerializer.Meta):
-
-        model   = House
-        fields  = FreeholdSerializer.Meta.fields
+        model  = House
+        fields = FreeholdSerializer.Meta.fields
    
     ''' Overrides parent by passing a House model as the 'property_class'. '''
     def create(self, validated_data):
 
         return super(HouseSerializer, self).create(House().__class__, validated_data)
 
+
 '''   Serializer for Townhouse models. '''
 class TownhouseSerializer(FreeholdSerializer):
 
     class Meta(FreeholdSerializer.Meta):
-
-        model   = Townhouse
-        fields  = FreeholdSerializer.Meta.fields + ('degree', )
+        model  = Townhouse
+        fields = FreeholdSerializer.Meta.fields + ('degree', )
 
     ''' Overrides parent by passing a House model as the 'property_class'. '''
     def create(self, validated_data):
 
         return super(TownhouseSerializer, self).create(Townhouse().__class__, validated_data)
 
+
 '''   Serializer for Manufactured properties. '''
 class ManufacturedSerializer(PropertySerializer):
 
     class Meta(PropertySerializer.Meta):
-        
-        fields  = PropertySerializer.Meta.fields
+        model  = Manufactured
+        fields = PropertySerializer.Meta.fields + ('manufacturer', 'serial',
+                    'year', 'length', 'width', 'mobile_park')
+
 
 '''   Serializer for Vacant Land properties. '''
 class VacantLandSerializer(PropertySerializer):
 
     class Meta(PropertySerializer.Meta):
-        
-        fields  = PropertySerializer.Meta.fields
+        model  = VacantLand
+        fields = PropertySerializer.Meta.fields
 

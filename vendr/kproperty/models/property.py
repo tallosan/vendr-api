@@ -9,6 +9,7 @@ from __future__ import unicode_literals
 from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 
 from rest_framework.exceptions import APIException
 
@@ -160,6 +161,15 @@ class Townhouse(Freehold):
 
 '''   Manufactured model. This includes properties such as mobile homes. '''
 class Manufactured(Property):
+
+    manufacturer = models.CharField(max_length=20)
+    serial_num = models.CharField(max_length=15, blank=True, null=True)
+    year = models.PositiveIntegerField(null=True)
+    length = models.DecimalField(decimal_places=2, max_digits=100, blank=True,
+                validators=MinValueValidator)
+    width = models.DecimalField(decimal_places=2, max_digits=100, blank=True,
+                validators=MinValueValidator)
+    mobile_park = models.CharField(max_length=15, default='No Park')
 
     def get_serializer(self):
 
