@@ -136,7 +136,8 @@ class Transaction(models.Model):
                 raise ValueError('buyer and seller must both accepted.')
 
             # Create the closing stage.
-            self.create_closing()
+            closing_type = 'closing'
+            self.create_closing(closing_type=closing_type)
 
         # Closing. Check the closing conditions are satisfied.
         elif self.stage == 2:
@@ -153,8 +154,13 @@ class Transaction(models.Model):
 
         return self.offers.filter(owner=user_id).order_by('-timestamp')
     
-    def create_closing(self):
-        pass
+    ''' Create a Closing object for this Transaction.
+        Args:
+            closing_type -- The type of Closing object to create. E.g. 'condo'.
+    '''
+    def create_closing(self, closing_type):
+        
+        closing = AbstractClosingFactory(closing_type=closing_type, transaction=self)
 
     ''' Overrides the default signal handling on related models. '''
     def delete(self, *args, **kwargs):

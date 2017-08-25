@@ -89,7 +89,8 @@ class BaseContractManager(models.Manager):
 
         # Create clauses.
         deposit_clause = DepositClause.objects.create(contract=contract)
-        completion_date = CompletionDateClause.objects.create(contract=contract)
+        completion_date = CompletionDateClause.objects.create(contract=contract,
+                _required=True)
         irrevocability_clause = IrrevocabilityClause.objects.create(contract=contract)
         payment_clause = PaymentMethodClause.objects.create(contract=contract,
                 value='Credit Card')
@@ -106,7 +107,8 @@ class BaseContractManager(models.Manager):
             clause = StaticClause.objects.create(contract=contract,
                         title=static_clause['title'],
                         preview=static_clause['preview'],
-                        explanation=static_clause['explanation']
+                        explanation=static_clause['explanation'],
+                        _required=static_clause['required']
             )
 
 
@@ -193,7 +195,8 @@ class CondoContractManager(CoOpContractManager):
         
         return contract
 
-'''   [** Abstract **] '''
+
+'''   [Abstract] '''
 class CoOwnershipContractManager(BaseContractManager):
 
     ''' Initialize this manager with any necessary additional static clauses. '''
@@ -417,6 +420,7 @@ class Contract(models.Model):
     owner       = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='contracts',
                     on_delete=models.CASCADE)
     
+    ''' Returns a list of clauses (static and dynamic) on this contract. '''
     @property
     def clauses(self):
         
@@ -428,6 +432,22 @@ class Contract(models.Model):
         ]
         
         return clauses
+    
+    ''' Returns a list of 'required' clauses on this contract. Required clauses
+        are simply clauses that contain a condition that must be fulfilled in
+        order to complete the transaction.
+    '''
+    @property
+    def required_clauses(self):
+    
+        required_clauses = []
+        required_clauses += self.static_clauses.filter(_required=True)
+        clauses += [
+                        d_clause.actual_type
+                        for d_clause in self.dynamic_clauses.filter(_required=True)
+        ]
+
+        return required_clauses
 
     def save(self, *args, **kwargs):
 
@@ -437,20 +457,26 @@ class Contract(models.Model):
 
         super(Contract, self).save(*args, **kwargs)
 
+
 class CoOpContract(Contract):
     objects = CoOpContractManager()
+
 
 class CondoContract(Contract):
     objects = CondoContractManager()
 
+
 class ManufacturedContract(Contract):
     objects = ManufacturedContractManager()
+
 
 class HouseContract(Contract):
     objects = HouseContractManager()
 
+
 class TownhouseContract(HouseContract):
     objects = TownhouseContractManager()
+
 
 class VacantLandContract(Contract):
     objects = VacantLandContractManager()
@@ -468,6 +494,7 @@ class Clause(models.Model):
     is_active = models.BooleanField(default=True)
     preview   = models.TextField()
     explanation = models.TextField()
+    _required = models.BooleanField(default=False, editable=False)
 
     class Meta:
         abstract = True
@@ -562,6 +589,7 @@ class DynamicClause(Clause):
     def serializer(self):
         return 'DynamicClauseSerializer'
 
+
 class DynamicTextClause(DynamicClause):
 
     # 'value' is deffered to the child classes to set. HTTP doesn't care aobut
@@ -570,12 +598,14 @@ class DynamicTextClause(DynamicClause):
     
     class Meta: abstract = True
 
+
 class DynamicToggleClause(DynamicClause):
 
     value   = models.BooleanField(default=True)
     ui_type = models.CharField(max_length=6, default='TOGGLE', editable=False)
 
     class Meta: abstract = True
+
 
 class DynamicDropdownClause(DynamicClause):
      
@@ -598,12 +628,14 @@ class DynamicDropdownClause(DynamicClause):
     def serializer(self):
         return 'DropdownClauseSerializer'
 
+
 class DynamicChipClause(DynamicClause):
  
     value = ArrayField(models.CharField(max_length=15), default=list)
     ui_type = models.CharField(max_length=10, default='CHIP', editable=False)
     
     class Meta: abstract = True
+
 
 class DynamicDateClause(DynamicClause):
 
@@ -624,6 +656,7 @@ class CompletionDateClause(DynamicDateClause):
             self.prompt = 'Sale Completion Date'
             self.explanation = DYNAMIC_STANDARD_CLAUSES['completion_date']\
                                                        ['explanation']
+            self._required = True
 
         super(CompletionDateClause, self).save(*args, **kwargs)
 
@@ -638,6 +671,7 @@ class CompletionDateClause(DynamicDateClause):
                   format(day, month, year)
         return preview
 
+
 class IrrevocabilityClause(DynamicDateClause):
 
     def save(self, *args, **kwargs):
@@ -648,6 +682,7 @@ class IrrevocabilityClause(DynamicDateClause):
             self.prompt = 'Cancellation Deadline'
             self.explanation = DYNAMIC_STANDARD_CLAUSES['irrevocability']\
                                                        ['explanation']
+            self._required = True
 
         super(IrrevocabilityClause, self).save(*args, **kwargs)
 
@@ -660,6 +695,7 @@ class IrrevocabilityClause(DynamicDateClause):
                   format(deadline_month, deadline_day)
         
         return preview
+
 
 class MortgageDeadlineClause(DynamicDateClause):
 
@@ -679,6 +715,7 @@ class MortgageDeadlineClause(DynamicDateClause):
         preview = DYNAMIC_STANDARD_CLAUSES['mortgage_date']['preview'].\
                   format(self.value)
         return preview
+
 
 class SurveyDeadlineClause(DynamicDateClause):
 
@@ -706,6 +743,7 @@ class SurveyDeadlineClause(DynamicDateClause):
 
         return preview
 
+
 class DepositClause(DynamicTextClause):
 
     value = models.PositiveIntegerField(null=True)
@@ -717,6 +755,7 @@ class DepositClause(DynamicTextClause):
             self.category = 'D'
             self.prompt = 'Number Of Days Until Buyer Delivers Deposit.'
             self.explanation = DYNAMIC_STANDARD_CLAUSES['deposit']['explanation']
+            self._required = True
 
         super(DepositClause, self).save(*args, **kwargs)
     
@@ -736,6 +775,7 @@ class DepositClause(DynamicTextClause):
 
         return preview
 
+
 class ChattelsAndFixsClause(DynamicToggleClause):
 
     def save(self, *args, **kwargs):
@@ -746,6 +786,7 @@ class ChattelsAndFixsClause(DynamicToggleClause):
             self.prompt = 'Ensure Chattels & Fixtures are in good working order'
             self.explanation = DYNAMIC_STANDARD_CLAUSES['chattels_and_fixs']\
                                                        ['explanation']
+            self._required = True
 
         super(ChattelsAndFixsClause, self).save(*args, **kwargs)
 
@@ -754,6 +795,7 @@ class ChattelsAndFixsClause(DynamicToggleClause):
 
         preview = DYNAMIC_STANDARD_CLAUSES['chattels_and_fixs']['preview']
         return preview
+
 
 class BuyerArrangesMortgageClause(DynamicToggleClause):
 
@@ -765,6 +807,7 @@ class BuyerArrangesMortgageClause(DynamicToggleClause):
             self.prompt = 'Buyer Arranges Mortgage'
             self.explanation = DYNAMIC_STANDARD_CLAUSES['buyer_mrtg_arrange']\
                                                        ['explanation']
+            self._required = True
 
         super(BuyerArrangesMortgageClause, self).save(*args, **kwargs)
 
@@ -773,6 +816,7 @@ class BuyerArrangesMortgageClause(DynamicToggleClause):
 
         preview = DYNAMIC_STANDARD_CLAUSES['buyer_mrtg_arrange']['preview']
         return preview
+
 
 class EquipmentClause(DynamicToggleClause):
 
@@ -792,6 +836,7 @@ class EquipmentClause(DynamicToggleClause):
         preview = DYNAMIC_STANDARD_CLAUSES['equipment']['preview']
         return preview
 
+
 class EnvironmentClause(DynamicToggleClause):
 
     def save(self, *args, **kwargs):
@@ -801,6 +846,7 @@ class EnvironmentClause(DynamicToggleClause):
             self.category = 'U'
             self.prompt = 'Environmental Clause'
             self.explanation = DYNAMIC_STANDARD_CLAUSES['environmental']['explanation']
+            self._required = True
 
         super(EnvironmentClause, self).save(*args, **kwargs)
 
@@ -809,6 +855,7 @@ class EnvironmentClause(DynamicToggleClause):
 
         preview = DYNAMIC_STANDARD_CLAUSES['environmental']['preview']
         return preview
+
 
 class MaintenanceClause(DynamicToggleClause):
 
@@ -829,6 +876,7 @@ class MaintenanceClause(DynamicToggleClause):
         preview = DYNAMIC_STANDARD_CLAUSES['maintenance']['preview']
         return preview
 
+
 class UFFIClause(DynamicToggleClause):
 
     def save(self, *args, **kwargs):
@@ -847,6 +895,7 @@ class UFFIClause(DynamicToggleClause):
         preview = DYNAMIC_STANDARD_CLAUSES['uffi']['preview']
         return preview
 
+
 class PaymentMethodClause(DynamicDropdownClause):
 
     value = models.CharField(max_length=15, blank=True, null=True)
@@ -860,6 +909,7 @@ class PaymentMethodClause(DynamicDropdownClause):
             self.options = ['Credit Card', 'Cheque', 'Cash']
             self.explanation = DYNAMIC_STANDARD_CLAUSES['payment_method']\
                                                        ['explanation']
+            self._required = True
         
         super(PaymentMethodClause, self).save(*args, **kwargs)
     
@@ -870,6 +920,7 @@ class PaymentMethodClause(DynamicDropdownClause):
         preview = DYNAMIC_STANDARD_CLAUSES['payment_method']['preview']
         
         return preview
+
 
 class ChattelsIncludedClause(DynamicChipClause):
 
@@ -892,6 +943,7 @@ class ChattelsIncludedClause(DynamicChipClause):
 
         return preview
 
+
 class FixturesExcludedClause(DynamicChipClause):
 
     def save(self, *args, **kwargs):
@@ -901,6 +953,7 @@ class FixturesExcludedClause(DynamicChipClause):
             self.title = 'Fixtures Excluded'
             self.prompt = 'Fixtures Excluded'
             self.explanation = DYNAMIC_STANDARD_CLAUSES['fixtures_exc']['explanation']
+            self._required = True
 
         super(FixturesExcludedClause, self).save(*args, **kwargs)
 
@@ -913,6 +966,7 @@ class FixturesExcludedClause(DynamicChipClause):
 
         return preview
 
+
 class RentalItemsClause(DynamicChipClause):
 
     def save(self, *args, **kwargs):
@@ -922,7 +976,8 @@ class RentalItemsClause(DynamicChipClause):
             self.title = 'Rental Items'
             self.prompt = 'Rented Items on Property'
             self.explanation = DYNAMIC_STANDARD_CLAUSES['rented_items']['explanation']
-
+            self._required = True
+            
         super(RentalItemsClause, self).save(*args, **kwargs)
 
     @property
