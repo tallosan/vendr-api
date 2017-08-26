@@ -57,7 +57,7 @@ class ImagesSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
 
         kproperty = validated_data.pop('kproperty')
-        image_data = self.context.pop('image')[0]
+        image_data = self.context.pop('images')[0]
         
         image = Images.objects.create(kproperty=kproperty, image=image_data)
 
@@ -66,7 +66,7 @@ class ImagesSerializer(serializers.ModelSerializer):
     ''' Update an Image object. Note, we're recieving files through the context. '''
     def update(self, instance, validated_data):
         
-        image = self.context.pop('image')[0]
+        image = self.context.pop('images')[0]
         instance.image = image
         
         instance.save()
