@@ -24,7 +24,8 @@ class TestPropertySearchList(APITestCase):
         # Owner: self.user. Condo Model 0.
         self.user = User.objects.create_user(email='test@kanga.xyz', password='test')
         self.user_condo_0 = Condo.objects.create(owner=self.user,
-                n_bathrooms=4, n_bedrooms=4, price=250000, sqr_ftg=3000, unit_num=11)
+                n_bathrooms=4, n_bedrooms=4, price=250000, sqr_ftg=3000,
+                unit_num=11, parking_spaces=1)
         Location.objects.create(kproperty=self.user_condo_0,
                 address='Robarts', city="Toronto", country="Canada",
                 province='Ontario', postal_code='M1P0B2',
@@ -41,7 +42,8 @@ class TestPropertySearchList(APITestCase):
 
         # Owner: self.user. Condo Model 1.
         self.user_condo_1 = Condo.objects.create(owner=self.user,
-                n_bathrooms=4, n_bedrooms=4, price=10500000, sqr_ftg=8000, unit_num=100)
+                n_bathrooms=4, n_bedrooms=4, price=10500000, sqr_ftg=8000,
+                unit_num=100, parking_spaces=1, corporation_name='Super Condos')
         Location.objects.create(kproperty=self.user_condo_1,
                 address='CN Tower', city="Toronto", country="Canada",
                 province='Ontario', postal_code='M1P0B2',

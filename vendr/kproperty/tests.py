@@ -51,6 +51,7 @@ class TestPropertyList(APITestCase):
                             "price": 250000.0, 
                             "sqr_ftg": 3000.0,
                             "unit_num": 11,
+                            "parking_spaces": 1,
                             "parking_spaces": 0,
                             "corporation_name": "Superstar Condos",
                             "tax_records": [
