@@ -18,7 +18,7 @@ from kproperty.serializers import FeaturesSerializer, TaxRecordsSerializer,\
                                     ImagesSerializer
 import kproperty.permissions as kproperty_permissions
 
-from core.mixins import NestedListCreateModelMixin, \
+from vendr_core.mixins import NestedListCreateModelMixin, \
     NestedRetrieveUpdateDestroyAPIView
 
 
