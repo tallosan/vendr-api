@@ -29,5 +29,17 @@ urlpatterns = [
         url(r'^(?P<transaction_pk>[0-9a-f-]+)/contracts/(?P<contract_pk>[0-9a-f-]+)/'
                 'clauses/(?P<pk>[0-9a-f-]+)/$',
             views.ClauseDetail.as_view()),
+
+        # Closing views.
+        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/$',
+            views.ClosingDetail.as_view()),
+        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/amendments/$',
+            views.AmendmentsList.as_view()),
+        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/$',
+            views.WaiverList.as_view()),
+        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/$',
+            views.NoticeOfFulfillmentList.as_view()),
+        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/$',
+            views.MutualReleaseList.as_view())
 ]
 
