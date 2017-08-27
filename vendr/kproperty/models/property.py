@@ -42,6 +42,7 @@ class Property(models.Model):
     views        = models.IntegerField(default=0)
     offers       = models.IntegerField(default=0)
     is_featured  = models.BooleanField(default=False)
+    display_pic  = models.PositiveIntegerField(default=0)
     
     ''' (Abstract) Returns the serializer type for this model. '''
     def get_serializer(self):
@@ -76,6 +77,10 @@ class Property(models.Model):
         if any((field < 0) for field in [self.price, self.sqr_ftg,
             self.n_bedrooms, self.n_bathrooms]):
             raise ValidationError('error: field cannot have a negative value.')
+        
+        # Ensure that the display pic is pointing to an actual image.
+        if self.display_pic > self.images.count():
+            raise ValidationError('error: display pic index out of range.')
 
         super(Property, self).clean()
 
