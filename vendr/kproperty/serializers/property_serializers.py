@@ -40,6 +40,7 @@ class PropertySerializer(serializers.ModelSerializer):
                    'open_houses',
                    'created_time',
                    'is_featured',
+                   'display_pic',
                    'views',
                    'offers')
 
