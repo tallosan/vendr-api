@@ -89,8 +89,7 @@ class BaseContractManager(models.Manager):
 
         # Create clauses.
         deposit_clause = DepositClause.objects.create(contract=contract)
-        completion_date = CompletionDateClause.objects.create(contract=contract,
-                _required=True)
+        completion_date = CompletionDateClause.objects.create(contract=contract)
         irrevocability_clause = IrrevocabilityClause.objects.create(contract=contract)
         payment_clause = PaymentMethodClause.objects.create(contract=contract,
                 value='Credit Card')
@@ -549,11 +548,22 @@ class DynamicClause(Clause):
     _content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     actual_type   = GenericForeignKey('_content_type', 'id')
     
-    ''' We have to override this in order to create our inheritance scheme. '''
-    def save(self, *args, **kwargs):
+    ''' We have to override this in order to create our inheritance scheme.
+        Args:
+            clause_key (str) -- The clauses's key in the dynamic clauses dict.
+    '''
+    def save(self, clause_key, *args, **kwargs):
 
         if not self.pk:
             self.actual_type = self
+
+            # Pull clause info from dynamic clauses doc.
+            self.category = DYNAMIC_STANDARD_CLAUSES[clause_key]['category']
+            self.title = DYNAMIC_STANDARD_CLAUSES[clause_key]['title']
+            self.prompt = DYNAMIC_STANDARD_CLAUSES[clause_key]['prompt']
+            self.explanation = DYNAMIC_STANDARD_CLAUSES['completion_date']\
+                                                       ['explanation']
+            self._required = DYNAMIC_STANDARD_CLAUSES[clause_key]['required']
  
         super(DynamicClause, self).save(*args, **kwargs)
 
@@ -650,15 +660,8 @@ class CompletionDateClause(DynamicDateClause):
 
     def save(self, *args, **kwargs):
 
-        if not self.pk:
-            self.category = 'D'
-            self.title = 'Completion Date'
-            self.prompt = 'Sale Completion Date'
-            self.explanation = DYNAMIC_STANDARD_CLAUSES['completion_date']\
-                                                       ['explanation']
-            self._required = True
-
-        super(CompletionDateClause, self).save(*args, **kwargs)
+        super(CompletionDateClause, self).save(clause_key='completion_date',
+                *args, **kwargs)
 
     @property
     def preview(self):
@@ -676,15 +679,8 @@ class IrrevocabilityClause(DynamicDateClause):
 
     def save(self, *args, **kwargs):
 
-        if not self.pk:
-            self.category = 'D'
-            self.title = 'Irrevocability'
-            self.prompt = 'Cancellation Deadline'
-            self.explanation = DYNAMIC_STANDARD_CLAUSES['irrevocability']\
-                                                       ['explanation']
-            self._required = True
-
-        super(IrrevocabilityClause, self).save(*args, **kwargs)
+        super(IrrevocabilityClause, self).save(clause_key='irrevocability',
+                *args, **kwargs)
 
     @property
     def preview(self):
@@ -701,13 +697,8 @@ class MortgageDeadlineClause(DynamicDateClause):
 
     def save(self, *args, **kwargs):
 
-        if not self.pk:
-            self.category = 'D'
-            self.title = 'Mortgage Date'
-            self.prompt = 'Mortgage Deadline'
-            self.explanatino = DYNAMIC_STANDARD_CLAUSES['mortgage_date']['explanation']
-
-        super(MortgageDeadlineClause, self).save(*args, **kwargs)
+        super(MortgageDeadlineClause, self).save(clause_key='mortgage_date',
+                *args, **kwargs)
 
     @property
     def preview(self):
@@ -720,14 +711,9 @@ class MortgageDeadlineClause(DynamicDateClause):
 class SurveyDeadlineClause(DynamicDateClause):
 
     def save(self, *args, **kwargs):
-        
-        if not self.pk:
-            self.category = 'P'
-            self.title = 'Survey'
-            self.prompt = 'Request a Land Survey'
-            self.explanation = DYNAMIC_STANDARD_CLAUSES['survey_date']['explanation']
 
-        super(SurveyDeadlineClause, self).save(*args, **kwargs)
+        super(SurveyDeadlineClause, self).save(clause_key='survey_date',
+                *args, **kwargs)
 
     @property
     def preview(self):
@@ -750,14 +736,7 @@ class DepositClause(DynamicTextClause):
 
     def save(self, *args, **kwargs):
 
-        if not self.pk:
-            self.title = 'Deposit Deadline'
-            self.category = 'D'
-            self.prompt = 'Number Of Days Until Buyer Delivers Deposit.'
-            self.explanation = DYNAMIC_STANDARD_CLAUSES['deposit']['explanation']
-            self._required = True
-
-        super(DepositClause, self).save(*args, **kwargs)
+        super(DepositClause, self).save(clause_key='deposit', *args, **kwargs)
     
     @property
     def preview(self):
@@ -780,15 +759,8 @@ class ChattelsAndFixsClause(DynamicToggleClause):
 
     def save(self, *args, **kwargs):
 
-        if not self.pk:
-            self.title = 'Chattels and Fixtures'
-            self.category = 'U'
-            self.prompt = 'Ensure Chattels & Fixtures are in good working order'
-            self.explanation = DYNAMIC_STANDARD_CLAUSES['chattels_and_fixs']\
-                                                       ['explanation']
-            self._required = True
-
-        super(ChattelsAndFixsClause, self).save(*args, **kwargs)
+        super(ChattelsAndFixsClause, self).save(clause_key='chattels_and_fixs',
+                *args, **kwargs)
 
     @property
     def preview(self):
@@ -801,15 +773,8 @@ class BuyerArrangesMortgageClause(DynamicToggleClause):
 
     def save(self, *args, **kwargs):
 
-        if not self.pk:
-            self.title = 'Buyer Arranging Mortgage'
-            self.category = 'F'
-            self.prompt = 'Buyer Arranges Mortgage'
-            self.explanation = DYNAMIC_STANDARD_CLAUSES['buyer_mrtg_arrange']\
-                                                       ['explanation']
-            self._required = True
-
-        super(BuyerArrangesMortgageClause, self).save(*args, **kwargs)
+        super(BuyerArrangesMortgageClause, self).save(clause_key='buyer_mrtg_arrange',
+                *args, **kwargs)
 
     @property
     def preview(self):
@@ -822,13 +787,7 @@ class EquipmentClause(DynamicToggleClause):
 
     def save(self, *args, **kwargs):
 
-        if not self.pk:
-            self.title = 'Equipment'
-            self.category = 'U'
-            self.prompt = 'Equipment State'
-            self.explanation = DYNAMIC_STANDARD_CLAUSES['equipment']['explanation']
-
-        super(EquipmentClause, self).save(*args, **kwargs)
+        super(EquipmentClause, self).save(clause_key='equipment', *args, **kwargs)
 
     @property
     def preview(self):
@@ -841,14 +800,8 @@ class EnvironmentClause(DynamicToggleClause):
 
     def save(self, *args, **kwargs):
 
-        if not self.pk:
-            self.title = 'Environment'
-            self.category = 'U'
-            self.prompt = 'Environmental Clause'
-            self.explanation = DYNAMIC_STANDARD_CLAUSES['environmental']['explanation']
-            self._required = True
-
-        super(EnvironmentClause, self).save(*args, **kwargs)
+        super(EnvironmentClause, self).save(clause_key='environmental',
+                *args, **kwargs)
 
     @property
     def preview(self):
@@ -861,14 +814,8 @@ class MaintenanceClause(DynamicToggleClause):
 
     def save(self, *args, **kwargs):
 
-        if not self.pk:
-            self.title = 'Maintenance'
-            self.category = 'U'
-            self.prompt = 'Seller will provide maintenance on the property prior ' \
-                          'to purchase'
-            self.explanation = DYNAMIC_STANDARD_CLAUSES['maintenance']['explanation']
-
-        super(MaintenanceClause, self).save(*args, **kwargs)
+        super(MaintenanceClause, self).save(clause_key='maintenance',
+                *args, **kwargs)
 
     @property
     def preview(self):
@@ -881,13 +828,7 @@ class UFFIClause(DynamicToggleClause):
 
     def save(self, *args, **kwargs):
 
-        if not self.pk:
-            self.title = 'UFFI and Vermiculite'
-            self.category = 'U'
-            self.prompt = 'Void UFFI & Vermiculite Warning'
-            self.explanation = DYNAMIC_STANDARD_CLAUSES['uffi']['explanation']
-
-        super(UFFIClause, self).save(*args, **kwargs)
+        super(UFFIClause, self).save(clause_key='uffi', *args, **kwargs)
 
     @property
     def preview(self):
@@ -901,17 +842,10 @@ class PaymentMethodClause(DynamicDropdownClause):
     value = models.CharField(max_length=15, blank=True, null=True)
 
     def save(self, *args, **kwargs):
-
-        if not self.pk:
-            self.category = 'F'
-            self.title = 'Payment Method'
-            self.prompt = 'Payment Method'
-            self.options = ['Credit Card', 'Cheque', 'Cash']
-            self.explanation = DYNAMIC_STANDARD_CLAUSES['payment_method']\
-                                                       ['explanation']
-            self._required = True
-        
-        super(PaymentMethodClause, self).save(*args, **kwargs)
+       
+        if not self.pk: self.options = ['Credit Card', 'Cheque', 'Cash']
+        super(PaymentMethodClause, self).save(clause_key='payment_method',
+                *args, **kwargs)
     
     @property
     def preview(self):
@@ -926,13 +860,8 @@ class ChattelsIncludedClause(DynamicChipClause):
 
     def save(self, *args, **kwargs):
 
-        if not self.pk:
-            self.category = 'P'
-            self.title = 'Chattels Included'
-            self.prompt = 'Chattels Included'
-            self.explanation = DYNAMIC_STANDARD_CLAUSES['chattels_inc']['explanation']
-        
-        super(ChattelsIncludedClause, self).save(*args, **kwargs)
+        super(ChattelsIncludedClause, self).save(clause_key='chattels_inc',
+                *args, **kwargs)
 
     @property
     def preview(self):
@@ -948,14 +877,8 @@ class FixturesExcludedClause(DynamicChipClause):
 
     def save(self, *args, **kwargs):
 
-        if not self.pk:
-            self.category = 'P'
-            self.title = 'Fixtures Excluded'
-            self.prompt = 'Fixtures Excluded'
-            self.explanation = DYNAMIC_STANDARD_CLAUSES['fixtures_exc']['explanation']
-            self._required = True
-
-        super(FixturesExcludedClause, self).save(*args, **kwargs)
+        super(FixturesExcludedClause, self).save(clause_key='fixtures_exc',
+                *args, **kwargs)
 
     @property
     def preview(self):
@@ -970,15 +893,9 @@ class FixturesExcludedClause(DynamicChipClause):
 class RentalItemsClause(DynamicChipClause):
 
     def save(self, *args, **kwargs):
-
-        if not self.pk:
-            self.category = 'P'
-            self.title = 'Rental Items'
-            self.prompt = 'Rented Items on Property'
-            self.explanation = DYNAMIC_STANDARD_CLAUSES['rented_items']['explanation']
-            self._required = True
-            
-        super(RentalItemsClause, self).save(*args, **kwargs)
+           
+        super(RentalItemsClause, self).save(clause_key='rented_items',
+                *args, **kwargs)
 
     @property
     def preview(self):
