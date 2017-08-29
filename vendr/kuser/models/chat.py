@@ -40,7 +40,12 @@ class Message(models.Model):
     ''' A minimal message representation used for instant message alerts. '''
     @property
     def alert(self):
-        return { 'chat': str(self.chat.pk), 'content': self.content }
+
+        return {
+                    'chat': str(self.chat.pk), 'content': self.content,
+                    'sender': self.sender, 'timestamp': self.timestamp,
+                    'pk': str(self.pk)
+        }
 
     ''' There are two behaviors we need to enforce on message saves:
         1. Immutability (i.e. prevent any edits).
@@ -49,10 +54,10 @@ class Message(models.Model):
     def save(self, *args, **kwargs):
         
         if self._state.adding:
-            self.chat.opened = False; self.chat.save()
             self.publish()
+            self.chat.opened = False; self.chat.save()
             super(Message, self).save(*args, **kwargs)
-    
+
     ''' Push our message into the appropriate channels. '''
     def publish(self):
 
@@ -60,9 +65,9 @@ class Message(models.Model):
             channels = [
                             'users.{}.inbox'.format(recipient.pk)
                             for recipient in self.chat.participants.all()
-                            if recipient.pk != self.sender
+                            if recipient.full_name != self.sender
             ]
-            
+
             # Push our message alert to the appropriate channels.
             message_json = json.dumps(self.alert)
             r = redis.StrictRedis(host=settings.REDIS_HOST,
@@ -70,4 +75,4 @@ class Message(models.Model):
             
             for channel in channels:
                 r.publish(channel, message_json)
-   
+
