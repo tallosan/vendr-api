@@ -18,7 +18,7 @@ import datetime
 from collections import OrderedDict
 
 from kproperty.models import Property
-from .transaction import Transaction
+import transaction
 from .offer import Offer
 
 from .text.static_clauses import STATIC_CLAUSES, CONDO_STATIC_CLAUSES, \
@@ -413,7 +413,7 @@ class Contract(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     # The Transaction that this contract belongs to.
-    transaction = models.ForeignKey(Transaction, related_name='contracts',
+    transaction = models.ForeignKey('Transaction', related_name='contracts',
                     on_delete=models.CASCADE)
     timestamp   = models.DateTimeField(auto_now_add=True)
     owner       = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='contracts',
@@ -441,7 +441,7 @@ class Contract(models.Model):
     
         required_clauses = []
         required_clauses += self.static_clauses.filter(_required=True)
-        clauses += [
+        required_clauses += [
                         d_clause.actual_type
                         for d_clause in self.dynamic_clauses.filter(_required=True)
         ]
