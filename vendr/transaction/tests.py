@@ -29,7 +29,8 @@ class TestTransactionPost(APITestCase):
         
         # Create the property, and set up the necessary sub-models.
         self.kproperty = Condo.objects.create(owner=self.seller, n_bathrooms=1,
-                            n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11)
+                            n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11,
+                            parking_spaces=1)
         Location.objects.create(kproperty=self.kproperty, address='74 Ulster St',
                     city="Toronto", country="Canada", province='Ontario',
                     postal_code='M1P0B2', latitude=43.773313, longitude=-79.258729)
@@ -150,7 +151,8 @@ class TestTransactionDetail(APITestCase):
 
         # Create the property, and set up the necessary sub-models.
         self.kproperty = Condo.objects.create(owner=self.seller, n_bathrooms=1,
-                            n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11)
+                            n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11,
+                            parking_spaces=1, corporation_name='Test Condos')
         Location.objects.create(kproperty=self.kproperty, address='74 Ulster St',
                     city="Toronto", country="Canada", province='Ontario',
                     postal_code='M1P0B2', latitude=43.773313, longitude=-79.258729)
@@ -380,7 +382,8 @@ class TestOfferList(APITestCase):
 
         # Create the property, and set up the necessary sub-models.
         self.kproperty = Condo.objects.create(owner=self.seller, n_bathrooms=1,
-                            n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11)
+                            n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11,
+                            parking_spaces=1, corporation_name='Test Condos')
         Location.objects.create(kproperty=self.kproperty, address='74 Ulster St',
                     city="Toronto", country="Canada", province='Ontario',
                     postal_code='M1P0B2', latitude=43.773313, longitude=-79.258729)
@@ -500,7 +503,8 @@ class TestOfferDetail(APITestCase):
 
         # Create the property, and set up the necessary sub-models.
         self.kproperty = Condo.objects.create(owner=self.seller, n_bathrooms=1,
-                            n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11)
+                            n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11,
+                            parking_spaces=1, corporation_name='Test Condos')
         Location.objects.create(kproperty=self.kproperty, address='74 Ulster St',
                     city="Toronto", country="Canada", province='Ontario',
                     postal_code='M1P0B2', latitude=43.773313, longitude=-79.258729)
@@ -644,7 +648,8 @@ class TestContractList(APITestCase):
 
         # Create the property, and set up the necessary sub-models.
         self.kproperty = Condo.objects.create(owner=self.seller, n_bathrooms=1,
-                            n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11)
+                            n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11,
+                            parking_spaces=1, corporation_name='Test Condos')
         Location.objects.create(kproperty=self.kproperty, address='74 Ulster St',
                     city="Toronto", country="Canada", province='Ontario',
                     postal_code='M1P0B2', latitude=43.773313, longitude=-79.258729)
@@ -762,7 +767,8 @@ class TestContractList(APITestCase):
 
         # Create the property, and set up the necessary sub-models.
         self.kproperty = Condo.objects.create(owner=self.seller, n_bathrooms=1,
-                            n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11)
+                            n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11,
+                            parking_spaces=1, corporation_name='Test Condos')
         Location.objects.create(kproperty=self.kproperty, address='74 Ulster St',
                     city="Toronto", country="Canada", province='Ontario',
                     postal_code='M1P0B2', latitude=43.773313, longitude=-79.258729)
@@ -883,7 +889,8 @@ class TestClauseList(APITestCase):
 
         # Create the property, and set up the necessary sub-models.
         self.kproperty = Condo.objects.create(owner=self.seller, n_bathrooms=1,
-                            n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11)
+                            n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11,
+                            parking_spaces=1, corporation_name='Test Condos')
         Location.objects.create(kproperty=self.kproperty, address='74 Ulster St',
                     city="Toronto", country="Canada", province='Ontario',
                     postal_code='M1P0B2', latitude=43.773313, longitude=-79.258729)
@@ -946,7 +953,8 @@ class TestClauseDetail(APITestCase):
 
         # Create the property, and set up the necessary sub-models.
         self.kproperty = Condo.objects.create(owner=self.seller, n_bathrooms=1,
-                            n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11)
+                            n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11,
+                            parking_spaces=1, corporation_name='Test Condos')
         Location.objects.create(kproperty=self.kproperty, address='74 Ulster St',
                     city="Toronto", country="Canada", province='Ontario',
                     postal_code='M1P0B2', latitude=43.773313, longitude=-79.258729)
@@ -1196,3 +1204,112 @@ class TestClauseDetail(APITestCase):
         response = self.view(request, self.transaction.pk, self.contract.pk, \
                     clause[0].pk)
         self.assertEquals(response.status_code, 401)
+
+
+class TestClosingList(APITestCase):
+
+    def setUp(self):
+        
+        #self.view = ClauseDetail.as_view()
+        self.factory = APIRequestFactory()
+ 
+        # Create the buyer, and seller.
+        self.buyer = User.objects.create_user(email='buyer@kangaa.xyz',
+                        password='buyer_pwd')
+        self.seller = User.objects.create_user(email='seller@kangaa.xyz',
+                        password='seller_pwd')
+        self.wrong_user = User.objects.create_user(email='wronguser@kangaa.xyz',
+                        password='wronguser')
+
+        # Create the property, and set up the necessary sub-models.
+        self.kproperty = Condo.objects.create(owner=self.seller, n_bathrooms=1,
+                            n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11,
+                            parking_spaces=1, corporation_name='Test Condos')
+        Location.objects.create(kproperty=self.kproperty, address='74 Ulster St',
+                    city="Toronto", country="Canada", province='Ontario',
+                    postal_code='M1P0B2', latitude=43.773313, longitude=-79.258729)
+        TaxRecords.objects.create(kproperty=self.kproperty)
+        Historical.objects.create(kproperty=self.kproperty, last_sold_price=2000000,
+                    last_sold_date='2011-08-14', year_built=2010)
+        Features.objects.create(kproperty=self.kproperty, feature='Oven')
+ 
+        # The transaction data.
+        offer_data = {	
+                        "offer": 350000,
+		        "deposit": 20000,
+		        "comment": "Please consider this offer!"
+	}
+        
+        self.transaction = Transaction.objects.create(buyer=self.buyer,
+                seller=self.seller, kproperty=self.kproperty)
+        self.offer = Offer.objects.create(owner=self.buyer,
+                transaction=self.transaction, **offer_data)
+        self.contract = AbstractContractFactory.create_contract(contract_type='condo',
+                owner=self.buyer, transaction=self.transaction)
+
+        self.transaction.contracts_equal = True
+        self.transaction.buyer_accepted_contract = True
+        self.transaction.seller_accepted_contract = True
+        self.transaction.save()
+        
+        self.path = '/v1/transactions/{}/'.format(self.transaction.pk)
+   
+    ''' Ensure that we can create a Closing model. '''
+    def test_closing_model_create(self):
+
+        closing = self.transaction.create_closing(closing_type='condo')
+        closing.notice_of_fulfillment.reformat_content()
+        self.assertEquals(closing.__class__.__name__, 'CondoClosing')
+        documents = [closing.amendments, closing.waiver,
+                    closing.notice_of_fulfillment, closing.mutual_release]
+        self.assertEquals(len(documents), 4)
+
+    ''' Ensure that we can add clauses to our clause documents. '''
+    def test_add_clause(self):
+
+        closing = self.transaction.create_closing(closing_type='condo')
+        clause = self.contract.dynamic_clauses.all()[0].actual_type
+
+        for document in [closing.waiver, closing.amendments,
+                closing.notice_of_fulfillment]:
+            document.add_clause(clause)
+
+            # Ensure our clause is added to the document.
+            self.assertIn(clause.title,
+                    [c.clause.title for c in document.pending_clauses])
+
+            # Ensure no clauses are put in the approved set.
+            self.assertEquals(document.approved_clauses.count(), 0)
+ 
+    ''' Ensure that clauses can be added, and removed, to and from documents. '''
+    def test_approve_and_remove_clause(self):
+
+        closing = self.transaction.create_closing(closing_type='condo')
+        clause = self.contract.dynamic_clauses.all()[0].actual_type
+
+        for document in [closing.waiver, closing.amendments,
+                closing.notice_of_fulfillment]:
+            document.add_clause(clause)
+            doc_clause =  document.document_clauses.all()[0]
+            doc_clause.accepted = True
+            doc_clause.save()
+            
+            self.assertIn(clause.title,
+                    [c.clause.title for c in document.approved_clauses])
+
+            doc_clause.accepted = False
+            doc_clause.save()
+            self.assertNotIn(clause.title,
+                    [c.clause.title for c in document.approved_clauses])
+            self.assertIn(clause.title,
+                    [c.clause.title for c in document.pending_clauses])
+
+    ''' Ensure that the Notice of Fulfillment document is created with
+        the requisite pending clauses. '''
+    def test_notice_of_fulfillment_add_pending_clauses(self):
+
+        closing = self.transaction.create_closing(closing_type='condo')
+        nof = closing.notice_of_fulfillment
+        self.assertGreater(len(nof.document_clauses.all()), 0)
+        self.assertGreater(nof.pending_clauses.count(), 0)
+
