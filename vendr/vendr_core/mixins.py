@@ -19,7 +19,7 @@ class NestedListCreateModelMixin(object):
         that exist on the given parent. '''
     def get_queryset(self):
 
-        parent = self.parent.objects.get(pk=self.kwargs['pk'])
+        parent = self.parent.objects.get(pk=self.kwargs[self.parent_pk_field])
         return getattr(parent, self.field_name).all()
    
     ''' Create a Nested object on the given parent model.
@@ -28,7 +28,7 @@ class NestedListCreateModelMixin(object):
     '''
     def create(self, request, *args, **kwargs):
         
-        parent = self.parent.objects.get(pk=self.kwargs['pk'])
+        parent = self.parent.objects.get(pk=self.kwargs[self.parent_pk_field])
         self.check_object_permissions(request, parent)
         
         serializer = self.serializer_class(data=request.data, context=request.FILES)
@@ -50,7 +50,7 @@ class NestedRetrieveUpdateDestroyAPIView(object):
     def get_object(self):
 
         try:
-            parent = self.parent.objects.get(pk=self.kwargs['pk'])
+            parent = self.parent.objects.get(pk=self.kwargs[self.parent_pk_field])
             instance = getattr(parent, self.field_name).\
                        get(pk=self.kwargs[self.pk_field])
             self.check_object_permissions(self.request, parent)
