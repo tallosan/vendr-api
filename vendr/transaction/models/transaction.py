@@ -9,6 +9,7 @@ from django.utils import timezone
 from model_utils.managers import InheritanceManager
 
 from kproperty.models import Property
+from .closing import AbstractClosingFactory
 
 
 '''   Custom Transaction Manager. '''
@@ -136,7 +137,7 @@ class Transaction(models.Model):
                 raise ValueError('buyer and seller must both accepted.')
 
             # Create the closing stage.
-            closing_type = 'closing'
+            closing_type = 'house'
             self.create_closing(closing_type=closing_type)
 
         # Closing. Check the closing conditions are satisfied.
@@ -160,7 +161,10 @@ class Transaction(models.Model):
     '''
     def create_closing(self, closing_type):
         
-        closing = AbstractClosingFactory(closing_type=closing_type, transaction=self)
+        closing = AbstractClosingFactory.create_closing(
+                    closing_type=closing_type, transaction=self)
+
+        return closing
 
     ''' Overrides the default signal handling on related models. '''
     def delete(self, *args, **kwargs):
