@@ -15,12 +15,21 @@ from rest_framework.response import Response
       called rather than those of the generic view's. '''
 class NestedListCreateModelMixin(object):
      
+    parent_pk_field = 'pk'
+    relation_type = 'foreign_key'
+
     ''' Returns a queryset of all nested models, identified by field name,
         that exist on the given parent. '''
     def get_queryset(self):
 
         parent = self.parent.objects.get(pk=self.kwargs[self.parent_pk_field])
-        return getattr(parent, self.field_name).all()
+        nested_queryset = getattr(parent, self.field_name)
+
+        # Check if we're dealing with a foreign key.
+        if hasattr(nested_queryset, 'all'):
+            return nested_queryset.all()
+
+        return nested_queryset
    
     ''' Create a Nested object on the given parent model.
         Args:
@@ -44,6 +53,8 @@ class NestedListCreateModelMixin(object):
       resolves inherited classes from left-to-right. I.e. we want this mixin's
       methods to be called rather than those of the generic view's. '''
 class NestedRetrieveUpdateDestroyAPIView(object):
+
+    parent_pk_field = 'pk'
 
     ''' Returns the nested model, identified by its lookup field, that exists
         on the given parent. '''
