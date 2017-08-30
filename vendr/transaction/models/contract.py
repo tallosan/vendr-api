@@ -561,8 +561,7 @@ class DynamicClause(Clause):
             self.category = DYNAMIC_STANDARD_CLAUSES[clause_key]['category']
             self.title = DYNAMIC_STANDARD_CLAUSES[clause_key]['title']
             self.prompt = DYNAMIC_STANDARD_CLAUSES[clause_key]['prompt']
-            self.explanation = DYNAMIC_STANDARD_CLAUSES['completion_date']\
-                                                       ['explanation']
+            self.explanation = DYNAMIC_STANDARD_CLAUSES[clause_key]['explanation']
             self._required = DYNAMIC_STANDARD_CLAUSES[clause_key]['required']
  
         super(DynamicClause, self).save(*args, **kwargs)
