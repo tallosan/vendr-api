@@ -32,14 +32,20 @@ urlpatterns = [
 
         # Closing views.
         url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/$',
+            views.ClosingList.as_view()),
+        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/(?P<closing_pk>[0-9a-f-]+)/$',
             views.ClosingDetail.as_view()),
-        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/amendments/$',
+        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/(?P<closing_pk>[0-9a-f-]+)/'
+                'amendments/$',
             views.AmendmentsList.as_view()),
-        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/$',
+        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/(?P<closing_pk>[0-9a-f-]+)/'
+                'waiver/$',
             views.WaiverList.as_view()),
-        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/$',
+        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/(?P<closing_pk>[0-9a-f-]+)/'
+                'notice_of_fulfillments/$',
             views.NoticeOfFulfillmentList.as_view()),
-        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/$',
+        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/(?P<closing_pk>[0-9a-f-]+)/'
+                'mutual_release/$',
             views.MutualReleaseList.as_view())
 ]
 
