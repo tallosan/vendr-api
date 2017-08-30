@@ -26,7 +26,6 @@ from vendr_core.mixins import NestedListCreateModelMixin, \
 class FeaturesList(NestedListCreateModelMixin, ListCreateAPIView):
     
     parent = Property
-    parent_pk_field = 'pk'
     parent_field_name = 'kproperty'
     field_name = 'features'
 
@@ -41,7 +40,6 @@ class FeaturesList(NestedListCreateModelMixin, ListCreateAPIView):
 class FeaturesDetail(NestedRetrieveUpdateDestroyAPIView, RetrieveUpdateDestroyAPIView):
 
     parent = Property
-    parent_pk_field = 'pk'
     field_name = 'features'
     pk_field = 'ft_pk'
     
@@ -56,7 +54,6 @@ class FeaturesDetail(NestedRetrieveUpdateDestroyAPIView, RetrieveUpdateDestroyAP
 class TaxRecordsList(NestedListCreateModelMixin, ListCreateAPIView):
 
     parent = Property
-    parent_pk_field = 'pk'
     parent_field_name = 'kproperty'
     field_name = 'tax_records'
 
@@ -71,7 +68,6 @@ class TaxRecordsList(NestedListCreateModelMixin, ListCreateAPIView):
 class TaxRecordsDetail(NestedRetrieveUpdateDestroyAPIView, RetrieveUpdateDestroyAPIView):
 
     parent = Property
-    parent_pk_field = 'pk'
     field_name = 'tax_records'
     pk_field = 'tr_pk'
 
@@ -86,7 +82,6 @@ class TaxRecordsDetail(NestedRetrieveUpdateDestroyAPIView, RetrieveUpdateDestroy
 class ImagesList(NestedListCreateModelMixin, ListCreateAPIView):
 
     parent = Property
-    parent_pk_field = 'pk'
     parent_field_name = 'kproperty'
     field_name = 'images'
 
@@ -101,7 +96,6 @@ class ImagesList(NestedListCreateModelMixin, ListCreateAPIView):
 class ImagesDetail(NestedRetrieveUpdateDestroyAPIView, RetrieveUpdateDestroyAPIView):
 
     parent = Property
-    parent_pk_field = 'pk'
     field_name = 'images'
     pk_field = 'i_pk'
 

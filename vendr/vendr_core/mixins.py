@@ -31,7 +31,7 @@ class NestedListCreateModelMixin(object):
         if hasattr(nested_queryset, 'all'):
             return nested_queryset.all()
 
-        return nested_queryset
+        return [nested_queryset]
    
     ''' Create a Nested object on the given parent model.
         Args:
@@ -64,8 +64,10 @@ class NestedRetrieveUpdateDestroyAPIView(object):
 
         try:
             parent = self.parent.objects.get(pk=self.kwargs[self.parent_pk_field])
-            instance = getattr(parent, self.field_name).\
-                       get(pk=self.kwargs[self.pk_field])
+            instance = getattr(parent, self.field_name)
+            if hasattr(instance, 'get'):
+                instance = instance.get(pk=self.kwargs[self.pk_field])
+
             self.check_object_permissions(self.request, parent)
         except ObjectDoesNotExist:
             error_msg = {'error': 'nested model with pk {} does not exist.'.\
