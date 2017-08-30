@@ -4,9 +4,11 @@
 # ===============================================================================
 
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.exceptions import APIException
 
 
 '''   Custom mixin for Nested model lists and creates. This should always be passed
@@ -23,7 +25,7 @@ class NestedListCreateModelMixin(object):
     def get_queryset(self):
 
         parent = self.parent.objects.get(pk=self.kwargs[self.parent_pk_field])
-        nested_queryset = getattr(parent, self.field_name)
+        nested_queryset = getattr(parent, self.field_name, self.parent.objects.none())
 
         # Check if we're dealing with a foreign key.
         if hasattr(nested_queryset, 'all'):
@@ -67,7 +69,7 @@ class NestedRetrieveUpdateDestroyAPIView(object):
             self.check_object_permissions(self.request, parent)
         except ObjectDoesNotExist:
             error_msg = {'error': 'nested model with pk {} does not exist.'.\
-                                  format(self.kwargs['pk'])}
+                                  format(self.kwargs[self.pk_field])}
             dne_exc = APIException(detail=error_msg)
             dne_exc.status = 404; raise dne_exc
         
