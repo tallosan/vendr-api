@@ -18,12 +18,12 @@ from kproperty.serializers import FeaturesSerializer, TaxRecordsSerializer,\
                                     ImagesSerializer
 import kproperty.permissions as kproperty_permissions
 
-from vendr_core.mixins import NestedListCreateModelMixin, \
+from vendr_core.generics import NestedListCreateAPIView, \
     NestedRetrieveUpdateDestroyAPIView
 
 
 '''   Create and List endpoint on Feature objects. '''
-class FeaturesList(NestedListCreateModelMixin, ListCreateAPIView):
+class FeaturesList(NestedListCreateAPIView, ListCreateAPIView):
     
     parent = Property
     parent_field_name = 'kproperty'
@@ -51,7 +51,7 @@ class FeaturesDetail(NestedRetrieveUpdateDestroyAPIView, RetrieveUpdateDestroyAP
 
 
 '''   Create and List endpoint on Tax Records objects. '''
-class TaxRecordsList(NestedListCreateModelMixin, ListCreateAPIView):
+class TaxRecordsList(NestedListCreateAPIView, ListCreateAPIView):
 
     parent = Property
     parent_field_name = 'kproperty'
@@ -79,7 +79,7 @@ class TaxRecordsDetail(NestedRetrieveUpdateDestroyAPIView, RetrieveUpdateDestroy
 
 
 '''   Create and List endpoint on Image objects. '''
-class ImagesList(NestedListCreateModelMixin, ListCreateAPIView):
+class ImagesList(NestedListCreateAPIView, ListCreateAPIView):
 
     parent = Property
     parent_field_name = 'kproperty'
