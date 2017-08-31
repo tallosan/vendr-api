@@ -1,43 +1,32 @@
 #
-# Custom Mixins.
+# Custom mixins for nested models.
 #
 # ===============================================================================
 
 from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
 
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.exceptions import APIException
 
 
+'''   List a nested model queryset. '''
 class ListNestedModelMixin(object):
 
-    ''' Returns a queryset of all nested models, identified by field name,
-        that exist on the given parent. '''
-    def get_queryset(self):
+    def list(self, request, *args, **kwargs):
 
-        parent_pk_field = getattr(self, 'parent_pk_field', 'pk')
-        parent = self.parent.objects.get(pk=self.kwargs[parent_pk_field])
-        nested_queryset = getattr(parent, self.field_name, self.parent.objects.none())
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
 
-        # Check if we're dealing with a foreign key.
-        if hasattr(nested_queryset, 'all'):
-            return nested_queryset.all()
-
-        return [nested_queryset]
+        return Response(serializer.data)
 
 
+'''   Create a nested object instance. '''
 class CreateNestedModelMixin(object):
 
-    ''' Create a nested object on the given parent model.
-        Args:
-            request -- The POST request.
-    '''
     def create(self, request, *args, **kwargs):
  
-        parent_pk_field = getattr(self, 'parent_pk_field', 'pk')
-        parent = self.parent.objects.get(pk=self.kwargs[parent_pk_field])
+        parent = self.parent.objects.get(pk=self.kwargs[self.parent_pk_field])
         self.check_object_permissions(request, parent)
         
         serializer = self.serializer_class(data=request.data, context=request.FILES)
@@ -48,37 +37,21 @@ class CreateNestedModelMixin(object):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+'''   Retrieve a nested model instance. '''
 class RetrieveNestedModelMixin(object):
 
-    ''' Returns the nested model, identified by its lookup field, that exists
-        on the given parent. '''
-    def get_object(self):
+    def retrieve(self, request, *args, **kwargs):
 
-        try:
-            parent_pk_field = getattr(self, 'parent_pk_field', 'pk')
-            parent = self.parent.objects.get(pk=self.kwargs[parent_pk_field])
-            instance = getattr(parent, self.field_name)
-            if hasattr(instance, 'get'):
-                instance = instance.get(pk=self.kwargs[self.pk_field])
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
 
-            self.check_object_permissions(self.request, parent)
-        except ObjectDoesNotExist:
-            error_msg = {'error': 'nested model with pk {} does not exist.'.\
-                                  format(self.kwargs[self.pk_field])}
-            dne_exc = APIException(detail=error_msg)
-            dne_exc.status = 404; raise dne_exc
-        
-        return instance
+        return Response(serializer.data)
 
 
+'''   Update a nested model instance. '''
 class UpdateNestedModelMixin(object):
 
-    ''' Updates a nested model, identified by its pk field, that exists on the
-        given parent.
-        Args:
-            request -- The PUT request.
-    '''
-    def update(self, request, *args, **kwargs):
+   def update(self, request, *args, **kwargs):
 
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
@@ -90,4 +63,16 @@ class UpdateNestedModelMixin(object):
             return Response(serializer.data)
 
         return Response(self.serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+'''   Destroy a nested model instance. '''
+class DestroyNestedModelMixin(object):
+
+    def destroy(self, request, *args, **kwargs):
+
+        instance = self.get_object()
+        instance.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
