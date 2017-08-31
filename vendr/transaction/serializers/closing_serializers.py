@@ -39,8 +39,8 @@ class ClauseDocumentSerializer(DocumentSerializer):
                 ('approved_clauses', 'pending_clauses')
 
     def get_approved_clauses(self, instance):
-        return instance.approved_clauses
+        return [doc_clause.clause.title for doc_clause in instance.approved_clauses]
 
     def get_pending_clauses(self, instance):
-        return instance.pending_clauses
+        return [doc_clause.clause.title for doc_clause in instance.pending_clauses]
 
