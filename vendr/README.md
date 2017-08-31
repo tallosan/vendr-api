@@ -546,6 +546,28 @@ Notifications	http://notify.vendr.xyz/	users.<user_pk>.notifications    (Authent
 Messages	http://notify.vendr.xyz/	users.<user_pk>.inbox    	 (Authentication Required)
 ```
 
+***Schedule [GET]***
+
+All users can access the list of properties that they've RSVP'd to on their respective **/schedule** endpoints.
+
+```javascript
+BODY
+[
+    {
+        "end": "2017-08-11T23:09:15Z",
+	"kproperty": 9,
+        "open_house_pk": "c4c4034f-d96c-4e99-a0bd-d34444fb9f6b", 
+        "pk": "41854a77-8bfd-4d4e-81ae-db31df73682d", 
+        "start": "2017-08-11T23:09:13Z"
+    },
+    ...
+]
+
+GET	http://api.vendr.xyz/v1/users/<user_id>/schedule/	(Authentication Required)
+```
+Note, this endpoint is **read-only**. If a user wants to update and/or delete an RSVP, they **must** do so on the original **/kproperty/<kproperty_id>/rsvp/** endpoint.
+
+
 ---
 ### Search Endpoint [GET]:
 
@@ -666,9 +688,11 @@ For example, when in the offer stage, note that a transaction has 2 accepted off
 buyer_accepted_offer & seller_accepted_offer.
 
 Users should be setting their corresponding accepted resource once they are happy with the state of the transaction.
-To move to the next stage, the user should attempt to increment the stage variable. This will only succeed if the 2 accepted
-resources are not null, and are equal (i.e. point to the same offer).
+To move to the next stage, the user should attempt send an empty POST request to /advance, as shown below. This will only succeed if the 2 accepted resources are not null, and are equal (i.e. point to the same offer).
 
+```
+POST	http://api.vendr.xyz/v1/transactions<transaction_id>/advance/	(Authentication Required)
+```
 
 **POST**
 
@@ -925,5 +949,133 @@ N.B. -- We are only showing one clause of each type to keep things short.
     ]
 }
 ```
+
+### Transactions / Closing [GET, PUT, DELETE]:
+
+Closing objects **cannot** be created explicitly. Instead, the correct way to create them is to successfully increment the transaction stage. The closing object will be created in the background, and will be accessible as follows:
+
+**GET**
+
+Get the Closing object.
+
+```javascript
+[
+    {
+        "buyer": 1, 
+        "pk": "e305fd1d-56e8-4477-8cc3-4115859801db", 
+        "seller": 1, 
+        "transaction": "fde4edcc-3d31-414d-884b-f902fd40beb4"
+    }
+]
+
+GET	http://api.vendr.xyz/v1/transactions/<transaction_id>/closing/    (Authentication Required)
+```
+
+#### Request Parameters:
+
+| Parameter      | Description                  | Values                                |
+| -------------- |------------------------------| ------------------------------------- |
+| transaction_id | The transaction id.          | The id of the contract's transaction. |
+
+***Closing Anatomy***:
+
+The closing stage is really just a container for 5 documents, which can be accessed as follows:
+
+1. Amendments
+```
+[
+    {
+        "approved_clauses": [], 
+        "content": "In accordance with the terms and conditions of the Agreement of Purchase and Sale dated, {}, regarding the said property above, I/We hereby agree to the following Amendments to the condition(s) which read(s) as follows: {}\nIRREVOCABILITY: This Offer to Amend the Agreement shall be irrevocable by [BUYER/SELLER] until {}, after which time, if not accepted, this Offer to Amend the Agreement shall be null and void.\nAll other terms and conditions in the aforementioned Agreement of Purchase and Sale to remain unchanged.\nFor the purposes of this Amendment, “Buyer” includes purchaser and “Seller” includes vendor. This amendment shall constitute the entire Agreement of Purchase and Sale between Buyer and Seller.\nTime shall in all respects be of the essence hereof provided that the time for doing or completing of any matter provided for herein may be extended or abridged by an agreement in writing signed by Seller and Buyer or by their respective solicitors who are hereby expressly appointed in this regard.", 
+        "explanation": "", 
+        "pending_clauses": [], 
+        "pk": "e5b10303-4223-44f5-a1a2-a0b5a298ed47", 
+        "signing_date": null, 
+        "title": "Amendment to Agreement of Purchase and Sale"
+    }
+]
+
+GET	.../closing/<closing_id>/amendments/ 	   (Authentication Required)
+```
+2. Waiver
+```
+[
+    {
+        "approved_clauses": [], 
+        "content": "In accordance with the terms and conditions of the Agreement of Purchase and Sale dated {} regarding the said property above, I/We hereby waive the condition(s) which read(s) as follows:\n{}\nAll other terms and conditions in the aforementioned Agreement of Purchase and Sale to remain unchanged.\nFor the purposes of this Waiver, “Buyer” means purchaser and “Seller” means vendor. This waiver shall constitute the entire Agreement of Purchase and Sale between Buyer and Seller.", 
+        "explanation": "", 
+        "pending_clauses": [], 
+        "pk": "e93b7af8-d5d7-455f-8fa5-0a01f8324d01", 
+        "signing_date": null, 
+        "title": "Waiver"
+    }
+]
+
+GET	.../closing/<closing_id>/waiver/ 	   (Authentication Required)
+```
+3. Notice of Fulfillment
+```
+[
+    {
+        "approved_clauses": [], 
+        "content": "In accordance with the terms and conditions of the Agreement of Purchase and Sale dated None, regarding the said property above, I/We hereby confirm that I/We have fulfilled the condition(s) which read(s) as follows:\nTitle, Title Search, Documents Request, Insurance, Planning, Meetings, Deposit Deadline, Buyer Arranging Mortgage, Chattels Included, Fixtures Excluded, Rental Items, Mortgage Date, Equipment, Environment, Survey, Maintenance, Chattels and Fixtures\nAll other terms and conditions in the aforementioned Agreement of Purchase and Sale to remain unchanged.\nFor the purposes of this Notice of Fulfillment of Condition, “Buyer” means purchaser and “Seller” means vendor.", 
+        "explanation": "", 
+        "pending_clauses": [
+            "Title", 
+            "Title Search", 
+            "Documents Request", 
+            "Insurance", 
+            "Planning", 
+            "Meetings", 
+            "Deposit Deadline", 
+            "Buyer Arranging Mortgage", 
+            "Chattels Included", 
+            "Fixtures Excluded", 
+            "Rental Items", 
+            "Mortgage Date", 
+            "Equipment", 
+            "Environment", 
+            "Survey", 
+            "Maintenance", 
+            "Chattels and Fixtures"
+        ], 
+        "pk": "ef7b7cc3-03f2-4087-996e-b187b71ec06b", 
+        "signing_date": null, 
+        "title": "Notice Of Fulfillment"
+    }
+]
+
+GET	.../closing/<closing_id>/notice_of_fulfillment/		(Authentication Required)
+```
+4. Mutual Release
+```
+[
+    {
+        "content": "In accordance with the terms and conditions of the Agreement of Purchase and Sale dated {}, regarding the said property above, I/We hereby agree to the following Mutual Release.\nWe, the Buyers and the Sellers in the above noted transaction hereby acknowledge that the above described transaction is terminated and release each other from all liabilities, covenants, obligations, claims and sums of money arising out of the above Agreement of Purchase and Sale, together with any rights and causes of action that each party may have had against the other and monies paid returned in full without interest or deduction to the Buyer.\nIRREVOCABILITY: This Mutual Release shall be irrevocable by [BUYER/SELLER] until {}, after which time, if not accepted, this Mutual Release shall become null and void.\nAll other terms and conditions in the aforementioned Agreement of Purchase and Sale to remain unchanged.\nFor the purposes of this Mutual Release, “Buyer” includes purchaser and “Seller” includes vendor. This release shall be binding upon the heirs, executors, administrators and assigns of all the parties executing same.\nTime shall in all respects be of the essence hereof provided that the time for doing or completing of any matter provided for herein may be extended or abridged by an agreement in writing signed by Seller and Buyer or by their respective solicitors who are hereby expressly appointed in this regard.", 
+        "explanation": "", 
+        "pk": "069ca0af-53cb-4481-998a-b46c4a105cb6", 
+        "signing_date": null, 
+        "title": "Mutual Release"
+    }
+]
+
+GET 	.../closing/<closing_id>/mutual_release/		(Authentication Required)
+```
+5. Disclosure
+```
+Not Implemented Yet.
+
+GET 	.../closing/<closing_id>/disclosure/		(Authentication Required)
+```
+
+The content / purpose of each document is beyond the scope of these docs.
+We have 2 different types of documents: Clause documents, which are documents that consist of clauses, and regular documents, which contain legal terms & statements. We don't really operate on regular documents, aside from pulling their contents and updating the buyer & seller's signatures.
+
+Thus, we'll focus on Clause Documents.
+
+***Clause Documents***:
+
+Clause Documents have two different sets.
+
 ---
 
