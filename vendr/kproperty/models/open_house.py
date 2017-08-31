@@ -36,7 +36,7 @@ class RSVP(models.Model):
     
     # N.B. -- We're removing reverse lookups, as it doesn't really make
     # sense for the user to be able to do that.
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='+',
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='rsvp_schedule',
                 on_delete=models.CASCADE)
 
     class Meta:

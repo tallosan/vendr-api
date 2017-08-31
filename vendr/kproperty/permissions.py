@@ -71,6 +71,6 @@ class RSVPDetailPermissions(permissions.BasePermission):
 
         user = request.user
         open_house_owner = obj.open_house.owner; rsvp_owner = obj.owner
-        
+
         return (user == rsvp_owner) or (user == open_house_owner)
 
