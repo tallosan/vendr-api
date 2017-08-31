@@ -42,7 +42,7 @@ urlpatterns = [
                 'waiver/$',
             views.WaiverList.as_view()),
         url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/(?P<closing_pk>[0-9a-f-]+)/'
-                'notice_of_fulfillments/$',
+                'notice_of_fulfillment/$',
             views.NoticeOfFulfillmentList.as_view()),
         url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/(?P<closing_pk>[0-9a-f-]+)/'
                 'mutual_release/$',
