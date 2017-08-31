@@ -21,5 +21,8 @@ urlpatterns = [
             views.ChatDetail.as_view()),
         url(r'^(?P<pk>[0-9]+)/chat/(?P<chat_pk>[0-9a-f-]+)/messages/$',
             views.MessageList.as_view()),
+        
+        # Schedule view.
+        url(r'^(?P<pk>[0-9]+)/schedule/$', views.ScheduleList.as_view()),
 ]
 
