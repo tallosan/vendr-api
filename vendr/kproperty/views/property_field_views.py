@@ -8,7 +8,6 @@
 
 from django.core.exceptions import ObjectDoesNotExist
 
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from rest_framework.exceptions import APIException
@@ -23,7 +22,7 @@ from vendr_core.generics import NestedListCreateAPIView, \
 
 
 '''   Create and List endpoint on Feature objects. '''
-class FeaturesList(NestedListCreateAPIView, ListCreateAPIView):
+class FeaturesList(NestedListCreateAPIView):
     
     parent = Property
     parent_field_name = 'kproperty'
@@ -37,7 +36,7 @@ class FeaturesList(NestedListCreateAPIView, ListCreateAPIView):
 
 
 '''   Retrieve, Update, and Delete endpoint on Features objects. '''
-class FeaturesDetail(NestedRetrieveUpdateDestroyAPIView, RetrieveUpdateDestroyAPIView):
+class FeaturesDetail(NestedRetrieveUpdateDestroyAPIView):
 
     parent = Property
     field_name = 'features'
@@ -51,7 +50,7 @@ class FeaturesDetail(NestedRetrieveUpdateDestroyAPIView, RetrieveUpdateDestroyAP
 
 
 '''   Create and List endpoint on Tax Records objects. '''
-class TaxRecordsList(NestedListCreateAPIView, ListCreateAPIView):
+class TaxRecordsList(NestedListCreateAPIView):
 
     parent = Property
     parent_field_name = 'kproperty'
@@ -65,7 +64,7 @@ class TaxRecordsList(NestedListCreateAPIView, ListCreateAPIView):
         
 
 '''   Retrieve, Update, and Delete endpoint on Tax Record objects. '''
-class TaxRecordsDetail(NestedRetrieveUpdateDestroyAPIView, RetrieveUpdateDestroyAPIView):
+class TaxRecordsDetail(NestedRetrieveUpdateDestroyAPIView):
 
     parent = Property
     field_name = 'tax_records'
@@ -79,7 +78,7 @@ class TaxRecordsDetail(NestedRetrieveUpdateDestroyAPIView, RetrieveUpdateDestroy
 
 
 '''   Create and List endpoint on Image objects. '''
-class ImagesList(NestedListCreateAPIView, ListCreateAPIView):
+class ImagesList(NestedListCreateAPIView):
 
     parent = Property
     parent_field_name = 'kproperty'
@@ -93,7 +92,7 @@ class ImagesList(NestedListCreateAPIView, ListCreateAPIView):
 
         
 '''   Retrieve, Update, and Delete endpoint on Image objects. '''
-class ImagesDetail(NestedRetrieveUpdateDestroyAPIView, RetrieveUpdateDestroyAPIView):
+class ImagesDetail(NestedRetrieveUpdateDestroyAPIView):
 
     parent = Property
     field_name = 'images'
