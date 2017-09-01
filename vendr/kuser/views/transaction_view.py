@@ -20,4 +20,10 @@ class TransactionList(RetrieveAPIView):
 
     queryset = User.objects.all()
     serializer_class = UserTransactionSerializer
+    permission_classes = ( permissions.IsAuthenticated, IsOwner )
+
+    def get(self, request, *args, **kwargs):
+
+        self.check_object_permissions(request, self)
+        return super(TransactionList, self).get(request, *args, **kwargs)
 
