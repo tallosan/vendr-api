@@ -1,54 +1,23 @@
+#
+# Serializer for User models.
+#
+# =========================================================================
+
 from django.contrib.auth import get_user_model
 
 from rest_framework import serializers
 
-from kproperty.models import Property
-from kuser.models import KUser, Profile
-from kuser.models import TransactionNotification, OfferNotification#, ContractNotification
-from transaction.models import Transaction
-from transaction.serializers import TransactionSerializer
+from kuser.models import KUser
 
 User = get_user_model()
-
-
-'''   Serializer for Profile models. '''
-class ProfileSerializer(serializers.ModelSerializer):
-
-    prof_pic = serializers.ReadOnlyField(source='prof_pic.name')
-    
-    class Meta:
-        model   = Profile
-        fields  = ('first_name', 'last_name',
-                   'location',
-                   'prof_pic',
-                   'bio')
 
 
 '''   Serializer for User models. '''
 class UserSerializer(serializers.ModelSerializer):
 
-    profile    = ProfileSerializer(required=False)
-    #TODO: Send password in plaintext.
-    properties = serializers.PrimaryKeyRelatedField(many=True, required=False,
-                    queryset=Property.objects.select_subclasses())
-    
-    # Custom notification queryset.
-    notification_qs  = []
-    #notification_qs += OfferNotification.objects.all()
-    #notification_qs += ContractNotification.objects.all()
-    
-    notifications = serializers.PrimaryKeyRelatedField(many=True, required=False,
-                        queryset=notification_qs)
-    
     class Meta:
         model   = KUser
-        fields  = ('id',
-                   'email', 'password',
-                   'profile',
-                   'properties',
-                   'favourites',
-                   'notifications',
-                   'join_date')
+        fields  = ('id', 'email', 'password', 'join_date')
     
     ''' Handles the creation of a Kangaa User object.
         Args:
@@ -58,7 +27,6 @@ class UserSerializer(serializers.ModelSerializer):
 
         email       = validated_data.pop('email')
         password    = validated_data.pop('password')
-        
         kuser       = User.objects.create_user(email=email, password=password)
         
         # Create the user profile if any data is given.
@@ -118,26 +86,4 @@ class UserSerializer(serializers.ModelSerializer):
             file_data['profile'][file_key] = self.context[file_key]
 
         return file_data
-
-    ''' User representation. Returns the transaction data, with the incoming
-        and outgoing transactions separated.
-        Args:
-            instance: The Transaction model being serialized.
-    '''
-    def to_representation(self, instance):
-
-        kuser = super(UserSerializer, self).to_representation(instance)
-        kuser['transactions'] = self.format_transactions(instance)
-        
-        return kuser
-
-    def format_transactions(self, instance):
-
-        user_id  = instance.pk
-        incoming = Transaction.objects.filter(seller=user_id).values_list('pk', flat=True)
-        outgoing = Transaction.objects.filter(buyer=user_id).values_list('pk', flat=True)
-
-        transactions = { "incoming": incoming, "outgoing": outgoing }
-
-        return transactions
 

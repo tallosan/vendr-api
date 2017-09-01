@@ -1,4 +1,5 @@
-from user_serializer import UserSerializer, ProfileSerializer
+from user_serializer import UserSerializer
+from profile_serializer import ProfileSerializer
 from notification_serializer import TransactionNotificationSerializer, \
                                     OfferNotificationSerializer, \
                                     ContractNotificationSerializer
