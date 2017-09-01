@@ -28,6 +28,9 @@ urlpatterns = [
         # Profile view.
         url(r'^(?P<pk>[0-9]+)/profile/$', views.ProfileDetail.as_view()),
 
+        # Favourites view.
+        url(r'^(?P<pk>[0-9]+)/favourites/$', views.FavouritesList.as_view()),
+
         # Property and Transaction views.
         url(r'^(?P<pk>[0-9]+)/properties/$', views.PropertyList.as_view()),
         url(r'^(?P<pk>[0-9]+)/transactions/$', views.TransactionList.as_view()),
