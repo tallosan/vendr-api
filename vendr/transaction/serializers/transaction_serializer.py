@@ -22,11 +22,13 @@ class TransactionSerializer(serializers.ModelSerializer):
     
     offers      = OfferSerializer(Offer.objects.all(), many=True, required=True)
     contracts   = ContractSerializer(Contract.objects.all(), many=True, required=False)
+    closing     = serializers.PrimaryKeyRelatedField(read_only=True)
     
     class Meta:
         model  = Transaction
         fields = (
                     'id',
+                    'start_date',
                     'buyer', 'seller',
                     'kproperty',
                     'stage',
@@ -35,7 +37,7 @@ class TransactionSerializer(serializers.ModelSerializer):
                     'contracts_equal',
                     'buyer_accepted_contract', 'seller_accepted_contract',
                     'contracts',
-                    'start_date',
+                    'closing'
         )
 
     ''' Create a new Transaction. Each transaction begins/is created with a
