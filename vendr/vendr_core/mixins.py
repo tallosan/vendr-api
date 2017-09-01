@@ -29,7 +29,7 @@ class CreateNestedModelMixin(object):
         parent = self.parent.objects.get(pk=self.kwargs[self.parent_pk_field])
         self.check_object_permissions(request, parent)
         
-        serializer = self.serializer_class(data=request.data, context=request.FILES)
+        serializer = self.get_serializer(data=request.data, context=request.FILES)
         if serializer.is_valid():
             serializer.save(**{self.parent_field_name: parent})
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -56,7 +56,7 @@ class UpdateNestedModelMixin(object):
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
 
-        serializer = self.serializer_class(instance, data=request.data,
+        serializer = self.get_serializer(instance, data=request.data,
                         context=request.FILES, partial=partial)
         if serializer.is_valid():
             serializer.save()
