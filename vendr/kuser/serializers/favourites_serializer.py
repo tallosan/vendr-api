@@ -14,7 +14,6 @@ User = get_user_model()
 
 class FavouritesSerializer(serializers.ModelSerializer):
 
-
     class Meta:
         model = User
         fields = ('favourites', )
