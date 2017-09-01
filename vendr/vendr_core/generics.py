@@ -35,13 +35,14 @@ class NestedGenericAPIView(GenericAPIView):
         on the given parent. '''
     def get_object(self):
 
+        # Note, we can determine if the object to be returned is a `ForeignKey`
+        # or `OneToOneField` by checking if it has a `get()` method.
         try:
             parent = self.parent.objects.get(pk=self.kwargs[self.parent_pk_field])
+            self.check_object_permissions(self.request, parent)
             instance = getattr(parent, self.field_name)
             if hasattr(instance, 'get'):
                 instance = instance.get(pk=self.kwargs[self.pk_field])
-
-            self.check_object_permissions(self.request, parent)
         except ObjectDoesNotExist:
             error_msg = {'error': 'nested model with pk {} does not exist.'.\
                                   format(self.kwargs[self.pk_field])}
