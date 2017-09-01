@@ -134,7 +134,7 @@ class Transaction(models.Model):
             if not self.contracts_equal:
                 raise ValueError('contracts must be equal.')
             if not self.buyer_accepted_contract or not self.seller_accepted_contract:
-                raise ValueError('buyer and seller must both accepted.')
+                raise ValueError('buyer and seller must both accept contract.')
 
             # Create the closing stage.
             closing_type = 'house'
