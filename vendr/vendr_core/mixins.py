@@ -62,7 +62,7 @@ class UpdateNestedModelMixin(object):
             serializer.save()
             return Response(serializer.data)
 
-        return Response(self.serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 '''   Destroy a nested model instance. '''
