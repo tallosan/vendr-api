@@ -87,3 +87,21 @@ class UserSerializer(serializers.ModelSerializer):
 
         return file_data
 
+    """ Adds a quick profile (i.e. stripped down profile object) to the
+        serializers User.
+        Args:
+            instance (User) -- The user being serialized.
+    """
+    def to_representation(self, instance):
+
+        user = super(UserSerializer, self).to_representation(instance)
+        profile = instance.profile
+        user['quick_profile'] = {
+                'first_name': profile.first_name,
+                'last_name': profile.last_name,
+                'last_name': profile.last_name,
+                'prof_pic':  profile.prof_pic.name
+        }
+
+        return user
+

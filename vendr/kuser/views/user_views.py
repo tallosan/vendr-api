@@ -61,7 +61,6 @@ class UserList(APIView):
             email: The desired email for the new user.
     '''
     def is_available(self, email):
-
         return User.objects.filter(email=email).count() == 0
 
 
@@ -100,21 +99,9 @@ class UserDetail(APIView):
     def get(self, request, pk, format=None):
 
         kuser = self.get_object(pk=pk)
-        
-        serializer      = self.serializer_class(kuser)
-        serializer_data = serializer.data
-       
-        # If the user is making a request on their own info, then we do not
-        # need to restrict access.
-        allow_access = request.user == kuser
-        
-        # Remove any restricted fields if necessary.
-        restricted_fields = ('password', 'notifications', 'transactions')
-        if not allow_access:
-            for restricted_field in restricted_fields:
-                serializer_data.pop(restricted_field)
-        
-        return Response(serializer_data)
+        serializer = self.serializer_class(kuser)
+
+        return Response(serializer.data)
     
     ''' Updates the user.
         Args:
@@ -124,7 +111,7 @@ class UserDetail(APIView):
     '''
     def put(self, request, pk, format=None):
         
-        kuser      = self.get_object(pk=pk)
+        kuser = self.get_object(pk=pk)
         serializer = self.serializer_class(kuser, data=request.data,
                         context=request.FILES, partial=True)
         if serializer.is_valid():
