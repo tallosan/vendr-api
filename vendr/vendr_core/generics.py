@@ -18,8 +18,8 @@ class NestedGenericAPIView(GenericAPIView):
 
     parent_pk_field = 'pk'
 
-    ''' Returns a queryset of all nested models, identified by field name,
-        that exist on the given parent. '''
+    """ Returns a queryset of all nested models, identified by field name,
+        that exist on the given parent. """
     def get_queryset(self):
 
         parent = self.parent.objects.get(pk=self.kwargs[self.parent_pk_field])
@@ -31,8 +31,8 @@ class NestedGenericAPIView(GenericAPIView):
 
         return [nested_queryset]
 
-    ''' Returns the nested model, identified by its lookup field, that exists
-        on the given parent. '''
+    """ Returns the nested model, identified by its lookup field, that exists
+        on the given parent. """
     def get_object(self):
 
         # Note, we can determine if the object to be returned is a `ForeignKey`
@@ -53,35 +53,35 @@ class NestedGenericAPIView(GenericAPIView):
 
 # ================================================================================
 
-'''   Concrete view for creating a nested model instance. '''
+"""   Concrete view for creating a nested model instance. """
 class NestedCreateAPIView(mixins.CreateNestedModelMixin, NestedGenericAPIView):
 
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)
 
 
-'''   List a nested model queryset. '''
+"""   List a nested model queryset. """
 class NestedListAPIView(mixins.ListNestedModelMixin, NestedGenericAPIView):
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
 
 
-'''   Concrete view for retrieving a nested model instance. '''
+"""   Concrete view for retrieving a nested model instance. """
 class NestedRetrieveAPIView(mixins.RetrieveNestedModelMixin, NestedGenericAPIView):
 
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
 
 
-'''   Concrete view for destroying a nested model instance. '''
+"""   Concrete view for destroying a nested model instance. """
 class NestedDestroyAPIView(mixins.DestroyNestedModelMixin, NestedGenericAPIView):
 
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
 
 
-'''   Concrete view for updating a nested model instance. '''
+"""   Concrete view for updating a nested model instance. """
 class NestedUpdateAPIView(mixins.UpdateNestedModelMixin,
                           NestedGenericAPIView):
 
@@ -89,7 +89,21 @@ class NestedUpdateAPIView(mixins.UpdateNestedModelMixin,
         return self.update(request, *args, **kwargs)
 
 
-'''   Concrete view for listing a queryset or creating a nested model instance. '''
+"""   Concrete view for nested one-to-one resources.
+      Example: `/parents/nestedmodel/` """
+class NestedListUpdateAPIView(NestedListAPIView, NestedUpdateAPIView):
+
+    """ We're going to make a slight modification here, as we only have one
+        Profile object / User. Thus, it makes sense to pop the one Profile out
+        of the queryset list so that it's easier to work with. """
+    def get(self, request, *args, **kwargs):
+
+        response = super(NestedListUpdateAPIView, self).get(
+                request, *args, **kwargs)
+        return Response(response.data[0])
+
+
+"""   Concrete view for listing a queryset or creating a nested model instance. """
 class NestedListCreateAPIView(mixins.ListNestedModelMixin,
                               mixins.CreateNestedModelMixin,
                               NestedGenericAPIView):
@@ -101,7 +115,7 @@ class NestedListCreateAPIView(mixins.ListNestedModelMixin,
         return self.create(request, *args, **kwargs)
 
 
-'''   Concrete view for retrieving and updating a nested model instance. '''
+"""   Concrete view for retrieving and updating a nested model instance. """
 class NestedRetrieveUpdateAPIView(mixins.RetrieveNestedModelMixin,
                                   mixins.UpdateNestedModelMixin,
                                   NestedGenericAPIView):
@@ -113,7 +127,7 @@ class NestedRetrieveUpdateAPIView(mixins.RetrieveNestedModelMixin,
         return self.update(request, *args, **kwargs)
 
 
-'''   Concrete view for retrieving or deleting a nested model instance. '''
+"""   Concrete view for retrieving or deleting a nested model instance. """
 class NestedRetrieveDestroyAPIView(mixins.RetrieveNestedModelMixin,
                                    mixins.DestroyNestedModelMixin,
                                    NestedGenericAPIView):
@@ -125,7 +139,7 @@ class NestedRetrieveDestroyAPIView(mixins.RetrieveNestedModelMixin,
         return self.destroy(request, *args, **kwargs)
 
 
-'''   Concrete view for retrieving, updating, or deleting a nested model instance. '''
+"""   Concrete view for retrieving, updating, or deleting a nested model instance. """
 class NestedRetrieveUpdateDestroyAPIView(mixins.RetrieveNestedModelMixin,
                                          mixins.UpdateNestedModelMixin,
                                          mixins.DestroyNestedModelMixin,
