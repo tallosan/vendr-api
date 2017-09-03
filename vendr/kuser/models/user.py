@@ -136,6 +136,8 @@ class Profile(models.Model):
     location   = models.CharField(max_length=50, blank=True)
     prof_pic   = models.ImageField(upload_to=prof_pic_file_name, 
                     storage=VendrMediaStorage(), max_length=150,
-                    blank=True, null=True
+                    blank=True, null=True,
+                    default='https://s3.ca-central-1.amazonaws.com/'
+                            'media.vendr/users/defaults/default_user_prof.jpg'
     )
 
