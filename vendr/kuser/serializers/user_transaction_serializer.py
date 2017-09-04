@@ -22,10 +22,10 @@ class UserTransactionSerializer(serializers.ModelSerializer):
         fields = ('incoming', 'outgoing')
 
     def get_incoming(self, instance):
-        return Transaction.objects.filter(buyer=instance.pk).\
+        return Transaction.objects.filter(seller=instance.pk).\
                 values_list('pk', flat=True)
 
     def get_outgoing(self, instance):
-        return Transaction.objects.filter(seller=instance.pk).\
+        return Transaction.objects.filter(buyer=instance.pk).\
                 values_list('pk', flat=True)
 
