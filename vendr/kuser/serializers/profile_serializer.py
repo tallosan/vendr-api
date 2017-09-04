@@ -19,3 +19,16 @@ class ProfileSerializer(serializers.ModelSerializer):
                    'prof_pic',
                    'bio')
 
+    """ Update a Profile model.
+        Args:
+            instance (Profile) -- The Profile model to be updated.
+            validated_data (OrderedDict) -- The update data.
+    """
+    def update(self, instance, validated_data):
+
+        if self.context['files']:
+            for key in self.context['files']:
+                validated_data[key] = self.context['files'][key]
+            
+        return super(ProfileSerializer, self).update(instance, validated_data)
+
