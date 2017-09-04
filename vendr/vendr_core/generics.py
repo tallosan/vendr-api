@@ -51,6 +51,13 @@ class NestedGenericAPIView(GenericAPIView):
         
         return instance
 
+    """ Include any files in the serializer context. """
+    def get_serializer_context(self):
+
+        context = super(NestedGenericAPIView, self).get_serializer_context()
+        context['files'] = self.request.FILES
+        return context
+
 # ================================================================================
 
 """   Concrete view for creating a nested model instance. """
@@ -101,6 +108,9 @@ class NestedListUpdateAPIView(NestedListAPIView, NestedUpdateAPIView):
         response = super(NestedListUpdateAPIView, self).get(
                 request, *args, **kwargs)
         return Response(response.data[0])
+
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
 
 
 """   Concrete view for listing a queryset or creating a nested model instance. """
