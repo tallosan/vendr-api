@@ -32,20 +32,38 @@ urlpatterns = [
 
         # Closing views.
         url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/$',
-            views.ClosingList.as_view()),
-        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/(?P<closing_pk>[0-9a-f-]+)/$',
             views.ClosingDetail.as_view()),
-        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/(?P<closing_pk>[0-9a-f-]+)/'
-                'amendments/$',
+
+        # [Closing] :: Amendments views.
+        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/amendments/$',
             views.AmendmentsList.as_view()),
-        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/(?P<closing_pk>[0-9a-f-]+)/'
-                'waiver/$',
+        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/amendments/clauses/$',
+            views.AmendmentsClauseList.as_view()),
+        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/amendments/'
+            'clauses/(?P<pk>[0-9a-f-]+)/$',
+            views.AmendmentsClauseDetail.as_view()),
+
+        # [Closing] :: Waiver views.
+        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/waiver/$',
             views.WaiverList.as_view()),
-        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/(?P<closing_pk>[0-9a-f-]+)/'
-                'notice_of_fulfillment/$',
+        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/waiver/clauses/$',
+            views.WaiverClauseList.as_view()),
+        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/waiver/'
+            'clauses/(?P<pk>[0-9a-f-]+)/$',
+            views.WaiverClauseDetail.as_view()),
+
+        # [Closing] :: Notice of Fulfillment views.
+        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/notice-of-fulfillment/$',
             views.NoticeOfFulfillmentList.as_view()),
-        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/(?P<closing_pk>[0-9a-f-]+)/'
-                'mutual_release/$',
+        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/notice-of-fulfillment/'
+            'clauses/$',
+            views.NoticeOfFulfillmentClauseList.as_view()),
+        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/notice-of-fulfillment/'
+            'clauses/(?P<pk>[0-9a-f-]+)/$',
+            views.NoticeOfFulfillmentClauseDetail.as_view()),
+
+        # [Closing] :: Mutual Reelease views.
+        url(r'^(?P<transaction_pk>[0-9a-f-]+)/closing/mutual-release/$',
             views.MutualReleaseList.as_view())
 ]
 
