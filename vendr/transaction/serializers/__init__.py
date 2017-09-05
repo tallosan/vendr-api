@@ -4,5 +4,5 @@ from .nested_serializers import \
         ContractSerializer, \
         StaticClauseSerializer, DynamicClauseSerializer, DropdownClauseSerializer
 from .closing_serializers import ClosingSerializer, DocumentSerializer,\
-        ClauseDocumentSerializer
+        ClauseDocumentSerializer, DocumentClauseSerializer
 
