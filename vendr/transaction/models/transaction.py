@@ -142,7 +142,7 @@ class Transaction(models.Model):
 
         # Closing. Check the closing conditions are satisfied.
         elif self.stage == 2:
-            pass
+            raise ValueError('this has yet to be implemented.')
 
         self.stage += 1
         self.save()
