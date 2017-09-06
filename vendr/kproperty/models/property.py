@@ -38,6 +38,15 @@ class Property(models.Model):
     # [ location, history, tax_records, features, images ]
 
     # Meta data.
+    _TYPES       = (
+            ('coop', 'CoOp'),
+            ('condo', 'Condo'),
+            ('house', 'House'),
+            ('townhouse', 'Townhouse'),
+            ('manufactured', 'Manufactured'),
+            ('vacant_land', 'Vacant Land')
+    )
+    _type        = models.CharField(choices=_TYPES, max_length=12, editable=False)
     created_time = models.DateTimeField(auto_now_add=True)
     views        = models.IntegerField(default=0)
     offers       = models.IntegerField(default=0)
@@ -92,10 +101,13 @@ class CoOp(Property):
     parking_spaces = models.PositiveIntegerField()
     corporation_name = models.CharField(max_length=20, blank=True, null=True)
 
-    ''' (Abstract) Raises a NotImplementedError, as this should be implemented
-        in the child models. '''
-    def get_serializer(self):
-        raise NotImplementedError("no 'get_serializer()' method for parent CoOp.")
+    """ We're overriding `save()` here to set the `_type` field. """
+    def save(self, *args, **kwargs):
+
+        if self._state.adding:
+            self._type = 'coop'
+
+        super(CoOp, self).save(*args, **kwargs)
 
     ''' Custom field validation. '''
     def clean(self):
@@ -122,9 +134,22 @@ class CoOp(Property):
 
         super(CoOp, self).validate_unique(exclude=exclude)
 
+    ''' (Abstract) Raises a NotImplementedError, as this should be implemented
+        in the child models. '''
+    def get_serializer(self):
+        raise NotImplementedError("no 'get_serializer()' method for parent CoOp.")
+
 
 '''   Condo model. '''
 class Condo(CoOp):
+
+    """ We're overriding `save()` here to set the `_type` field. """
+    def save(self, *args, **kwargs):
+
+        if self._state.adding:
+            self._type = 'condo'
+
+        super(Condo, self).save(*args, **kwargs)
 
     ''' Returns a CondoSerializer object. '''
     def get_serializer(self):
@@ -145,6 +170,14 @@ class Freehold(Property):
 '''   House model. '''
 class House(Freehold):
 
+    """ We're overriding `save()` here to set the `_type` field. """
+    def save(self, *args, **kwargs):
+
+        if self._state.adding:
+            self._type = 'condo'
+
+        super(House, self).save(*args, **kwargs)
+
     ''' Returns a HouseSerializer object. '''
     def get_serializer(self):
 
@@ -156,6 +189,14 @@ class House(Freehold):
 class Townhouse(Freehold):
 
     degree = models.IntegerField()
+
+    """ We're overriding `save()` here to set the `_type` field. """
+    def save(self, *args, **kwargs):
+
+        if self._state.adding:
+            self._type = 'townhouse'
+
+        super(Townhouse, self).save(*args, **kwargs)
 
     ''' Returns a TownhouseSerializer object. '''
     def get_serializer(self):
@@ -176,6 +217,14 @@ class Manufactured(Property):
                 validators=MinValueValidator)
     mobile_park = models.CharField(max_length=15, default='No Park')
 
+    """ We're overriding `save()` here to set the `_type` field. """
+    def save(self, *args, **kwargs):
+
+        if self._state.adding:
+            self._type = 'manufactured'
+
+        super(Manufactured, self).save(*args, **kwargs)
+
     def get_serializer(self):
 
         from kproperty.serializers import ManufacturedSerializer
@@ -184,6 +233,14 @@ class Manufactured(Property):
 
 '''   Vacant Land model. '''
 class VacantLand(Property):
+
+    """ We're overriding `save()` here to set the `_type` field. """
+    def save(self, *args, **kwargs):
+
+        if self._state.adding:
+            self._type = 'vacant_land'
+
+        super(VacantLand, self).save(*args, **kwargs)
 
     def get_serializer(self):
 
