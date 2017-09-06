@@ -266,12 +266,13 @@ class BaseNotification(models.Model):
 class TransactionNotification(BaseNotification):
 
     transaction = models.UUIDField()
-  
+    
 
 '''   A notification on a transaction's offers. '''
 class OfferNotification(TransactionNotification):
 
-    offer   = models.UUIDField()
+    offer = models.UUIDField()
+    _type = models.CharField(default='offer', max_length=5, editable=False)
     objects = OfferNotificationManager()
 
     ''' Returns the serializer for this notification type. '''
@@ -292,7 +293,8 @@ class OfferNotification(TransactionNotification):
 class ContractNotification(TransactionNotification):
  
     contract = models.UUIDField()
-    objects  = ContractNotificationManager()
+    _type = models.CharField(default='contract', max_length=8, editable=False)
+    objects = ContractNotificationManager()
     
     ''' Returns the serializer for this notification type. '''
     @staticmethod

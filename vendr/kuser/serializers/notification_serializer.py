@@ -28,7 +28,7 @@ class TransactionNotificationSerializer(NotificationSerializer):
 
     class Meta(NotificationSerializer.Meta):
         model  = TransactionNotification
-        fields = NotificationSerializer.Meta.fields + ('transaction', )
+        fields = NotificationSerializer.Meta.fields + ('transaction', '_type')
 
 
 class OfferNotificationSerializer(TransactionNotificationSerializer):
