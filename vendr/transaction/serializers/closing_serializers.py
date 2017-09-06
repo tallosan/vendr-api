@@ -37,6 +37,20 @@ class DocumentClauseSerializer(serializers.ModelSerializer):
         model = DocumentClause
         fields = ('pk', 'title', 'buyer_accepted', 'seller_accepted')
 
+    """ We're overiding this function to use our `add_clause()` method.
+        Args:
+            validated_data (OrderedDict) -- The POST request data.
+    """
+    def create(self, validated_data):
+
+        document = validated_data.pop('document')
+        clause = validated_data.pop('clause')
+        sender = validated_data.pop('sender')
+
+        document_clause = document.add_clause(clause, sender=sender)
+
+        return document_clause
+
     """ Returns the title of the `DocumentClause` title.
         Args:
             instance (DocumentClause) -- The `DocumentClause` being serialized.
