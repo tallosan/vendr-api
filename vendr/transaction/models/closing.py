@@ -8,6 +8,7 @@ from __future__ import unicode_literals
 import uuid
 
 from django.db import models
+from django.db.models import Q
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.conf import settings
@@ -192,6 +193,13 @@ class Closing(models.Model):
     transaction = models.OneToOneField('Transaction', related_name='closing',
                     on_delete=models.CASCADE)
 
+    STATES = (
+            ('PCR', 'pending contract requirements'),
+            ('PF', 'pending funds'),
+            ('C', 'completed')
+    )
+    state = models.CharField(choices=STATES, default='PCR', max_length=3)
+
     # These are fields that pertain to each document associated with the
     # closing stage. As such, it makes sense to store them in one place, as opposed
     # to four (in each doc).
@@ -231,7 +239,7 @@ class Document(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4,
             editable=False, db_index=True)
 
-    title = models.CharField(max_length=43)
+    title = models.CharField(max_length=43, editable=False)
     content = models.TextField(blank=False)
     explanation = models.TextField()
     signing_date = models.DateField(blank=True, null=True)
@@ -263,7 +271,8 @@ class DocumentClause(models.Model):
 
     # Clauses must be approved by both parties in order for them to be added
     # to the document. Thus, we'll use this flag to determine a clause's state.
-    accepted = models.BooleanField(default=False)
+    buyer_accepted = models.BooleanField(default=False)
+    seller_accepted = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         
@@ -295,22 +304,45 @@ class ClauseDocumentMixin(object):
         to give them these necessary functionalities -- in this case,
         the DocumentClause model.
         Args:
-            clause -- The clause (static or dynamic) to be added.
+            clause (StaticClause or DynamicClause) -- The clause to be added.
+            sender (User) -- The user adding this clause.
     '''
-    def add_clause(self, clause, accepted=False):
+    def add_clause(self, clause, sender):
+        
+        # Set the user's `role_accepted` field according to their role in
+        # the transaction.
+        buyer_accepted = False; seller_accepted = False
+        if sender.pk == self.closing.transaction.buyer.pk:
+            buyer_accepted=True
+        else:
+            seller_accepted = True
 
-        new_clause = self.clause_model.objects.create(document=self, clause=clause,
-                        accepted=accepted)
+        # Create (add) the clause to the document.
+        new_clause = self.clause_model.objects.create(document=self,
+                clause=clause,
+                buyer_accepted=buyer_accepted,
+                seller_accepted=seller_accepted
+        )
+
+        return new_clause
 
     ''' The approved clauses that have been approved on the document. '''
     @property
     def approved_clauses(self):
-        return self.document_clauses.filter(accepted=True)
+
+        buyer_accepted = Q(buyer_accepted=True)
+        seller_accepted = Q(seller_accepted=True)
+
+        return self.document_clauses.filter(buyer_accepted & seller_accepted)
 
     ''' The pending clauses that have yet to be approved. '''
     @property
     def pending_clauses(self):
-        return self.document_clauses.filter(accepted=False)
+
+        buyer_pending = Q(buyer_accepted=False)
+        seller_pending = Q(seller_accepted=False)
+
+        return self.document_clauses.filter(buyer_pending | seller_pending)
 
     ''' Raise NotImplementedError. Updates a document's content by iterating
         through its clauses and checking for any new additions to the
