@@ -41,8 +41,6 @@ class TransactionManager(models.Manager):
                         start_date=now, **extra_fields
         )
 
-        # Set buyer & seller permissions.
-        #buyer.add_permission(...)
         return transaction
 
 
@@ -94,7 +92,8 @@ class Transaction(models.Model):
     '''
     def check_field_permissions(self, user_id, fields):
 
-        # Mapping between users and the restricted fields that they cannot access.
+        # Mapping between users and the restricted fields that
+        # they cannot access.
         restricted_fields = {
                                 self.buyer.pk: [ 'seller_accepted_offer',
                                                  'seller_accepted_contract',
@@ -137,8 +136,7 @@ class Transaction(models.Model):
                 raise ValueError('buyer and seller must both accept contract.')
 
             # Create the closing stage.
-            closing_type = 'house'
-            self.create_closing(closing_type=closing_type)
+            self.create_closing()
 
         # Closing. Check the closing conditions are satisfied.
         elif self.stage == 2:
@@ -155,12 +153,11 @@ class Transaction(models.Model):
 
         return self.offers.filter(owner=user_id).order_by('-timestamp')
     
-    ''' Create a Closing object for this Transaction.
-        Args:
-            closing_type -- The type of Closing object to create. E.g. 'condo'.
-    '''
-    def create_closing(self, closing_type):
+    ''' Create a Closing object for this transaction according to the type
+        of property we're operating on. '''
+    def create_closing(self):
         
+        closing_type = self.kproperty._type
         closing = AbstractClosingFactory.create_closing(
                     closing_type=closing_type, transaction=self)
 
