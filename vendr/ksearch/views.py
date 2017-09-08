@@ -1,3 +1,10 @@
+#
+# View for searching Property and User models.
+#
+# ==========================================================================
+
+from operator import and_
+
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -67,7 +74,7 @@ class PropertySearch(generics.ListAPIView):
         taken care of, we can construct our queryset. We then apply our paginator
         to its results and return the serialized response.
         Args:
-            request -- The GET request.
+            request (OrderedDict) -- The GET request.
     '''
     def list(self, request):
         
@@ -94,7 +101,7 @@ class PropertySearch(generics.ListAPIView):
         of our pagination class (we're using Limit Offset Pagination). Otherwise,
         we'll return None.
         Args:
-            request -- The GET request.
+            request (OrderedDict) -- The GET request.
     '''
     def get_paginator(self, request):
         
@@ -115,52 +122,21 @@ class PropertySearch(generics.ListAPIView):
     ''' Filters the queryset according to the specified parameters. '''
     def get_queryset(self):
         
-        # Get the Property types arguments, if any are given.
-        try:
-            ptypes = self.request.GET.pop('ptypes')[0]
-            ptypes = self.parse_multikey(ptypes)
-        except KeyError:
-            ptypes = []
-               
+        queryset = Property.objects.select_subclasses()
+
         # Construct a filter chain from the given parameters.
-        filter_args = self.gen_filter_chain(self.request.GET)
-        
-        queryset = []
-        if not filter_args:
-            for model in self.get_models(ptypes): queryset += model.objects.all()
-            return queryset
-        
-        import operator
-        
-        # Build the query set by querying each model type.
-        for model in self.get_models(ptypes):
-            try:
-                queryset += model.objects.filter(reduce(operator.and_, filter_args))
-            except FieldError:
-                pass
-        
+        filter_args = self.generate_filter_chain(self.request.GET)
+        if filter_args:
+            queryset = queryset.filter(reduce(and_, filter_args))
+
         return queryset
  
-    ''' (Helper Function) Parses a multi-key value into something we can pass
-        through a Django filter.
-        Args:
-            multi_value: The multi-value key, contained in a list (e.g. [..., ...])
-    '''
-    def parse_multikey(self, multi_value):
-        
-        multi_value = [
-                            q.strip('[').strip(']').lstrip(' ')
-                            for q in multi_value.encode('utf8').split(',')
-        ]
-        
-        return multi_value
-   
     ''' (Helper Function) Parses a set of filters and generate a filter
         chain of Q objects from them.
         Args:
-            filters: A dictionary of filter type-filter value, parameters.
+            filters (dict) -- A dictionary of filter type-filter value, parameters.
     '''
-    def gen_filter_chain(self, filters):
+    def generate_filter_chain(self, filters):
 
         filter_args = []
         
@@ -174,25 +150,20 @@ class PropertySearch(generics.ListAPIView):
             for coordinate in map_coordinates:
                 map_filters[coordinate] = filters.pop(coordinate)[0]
             
-            filter_args.append(self.parse_mapkey(map_filters))
+            filter_args.append(self.parse_mapkeys(map_filters))
         
-        # Construct the filter chain. We have both multi-value, and single-value cases.
-        # If our data is in a list, we assume it's multi-value. If not, single.
+        # Construct the filter chain.
         for kfilter in filters.keys():
-            if (filters[kfilter][0] == '[') and (filters[kfilter][-1] == ']'):
-                next_filter = self.parse_multikey(filters[kfilter])
-            else:
-                next_filter = Q((kfilter, filters[kfilter]))
-            
+            next_filter = Q((kfilter, filters[kfilter]))
             filter_args.append(next_filter)
 
         return filter_args
 
     ''' Create and return a bounding box, given a set of coordinate pairs.
         Args:
-            map_keys -- Map coordinates for the north east and south west.
+            map_keys (dict) -- Map coordinates for the north east and south west.
     '''
-    def parse_mapkey(self, map_keys):
+    def parse_mapkeys(self, map_keys):
 
         # Create a bounding box from the given longitude & latitude.
         lng = (float(map_keys['ne_lng']), float(map_keys['sw_lng']))
@@ -201,32 +172,6 @@ class PropertySearch(generics.ListAPIView):
         
         return Q(location__geo_point__intersects=box)
 
-    ''' (Helper Function) Using the property types parameter, return the
-        specified model subclasses.
-        Args:
-            ptypes: A list of strings specifying property types.
-    '''
-    def get_models(self, ptypes):
-        
-        # Get the models.
-        try:
-            models = [
-                        getattr(kproperty.models, model[:1].upper() + model[1:].lower())
-                        for model in ptypes
-            ]
-        except AttributeError:
-            error_msg = { 'error' : 'invalid model type.' }
-            exc = APIException(detail=error_msg)
-            exc.status_code = 401
-            
-            raise exc
-        
-        # No models specified, so we'll just return all types.
-        if not models:
-            models = [House, Condo, Townhouse, Manufactured, VacantLand]
-        
-        return models
-      
 
 '''   Search view for User objects. '''
 class UserSearch(generics.ListAPIView):
