@@ -43,11 +43,11 @@ class NestedGenericAPIView(GenericAPIView):
             instance = getattr(parent, self.field_name)
             if hasattr(instance, 'get'):
                 instance = instance.get(pk=self.kwargs[self.pk_field])
-        except ObjectDoesNotExist:
+        except instance.model.DoesNotExist:
             error_msg = {'error': 'nested model with pk {} does not exist.'.\
                                   format(self.kwargs[self.pk_field])}
             dne_exc = APIException(detail=error_msg)
-            dne_exc.status = 404; raise dne_exc
+            dne_exc.status_code = 404; raise dne_exc
         
         return instance
 
