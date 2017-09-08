@@ -1,4 +1,5 @@
 from django.http import Http404
+from django.apps import apps
 from django.contrib.auth.models import User
 
 from rest_framework.views import APIView
@@ -17,9 +18,7 @@ from kproperty.permissions import IsOwnerOrReadOnly
 '''   Lists all properties. '''
 class PropertyList(APIView):
 
-    permission_classes = (
-                            permissions.IsAuthenticatedOrReadOnly,
-    )
+    permission_classes = ( permissions.IsAuthenticatedOrReadOnly, )
 
     ''' Places objects in the database.
         Args:
@@ -71,8 +70,8 @@ class PropertyDetail(APIView):
         
         self.serializer         = None
         self.permission_classes = (
-                                    permissions.IsAuthenticatedOrReadOnly,
-                                    IsOwnerOrReadOnly,
+                permissions.IsAuthenticatedOrReadOnly,
+                IsOwnerOrReadOnly
         )
         self.parsers = (FormParser, MultiPartParser, )
 
@@ -82,21 +81,15 @@ class PropertyDetail(APIView):
     '''
     def get_object(self, pk):
 
-        # Get the object in question, and its serializer.
+        # Get the object in question and its serializer. Note, we're also going
+        # to increment its `views`.
         try:
-            kproperty = Property.objects.get_subclass(pk=pk)
+            model_type = Property.objects.filter(pk=pk).values_list('_type', flat=True)
+            model = apps.get_model(app_label='kproperty', model_name=model_type)
+            kproperty = model.objects.get(pk=pk)
             self.check_object_permissions(self.request, kproperty)
-            
-            # TODO: Refactor this.
-            for model in [House, Condo, Townhouse, Manufactured, VacantLand]:
-                try:
-                    if model.objects.get(pk=kproperty.pk):
-                        kproperty = model.objects.get(pk=kproperty.pk)
-                except Exception:pass
-
-            kproperty.views += 1; kproperty.save()
             self.serializer = kproperty.get_serializer()
-
+            kproperty.views += 1; kproperty.save()
             return kproperty
         except Property.DoesNotExist:
             error_msg = {'error': 'property with id=' + str(pk) + ' does not exist.'}
