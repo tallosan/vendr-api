@@ -145,9 +145,8 @@ class TestPropertySearchList(APITestCase):
         request.GET._mutable = True; request.GET.pop('stype')[0]
         force_authenticate(self.view)
         response = self.view(request)
-        
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)
+
+        self.assertEqual(response.status_code, 400)
 	
     ''' Search on a nested value. '''
     def test_nested_value(self):
@@ -192,8 +191,7 @@ class TestPropertySearchList(APITestCase):
         force_authenticate(self.view)
         response = self.view(request)
         
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)
+        self.assertEqual(response.status_code, 400)
 	
     ''' Search on standard and nested values. '''
     def test_standard_and_nested_values(self):

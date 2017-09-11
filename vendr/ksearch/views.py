@@ -3,7 +3,8 @@
 #
 # ==========================================================================
 
-from operator import and_
+from operator import and_ as AND
+import ast
 
 from django.shortcuts import render
 from django.http import HttpResponse
@@ -29,11 +30,11 @@ from kuser.serializers import *
 User = get_user_model()
 
 
-''' Handles search requests by routing to the appropriate view depending
+""" Handles search requests by routing to the appropriate view depending
     on the 'type' specified.
     Args:
         request: HttpResponse object containing 'type' parameter.
-'''
+"""
 @api_view(['GET'])
 def search_router(request):
     
@@ -59,7 +60,7 @@ def search_router(request):
                         status=status.HTTP_400_BAD_REQUEST)
 
 
-''' Seach view for all Property models. '''
+""" Seach view for all Property models. """
 class PropertySearch(generics.ListAPIView):
 
     # We're using Limit Offset pagination by default, but this gives us a bit
@@ -67,7 +68,7 @@ class PropertySearch(generics.ListAPIView):
     # pagination scheme.
     pagination_class = api_settings.DEFAULT_PAGINATION_CLASS
     
-    ''' Overrides the default 'list()' method. We have a number of different model
+    """ Overrides the default 'list()' method. We have a number of different model
         types, and a number of different (optional) filters.
         The first step is to parse the pagination parameters (if any) because we
         don't want to mix them up with the Property filter parameters. Once this is
@@ -75,7 +76,7 @@ class PropertySearch(generics.ListAPIView):
         to its results and return the serialized response.
         Args:
             request (OrderedDict) -- The GET request.
-    '''
+    """
     def list(self, request):
         
         # Parse the pagination parameters (if any).
@@ -119,24 +120,28 @@ class PropertySearch(generics.ListAPIView):
         except KeyError:
             return None
  
-    ''' Filters the queryset according to the specified parameters. '''
+    """ Filters the queryset according to the specified parameters. """
     def get_queryset(self):
         
         queryset = Property.objects.select_subclasses()
-
+        
         # Construct a filter chain from the given parameters.
-        filter_args = self.generate_filter_chain(self.request.GET)
+        filter_args = self._generate_filter_chain(self.request.GET)
         if filter_args:
-            queryset = queryset.filter(reduce(and_, filter_args))
+            try:
+                queryset = queryset.filter(reduce(AND, filter_args))
+            except FieldError:
+                field_exc = APIException(detail={'error': 'invalid search field.'})
+                field_exc.status_code = 400; raise field_exc
 
         return queryset
  
-    ''' (Helper Function) Parses a set of filters and generate a filter
+    """ (Helper Function) Parses a set of filters and generate a filter
         chain of Q objects from them.
         Args:
             filters (dict) -- A dictionary of filter type-filter value, parameters.
-    '''
-    def generate_filter_chain(self, filters):
+    """
+    def _generate_filter_chain(self, filters):
 
         filter_args = []
         
@@ -150,20 +155,24 @@ class PropertySearch(generics.ListAPIView):
             for coordinate in map_coordinates:
                 map_filters[coordinate] = filters.pop(coordinate)[0]
             
-            filter_args.append(self.parse_mapkeys(map_filters))
+            filter_args.append(self._parse_mapkeys(map_filters))
         
-        # Construct the filter chain.
+        # Construct the filter chain. Note, we'll need to handle multi-keys
+        # in a different manner.
         for kfilter in filters.keys():
+            if len(filters.getlist(kfilter)[0].split(',')) > 1:
+                filters[kfilter] = self._parse_multikey(filters[kfilter])
+
             next_filter = Q((kfilter, filters[kfilter]))
             filter_args.append(next_filter)
 
         return filter_args
 
-    ''' Create and return a bounding box, given a set of coordinate pairs.
+    """ Create and return a bounding box, given a set of coordinate pairs.
         Args:
             map_keys (dict) -- Map coordinates for the north east and south west.
-    '''
-    def parse_mapkeys(self, map_keys):
+    """
+    def _parse_mapkeys(self, map_keys):
 
         # Create a bounding box from the given longitude & latitude.
         lng = (float(map_keys['ne_lng']), float(map_keys['sw_lng']))
@@ -172,13 +181,30 @@ class PropertySearch(generics.ListAPIView):
         
         return Q(location__geo_point__intersects=box)
 
+    """ Parses a multi-key into a valid string that we can use to create
+        a Q object.
+        An example multi-key: `_type__in=[type1, type2,type3]`
+        This is passed through the request as a unicode string. Unfortunately
+        we can't use the `ast` module to parse this right away, as it doesn't
+        handle variables (for security reasons). Thus, we need to manually
+        step through it, remove the brackets, and convert it into a list of
+        strings ourselves.
+        Args:
+            multi_key (unicode str) -- The multi-key to be parsed.
+    """
+    def _parse_multikey(self, multi_key):
 
-'''   Search view for User objects. '''
+        multi_key = multi_key.replace('[', '').replace(']', '')
+        multi_key = multi_key.split(',')
+        return [key.encode('utf-8').strip() for key in multi_key]
+
+
+"""   Search view for User objects. """
 class UserSearch(generics.ListAPIView):
 
     serializer_class = UserSerializer
     
-    ''' Filters the queryset according to the specified parameters. '''
+    """ Filters the queryset according to the specified parameters. """
     def get_queryset(self):
         
         filter_args = {}
