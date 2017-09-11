@@ -56,7 +56,7 @@ class DocumentClauseSerializer(serializers.ModelSerializer):
             instance (DocumentClause) -- The `DocumentClause` being serialized.
     """
     def get_title(self, instance):
-        return instance.clause.title
+        return instance.title
 
 
 class ClauseDocumentSerializer(DocumentSerializer):
