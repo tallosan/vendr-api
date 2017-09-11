@@ -201,8 +201,8 @@ class Closing(models.Model):
     state = models.CharField(choices=STATES, default='PCR', max_length=3)
 
     # These are fields that pertain to each document associated with the
-    # closing stage. As such, it makes sense to store them in one place, as opposed
-    # to four (in each doc).
+    # closing stage. As such, it makes sense to store them in one place,
+    # as opposed to four (in each doc).
     _property_descriptor = models.TextField(blank=False)
     _document_header = models.TextField(blank=False)
     _document_footer = models.TextField(blank=False)
@@ -276,18 +276,43 @@ class DocumentClause(models.Model):
 
     def save(self, *args, **kwargs):
         
-        # Ensure that the linked Clause is, indeed, a Clause object.
-        if not issubclass(self.clause_type.model_class(), Clause):
-            raise AttributeError(
-                    'error: clause must be either an instance of `StaticClause` '
-                    'or `DynamicClause`. instead, clause is of type {}'.
-                    format(self.clause_type.model_class().__class__)
-            )
+        # On create, ensure that the linked Clause is, indeed, a Clause object.
+        if self._state.adding:
+            if not issubclass(self.clause_type.model_class(), Clause):
+                raise AttributeError(
+                        'error: clause must be either an instance of `StaticClause` '
+                        'or `DynamicClause`. instead, clause is of type {}'.
+                        format(self.clause_type.model_class().__class__)
+                )
 
         super(DocumentClause, self).save(*args, **kwargs)
 
-    def __str__(self):
+    """ Ensure that the user is not attempting to access a restricted field.
+        Args:
+            user_id (int) -- The ID of the user making the request.
+            fields (list of str) -- The fields the user is attempting to change.
+    """
+    def check_field_permissions(self, user_id, fields):
+
+        buyer_pk = self.document.closing.transaction.buyer.pk
+        seller_pk = self.document.closing.transaction.seller.pk
+        restricted_fields = {
+                buyer_pk: 'seller_accepted',
+                seller_pk: 'buyer_accepted'
+        }
+
+        for field in fields:
+            if field in restricted_fields[user_id]:
+                return False
+
+        return True
+
+    @property
+    def title(self):
         return self.clause.title
+
+    def __str__(self):
+        return self.title
 
 
 '''   Some Documents have a set of clauses attached to them -- e.g. the
@@ -308,7 +333,12 @@ class ClauseDocumentMixin(object):
             sender (User) -- The user adding this clause.
     '''
     def add_clause(self, clause, sender):
-        
+ 
+        # Ensure that the clause we're adding hasn't already been added.
+        if clause.title in \
+            [doc_clause.title for doc_clause in self.document_clauses.all()]:
+            raise ValueError('cannot have duplicate clause instances.')
+       
         # Set the user's `role_accepted` field according to their role in
         # the transaction.
         buyer_accepted = False; seller_accepted = False
@@ -344,6 +374,10 @@ class ClauseDocumentMixin(object):
 
         return self.document_clauses.filter(buyer_pending | seller_pending)
 
+    @property
+    def contract(self):
+        return self.closing.transaction.contracts.all()[0]
+
     ''' Raise NotImplementedError. Updates a document's content by iterating
         through its clauses and checking for any new additions to the
         `approved` set. This should be called after each clause addition.
@@ -374,7 +408,7 @@ class Amendments(Document, ClauseDocumentMixin):
         clauses and checking for any new additions to the `approved` set. '''
     def reformat_content(self):
 
-        contract = self.closing.transaction.contracts.all()[0]
+        contract = self.contract
         contract_signing_date = None
         amended_clauses = ', '.join([str(clause) for clause in self.approved_clauses])
         irrevocability_date = contract.dynamic_clauses.get(title='Irrevocability').\
@@ -403,7 +437,7 @@ class Waiver(Document, ClauseDocumentMixin):
         checking for any new additions to the `approved` set. '''
     def reformat_content(self):
 
-        contract = self.closing.transaction.contracts.all()[0]
+        contract = self.contract
         contract_signing_date = None
         waiver_clauses = ', '.join([str(clause) for clause in self.approved_clauses])
         self.content = self.content.format(contract_signing_date,
@@ -437,7 +471,7 @@ class NoticeOfFulfillment(Document, ClauseDocumentMixin):
         
         # Add each required clause to our pending queue. N.B. -- We're
         # explicitly setting `accepted` here for no reason other than brevity.
-        contract = self.closing.transaction.contracts.all()[0]
+        contract = self.contract
         for clause in contract.required_clauses:
             self.add_clause(clause, accepted=False)
 
@@ -447,7 +481,7 @@ class NoticeOfFulfillment(Document, ClauseDocumentMixin):
         its clauses and checking for any new additions to the `approved` set. '''
     def reformat_content(self):
 
-        contract = self.closing.transaction.contracts.all()[0]
+        contract = self.contract
         contract_signing_date = None
         clauses = ', '.join([str(clause) for clause in self.pending_clauses])
         self.content = self.content.format(
