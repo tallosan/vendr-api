@@ -84,7 +84,8 @@ class PropertyDetail(APIView):
         # Get the object in question and its serializer. Note, we're also going
         # to increment its `views`.
         try:
-            model_type = Property.objects.filter(pk=pk).values_list('_type', flat=True)
+            model_type = Property.objects.filter(pk=pk).\
+                            values_list('_type', flat=True)[0]
             model = apps.get_model(app_label='kproperty', model_name=model_type)
             kproperty = model.objects.get(pk=pk)
             self.check_object_permissions(self.request, kproperty)
