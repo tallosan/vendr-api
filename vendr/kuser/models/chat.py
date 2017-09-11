@@ -29,7 +29,8 @@ class Message(models.Model):
     
     # Soft reference to the sender. N.B. -- This is our chosen user
     # representation and, as such, is subject to change.
-    sender = models.CharField(max_length=51, editable=False)
+    sender = models.PositiveIntegerField(editable=False)
+    sender_name = models.CharField(max_length=51, editable=False)
     
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
@@ -43,8 +44,8 @@ class Message(models.Model):
 
         return {
                     'chat': str(self.chat.pk), 'content': self.content,
-                    'sender': self.sender, 'timestamp': self.timestamp,
-                    'pk': str(self.pk)
+                    'sender': self.sender, 'sender_name': self.sender_name,
+                    'timestamp': self.timestamp, 'pk': str(self.pk)
         }
 
     ''' There are two behaviors we need to enforce on message saves:
