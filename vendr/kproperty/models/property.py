@@ -6,8 +6,11 @@
 
 from __future__ import unicode_literals
 
+from datetime import datetime, timedelta
+
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 
@@ -16,12 +19,27 @@ from rest_framework.exceptions import APIException
 from model_utils.managers import InheritanceManager
 
 
+class PropertyManager(InheritanceManager):
+
+    """ Queue of Property objects to unfeature. """
+    def unfeature_queue(self):
+
+        # We only feature properties for one day.
+        feature_limit = timedelta(days=1)
+        feature_duration = timezone.now() - feature_limit
+        unfeature_queue = super(PropertyManager, self).get_queryset().\
+                filter(is_featured=True).\
+                filter(created_time__lte=feature_duration)
+
+        return unfeature_queue
+
+
 '''   [Abstract] Property model. Contains all data pertaining to a particular 
       Property instance. '''
 class Property(models.Model):
 
     # Allows us to use polymorphism.
-    objects = InheritanceManager()
+    objects = PropertyManager()
     
     # Owner of this property listing.
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='properties',
@@ -69,15 +87,6 @@ class Property(models.Model):
                 raise validation_exc
             
         super(Property, self).save(*args, **kwargs)
-
-    ''' Unfeature a property after a set amount of time.
-        Args:
-            kproperty -- The property we're unfeaturing.
-            eta -- The time for the task to execute.
-    @app.task
-    def _unfeature(self, kproperty, eta):
-        pass
-    '''
 
     ''' Custom field validation. '''
     def clean(self):
@@ -174,7 +183,7 @@ class House(Freehold):
     def save(self, *args, **kwargs):
 
         if self._state.adding:
-            self._type = 'condo'
+            self._type = 'house'
 
         super(House, self).save(*args, **kwargs)
 
