@@ -117,11 +117,10 @@ CACHES = {
 CACHE_TTL = ( 60 ) * 30
 
 # Celery.
-BROKER_URL = 'reddis://localhost:6379'
+BROKER_URL = 'redis://{}:{}'.format(REDIS_HOST, REDIS_PORT)
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
-
 
 # Authorized user model.
 AUTH_USER_MODEL = 'kuser.KUser'
