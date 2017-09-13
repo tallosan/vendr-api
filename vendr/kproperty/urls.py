@@ -30,6 +30,9 @@ urlpatterns = [
             views.RSVPList.as_view()),
         url(r'^(?P<pk>[0-9+]+)/openhouses/(?P<oh_pk>[0-9a-f-]+)'
                              '/rsvp/(?P<rsvp_pk>[0-9a-f-]+)/$',
-            views.RSVPDetail.as_view())
+            views.RSVPDetail.as_view()),
+
+        # Property sharing view.
+        url(r'^(?P<pk>[0-9+]+)/share/$', views.VendrShare.as_view())
 ]
 
