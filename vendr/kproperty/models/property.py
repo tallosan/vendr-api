@@ -25,7 +25,7 @@ class PropertyManager(InheritanceManager):
     def unfeature_queue(self):
 
         # We only feature properties for one day.
-        feature_limit = timedelta(days=1)
+        feature_limit = timedelta(days=7)
         feature_duration = timezone.now() - feature_limit
         unfeature_queue = super(PropertyManager, self).get_queryset().\
                 filter(is_featured=True).\
