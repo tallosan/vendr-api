@@ -81,8 +81,8 @@ class PropertyDetail(APIView):
     '''
     def get_object(self, pk):
 
-        # Get the object in question and its serializer. Note, we're also going
-        # to increment its `views`.
+        # Get the object in question and its serializer. Note, we're
+        # also going to increment its `views`.
         try:
             model_type = Property.objects.filter(pk=pk).\
                             values_list('_type', flat=True)[0]
@@ -92,7 +92,7 @@ class PropertyDetail(APIView):
             self.serializer = kproperty.get_serializer()
             kproperty.views += 1; kproperty.save()
             return kproperty
-        except Property.DoesNotExist:
+        except (Property.DoesNotExist, IndexError):
             error_msg = {'error': 'property with id=' + str(pk) + ' does not exist.'}
             dne_exc = APIException(detail=error_msg)
             dne_exc.status_code = status.HTTP_400_BAD_REQUEST
