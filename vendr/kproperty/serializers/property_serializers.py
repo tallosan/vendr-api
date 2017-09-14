@@ -39,6 +39,7 @@ class PropertySerializer(serializers.ModelSerializer):
                    'images',
                    'open_houses',
                    '_type',
+                   'description',
                    'created_time',
                    'is_featured',
                    'display_pic',
