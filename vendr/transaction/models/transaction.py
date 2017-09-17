@@ -130,10 +130,10 @@ class Transaction(models.Model):
 
         # Contracts. Ensure that contracts are equal, & both parties have accepted.
         elif self.stage == 1:
-            if not self.contracts_equal:
-                raise ValueError('contracts must be equal.')
             if not self.buyer_accepted_contract or not self.seller_accepted_contract:
                 raise ValueError('buyer and seller must both accept contract.')
+            if not self.contracts_equal:
+                raise ValueError('contracts must be equal.')
 
             # Create the closing stage.
             self.create_closing()
