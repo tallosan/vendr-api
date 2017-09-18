@@ -9,12 +9,14 @@ import uuid
 
 from django.db import models
 from django.db.models import Q
+from django.apps import apps
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.conf import settings
 
 from .contract import Clause
 from .text.closing import DOCUMENTS_TEXT
+from kproperty.models import Property
    
 
 class AbstractClosingFactory(object):
@@ -70,6 +72,9 @@ class BaseClosingManager(models.Manager):
                     _document_footer=DOCUMENTS_TEXT['footer']
         )
 
+        pk = transaction.kproperty.pk
+        kproperty = Property.objects.select_subclasses().get(pk=pk)
+
         # Create the four Closing documents.
         amendment = Amendments.objects.create(closing=closing)
         waiver = Waiver.objects.create(closing=closing)
@@ -90,10 +95,12 @@ class CoOpClosingManager(BaseClosingManager):
     '''
     def format_descriptor(self, transaction):
 
+        pk = transaction.kproperty.pk
+        kproperty = Property.objects.select_subclasses().get(pk=pk)
         descriptor = DOCUMENTS_TEXT['coop_descriptor'].format(
-                        transaction.kproperty.unit_num,
-                        transaction.kproperty.location.address,
-                        transaction.kproperty.corporation_name
+                        kproperty.unit_num,
+                        kproperty.location.address,
+                        kproperty.corporation_name
         )
 
         return descriptor
@@ -107,9 +114,11 @@ class CondoClosingManager(BaseClosingManager):
     '''
     def format_descriptor(self, transaction):
 
+        pk = transaction.kproperty.pk
+        kproperty = Property.objects.select_subclasses().get(pk=pk)
         descriptor = DOCUMENTS_TEXT['condo_descriptor'].format(
-                        transaction.kproperty.location.address,
-                        transaction.kproperty.unit_num
+                        kproperty.location.address,
+                        kproperty.unit_num
         )
 
         return descriptor
@@ -123,9 +132,11 @@ class HouseClosingManager(BaseClosingManager):
     '''
     def format_descriptor(self, transaction):
 
+        pk = transaction.kproperty.pk
+        kproperty = Property.objects.select_subclasses().get(pk=pk)
         descriptor = DOCUMENTS_TEXT['house_descriptor'].format(
-                        transaction.kproperty.location.address,
-                        transaction.kproperty.sqr_ftg
+                        kproperty.location.address,
+                        kproperty.sqr_ftg
         )
 
         return descriptor
@@ -140,8 +151,7 @@ class TownhouseClosingManager(BaseClosingManager):
     def format_descriptor(self, transaction):
 
         descriptor = DOCUMENTS_TEXT['townhouse_descriptor'].format(
-                        transaction.kproperty.location.address,
-                        transaction.kproperty.unit_num
+                        transaction.kproperty.location.address
         )
 
         return descriptor
@@ -273,6 +283,8 @@ class DocumentClause(models.Model):
     # to the document. Thus, we'll use this flag to determine a clause's state.
     buyer_accepted = models.BooleanField(default=False)
     seller_accepted = models.BooleanField(default=False)
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='sender',
+                null=True, on_delete=models.CASCADE)
 
     def save(self, *args, **kwargs):
         
@@ -284,6 +296,10 @@ class DocumentClause(models.Model):
                         'or `DynamicClause`. instead, clause is of type {}'.
                         format(self.clause_type.model_class().__class__)
                 )
+
+        # Apply action.
+        if (self.buyer_accepted and self.seller_accepted):
+            self.apply_action()
 
         super(DocumentClause, self).save(*args, **kwargs)
 
@@ -315,6 +331,56 @@ class DocumentClause(models.Model):
         return self.title
 
 
+class AmendmentDocumentClause(DocumentClause):
+
+    _type = models.CharField(default='dc_amendment', max_length=12,
+            editable=False)
+
+    def acceptance_action(self, clause):
+        print 'amend'
+
+class WaiverDocumentClause(DocumentClause):
+
+    _type = models.CharField(default='dc_waiver', editable=False,
+            max_length=9)
+
+    def acceptance_action(self, clause):
+        print 'waiv'
+
+class NoticeOfFulfillmentDocumentClause(DocumentClause):
+
+    _type = models.CharField(default='dc_nof', editable=False, max_length=6)
+
+    def acceptance_action(self, clause):
+        print 'nof'
+
+
+""" Factory method for `DocumentClause` creation.
+    Args:
+        clause (StaticClause or DynamicClause) -- The clause to be added.
+        doc_type (string) -- The type of document we're binding to.
+"""
+def create_document_clause(document, clause, buyer_accepted, seller_accepted):
+    
+    doc_type = document.__class__.__name__.lower()
+    if doc_type == 'amendments':
+        doc_clause = AmendmentDocumentClause.objects.create(
+                document=document, clause=clause,
+                buyer_accepted=buyer_accepted, seller_accepted=seller_accepted)
+    elif doc_type == 'waiver':
+        doc_clause = WaiverDocumentClause.objects.create(
+                document=document, clause=clause,
+                buyer_accepted=buyer_accepted, seller_accepted=seller_accepted)
+    elif doc_type == 'noticeoffulfillment':
+        doc_clause = NoticeOfFulfillmentDocumentClause.objects.create(
+                document=document, clause=clause,
+                buyer_accepted=buyer_accepted, seller_accepted=seller_accepted)
+    else:
+        raise ValidationError("error: `doc_type` isn't valid.")
+
+    return doc_clause
+
+
 '''   Some Documents have a set of clauses attached to them -- e.g. the
       Amendments document contains a set of clauses that have been ammended.
       This mixin supports any necessary functionality that a document will need
@@ -342,15 +408,15 @@ class ClauseDocumentMixin(object):
         # Set the user's `role_accepted` field according to their role in
         # the transaction.
         buyer_accepted = False; seller_accepted = False
-        if sender.pk == self.closing.transaction.buyer.pk:
-            buyer_accepted=True
-        else:
-            seller_accepted = True
+        if sender:
+            if sender.pk == self.closing.transaction.buyer.pk:
+                buyer_accepted=True
+            else:
+                seller_accepted = True
 
         # Create (add) the clause to the document.
-        new_clause = self.clause_model.objects.create(document=self,
-                clause=clause,
-                buyer_accepted=buyer_accepted,
+        new_clause = create_document_clause(document=self,
+                clause=clause, buyer_accepted=buyer_accepted,
                 seller_accepted=seller_accepted
         )
 
@@ -473,7 +539,7 @@ class NoticeOfFulfillment(Document, ClauseDocumentMixin):
         # explicitly setting `accepted` here for no reason other than brevity.
         contract = self.contract
         for clause in contract.required_clauses:
-            self.add_clause(clause, accepted=False)
+            self.add_clause(clause, sender=None)
 
         self.reformat_content()
 
