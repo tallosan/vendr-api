@@ -110,14 +110,6 @@ class CoOp(Property):
     parking_spaces = models.PositiveIntegerField()
     corporation_name = models.CharField(max_length=20, blank=True, null=True)
 
-    """ We're overriding `save()` here to set the `_type` field. """
-    def save(self, *args, **kwargs):
-
-        if self._state.adding:
-            self._type = 'coop'
-
-        super(CoOp, self).save(*args, **kwargs)
-
     ''' Custom field validation. '''
     def clean(self):
 
