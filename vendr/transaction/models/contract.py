@@ -164,7 +164,6 @@ class CondoContractManager(CoOpContractManager):
             # Generic clauses.
             STATIC_CLAUSES['title'],
             STATIC_CLAUSES['status_certificate_and_mgmt'],
-            STATIC_CLAUSES['meetings'],
             STATIC_CLAUSES['condo_laws_acknowledgement_pre'],
             STATIC_CLAUSES['unit_insurance'],
             STATIC_CLAUSES['alt_document_prep'],
@@ -310,7 +309,7 @@ class TownhouseContractManager(HouseContractManager):
     '''
     def create_contract(self, owner, transaction, **kwargs):
         
-        contract =  super(TownhouseContractManager, self).\
+        contract = super(TownhouseContractManager, self).\
               create_contract(owner, transaction, **kwargs)
 
         # Dynamic Clauses:
