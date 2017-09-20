@@ -11,7 +11,7 @@ from rest_framework.exceptions import APIException
 
 from oauth2_provider.contrib.rest_framework import TokenHasReadWriteScope, TokenHasScope
 
-from kuser.serializers import *
+from kuser.serializers import UserReadSerializer, UserCreateUpdateSerializer
 from kuser.permissions import IsOwnerOrReadOnly
 
 User = get_user_model()
@@ -21,7 +21,8 @@ User = get_user_model()
 class UserList(APIView):
 
     queryset           = User.objects.all()
-    serializer_class   = UserSerializer
+    read_serializer    = UserReadSerializer
+    create_serializer  = UserCreateUpdateSerializer
     permission_classes = (
                             permissions.AllowAny,
     )
@@ -29,10 +30,12 @@ class UserList(APIView):
     ''' Get a list of users. '''
     def get(self, request, format=None):
         
+        serializer_class = self.read_serializer
+
         # Paginate the queryset if necessary.
         response = []
         for user in self.get_queryset():
-            response.append(self.serializer_class(user, context={'request': request}).data)
+            response.append(serializer_class(user, context={'request': request}).data)
 
         return Response(response)
     
@@ -47,7 +50,8 @@ class UserList(APIView):
             user_exists_exc.status_code = status.HTTP_400_BAD_REQUEST
             raise user_exists_exc
 
-        serializer = self.serializer_class(data=request.data, context=request.FILES)
+        serializer_class = self.create_serializer
+        serializer = serializer_class(data=request.data, context=request.FILES)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -68,7 +72,8 @@ class UserList(APIView):
 class UserDetail(APIView):
 
     queryset           = User.objects.all()
-    serializer_class   = UserSerializer
+    serializer_class   = UserReadSerializer
+    update_serializer  = UserCreateUpdateSerializer
     permission_classes = (
                             permissions.IsAuthenticatedOrReadOnly,
                             IsOwnerOrReadOnly,
@@ -112,7 +117,7 @@ class UserDetail(APIView):
     def put(self, request, pk, format=None):
         
         kuser = self.get_object(pk=pk)
-        serializer = self.serializer_class(kuser, data=request.data,
+        serializer = self.update_serializer(kuser, data=request.data,
                         context=request.FILES, partial=True)
         if serializer.is_valid():
             serializer.save()
