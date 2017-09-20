@@ -25,7 +25,7 @@ from rest_framework.settings import api_settings
 import kproperty.models
 from kproperty.models import *
 from kproperty.serializers import *
-from kuser.serializers import *
+from kuser.serializers import UserReadSerializer
 
 User = get_user_model()
 
@@ -145,6 +145,7 @@ class PropertySearch(generics.ListAPIView):
 
         filter_args = []
         
+        #TODO: Fix the case sensitive search!
         # Parse any map filters.
         map_filters = {}; map_coordinates = ['ne_lng', 'ne_lat', 'sw_lng', 'sw_lat']
         if any(map_filter in filters.keys() for map_filter in map_coordinates):
@@ -202,7 +203,7 @@ class PropertySearch(generics.ListAPIView):
 """   Search view for User objects. """
 class UserSearch(generics.ListAPIView):
 
-    serializer_class = UserSerializer
+    serializer_class = UserReadSerializer
     
     """ Filters the queryset according to the specified parameters. """
     def get_queryset(self):
