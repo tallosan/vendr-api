@@ -1,4 +1,4 @@
-from user_serializer import UserSerializer
+from user_serializer import UserCreateUpdateSerializer, UserReadSerializer
 from profile_serializer import ProfileSerializer
 from notification_serializer import TransactionNotificationSerializer, \
                                     OfferNotificationSerializer, \

@@ -8,21 +8,23 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from kuser.models import KUser
+from .profile_serializer import ProfileSerializer
 
 User = get_user_model()
 
 
-'''   Serializer for User models. '''
-class UserSerializer(serializers.ModelSerializer):
+"""   Serializer for User model creation and updates. """
+class UserCreateUpdateSerializer(serializers.ModelSerializer):
 
+    profile = ProfileSerializer()
     class Meta:
         model   = KUser
-        fields  = ('id', 'email', 'password', 'join_date')
+        fields  = ('id', 'email', 'password', 'join_date', 'profile')
     
-    ''' Handles the creation of a Kangaa User object.
+    """ Handles the creation of a Kangaa User object.
         Args:
             validated_data: The request data we create the new model from.
-    '''
+    """
     def create(self, validated_data):
 
         email       = validated_data.pop('email')
@@ -37,16 +39,15 @@ class UserSerializer(serializers.ModelSerializer):
                 setattr(kuser.profile, key, prof.pop(key))
             
             kuser.profile.save()
-
         except KeyError: pass
         
         return kuser
 
-    ''' Update all target fields.
+    """ Update all target fields.
         Args:
             instance: The actual user object to be updated.
             validated_data: Fields to be updated, and their updates.
-    '''
+    """
     def update(self, instance, validated_data):
         
         # Files are passed through the context.
@@ -76,9 +77,9 @@ class UserSerializer(serializers.ModelSerializer):
 
         return instance
 
-    ''' Get file objects from the context. N.B. -- only the Profile object
+    """ Get file objects from the context. N.B. -- only the Profile object
         contains a file (image) field.
-    '''
+    """
     def get_file_data(self):
 
         file_data = { 'profile': {} }
@@ -87,6 +88,13 @@ class UserSerializer(serializers.ModelSerializer):
 
         return file_data
 
+
+class UserReadSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model   = KUser
+        fields  = ('id', 'email', 'password', 'join_date')
+
     """ Adds a quick profile (i.e. stripped down profile object) to the
         serializers User.
         Args:
@@ -94,7 +102,7 @@ class UserSerializer(serializers.ModelSerializer):
     """
     def to_representation(self, instance):
 
-        user = super(UserSerializer, self).to_representation(instance)
+        user = super(UserReadSerializer, self).to_representation(instance)
         profile = instance.profile
         user['quick_profile'] = {
                 'first_name': profile.first_name,
