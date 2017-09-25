@@ -31,8 +31,10 @@ urlpatterns = [
         # Favourites view.
         url(r'^(?P<pk>[0-9]+)/favourites/$', views.FavouritesList.as_view()),
 
-        # Property and Transaction views.
+        # Property, Transaction, Contract, and Closing views.
         url(r'^(?P<pk>[0-9]+)/properties/$', views.PropertyList.as_view()),
         url(r'^(?P<pk>[0-9]+)/transactions/$', views.TransactionList.as_view()),
+        url(r'^(?P<pk>[0-9]+)/contracts/$', views.ContractList.as_view()),
+        url(r'^(?P<pk>[0-9]+)/closing/$', views.ClosingList.as_view()),
 ]
 
