@@ -125,7 +125,6 @@ class CoOpContractManager(BaseContractManager):
                 STATIC_CLAUSES['property_tax_assessment'],
                 STATIC_CLAUSES['alt_alterations'],
                 STATIC_CLAUSES['occupancy_agreement'],
-                STATIC_CLAUSES['alt_documents_request'],
 
                 # Co-Op specific clauses.
                 COOP_STATIC_CLAUSES['corporation_documentation'],
@@ -133,7 +132,6 @@ class CoOpContractManager(BaseContractManager):
                 COOP_STATIC_CLAUSES['title'],
                 COOP_STATIC_CLAUSES['loan_discharge'],
                 COOP_STATIC_CLAUSES['adjustments']
-
         ]
 
     def create_contract(self, owner, transaction, **kwargs):
@@ -492,6 +490,12 @@ class Clause(models.Model):
     is_active = models.BooleanField(default=True)
     preview   = models.TextField()
     explanation = models.TextField()
+
+    # Used in Closing stage. Indicates whether or not a clause has been removed.
+    _waived = models.BooleanField(default=False)
+
+    # Used in Closing stage. Indicates whether or not a clause is a
+    # contract requirement.
     _required = models.BooleanField(default=False, editable=False)
 
     class Meta:
