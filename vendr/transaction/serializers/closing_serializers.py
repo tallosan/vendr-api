@@ -33,10 +33,11 @@ class DocumentSerializer(serializers.ModelSerializer):
 class DocumentClauseSerializer(serializers.ModelSerializer):
 
     title = serializers.SerializerMethodField()
+    waived = serializers.SerializerMethodField()
 
     class Meta:
         model = DocumentClause
-        fields = ('pk', 'title', 'buyer_accepted', 'seller_accepted')
+        fields = ('pk', 'title', 'buyer_accepted', 'seller_accepted', 'waived')
 
     """ We're overiding this function to use our `add_clause()` method.
         Args:
@@ -58,6 +59,13 @@ class DocumentClauseSerializer(serializers.ModelSerializer):
     """
     def get_title(self, instance):
         return instance.title
+
+    """ Returns the `waived` status of the `DocumentClause`
+        Args:
+            instance (DocumentClause) -- The `DocumentClause` being serialized.
+    """
+    def get_waived(self, instance):
+        return instance.clause._waived
 
     def to_representation(self, instance):
 
