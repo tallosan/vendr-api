@@ -19,7 +19,7 @@ from transaction.models import Transaction, Closing, Amendments, Waiver, \
         NoticeOfFulfillment, MutualRelease, DocumentClause, \
         StaticClause, DynamicClause
 from transaction.serializers import ClosingSerializer, DocumentSerializer, \
-        ClauseDocumentSerializer, DocumentClauseSerializer
+        ClauseDocumentSerializer, DocumentClauseSerializer, AmendmentClauseSerializer
 import transaction.permissions as transaction_permissions
 
 
@@ -117,6 +117,18 @@ class OneToOneMixin(GenericAPIView):
             dne_exc = APIException(detail=error_msg)
             dne_exc.status_code = 404; raise dne_exc
 
+    def put(self, request, *args, **kwargs):
+        
+        instance = self.get_object()
+        partial = True
+        serializer = self.get_serializer(instance, data=request.data,
+                context=request.FILES, partial=partial)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+    
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class DocumentClauseCreateMixin(object):
         
@@ -184,7 +196,7 @@ class AmendmentsClauseList(DocumentClauseCreateMixin, OneToOneMixin, ListAPIView
             ('document_clauses', None)
     ]
 
-    serializer_class = DocumentClauseSerializer
+    serializer_class = AmendmentClauseSerializer
     permission_classes = (
             permissions.IsAuthenticated,
             transaction_permissions.ClauseDocumentListPermissions
@@ -202,7 +214,7 @@ class AmendmentsClauseDetail(OneToOneMixin, RetrieveUpdateAPIView):
             ('document_clauses', None)
     ]
 
-    serializer_class = DocumentClauseSerializer
+    serializer_class = AmendmentClauseSerializer
     permission_classes = ( 
             permissions.IsAuthenticated,
             transaction_permissions.ClauseDocumentDetailPermissions
