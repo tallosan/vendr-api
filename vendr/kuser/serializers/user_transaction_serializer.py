@@ -1,5 +1,5 @@
 #
-# Serializer for a User object's transactions.
+# Serializer for a User's transactions.
 #
 # ========================================================================
 
