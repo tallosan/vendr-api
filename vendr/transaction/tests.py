@@ -1257,8 +1257,7 @@ class TestClosingList(APITestCase):
     ''' Ensure that we can create a Closing model. '''
     def test_closing_model_create(self):
 
-        closing = self.transaction.create_closing(closing_type='condo')
-        closing.notice_of_fulfillment.reformat_content()
+        closing = self.transaction.create_closing()
         self.assertEquals(closing.__class__.__name__, 'CondoClosing')
         documents = [closing.amendments, closing.waiver,
                     closing.notice_of_fulfillment, closing.mutual_release]
@@ -1267,12 +1266,15 @@ class TestClosingList(APITestCase):
     ''' Ensure that we can add clauses to our clause documents. '''
     def test_add_clause(self):
 
-        closing = self.transaction.create_closing(closing_type='condo')
+        closing = self.transaction.create_closing()
         clause = self.contract.dynamic_clauses.all()[0].actual_type
-
-        for document in [closing.waiver, closing.amendments,
-                closing.notice_of_fulfillment]:
-            document.add_clause(clause)
+        
+        amended_clause = closing.amendments.add_clause(clause,
+                sender=self.buyer, amendment=False)
+        self.assertIn(amended_clause.title,
+                [c.clause.title for c in closing.amendments.pending_clauses])
+        for document in [closing.waiver, closing.notice_of_fulfillment]:
+            document.add_clause(clause, sender=self.buyer)
 
             # Ensure our clause is added to the document.
             self.assertIn(clause.title,
@@ -1284,32 +1286,81 @@ class TestClosingList(APITestCase):
     ''' Ensure that clauses can be added, and removed, to and from documents. '''
     def test_approve_and_remove_clause(self):
 
-        closing = self.transaction.create_closing(closing_type='condo')
+        closing = self.transaction.create_closing()
         clause = self.contract.dynamic_clauses.all()[0].actual_type
 
-        for document in [closing.waiver, closing.amendments,
-                closing.notice_of_fulfillment]:
-            document.add_clause(clause)
-            doc_clause =  document.document_clauses.all()[0]
-            doc_clause.accepted = True
-            doc_clause.save()
+        # Test amended clause doc.
+        amended_clause = closing.amendments.add_clause(
+                clause, sender=self.buyer, amendment=False)
+        amended_clause.seller_accepted = True; amended_clause.save()
+
+        # Ensure that the clause was added properly.
+        self.assertIn(amended_clause.title,
+                [c.clause.title for c in closing.amendments.approved_clauses])
+
+        # Now remove it, and ensure that it was removed properly.
+        amended_clause.seller_accepted = False; amended_clause.save()
+        self.assertNotIn(amended_clause.title,
+                [c.clause.title for c in closing.amendments.approved_clauses])
+        self.assertIn(amended_clause.title,
+                [c.clause.title for c in closing.amendments.pending_clauses])
+
+        # Test waiver & notice of fulfillment docs.
+        for document in [closing.waiver, closing.notice_of_fulfillment]:
+            doc_clause = document.add_clause(clause, sender=self.buyer)
+            doc_clause.seller_accepted = True; doc_clause.save()
             
-            self.assertIn(clause.title,
+            # Ensure the clause was added properly.
+            self.assertIn(doc_clause.title,
                     [c.clause.title for c in document.approved_clauses])
 
-            doc_clause.accepted = False
-            doc_clause.save()
-            self.assertNotIn(clause.title,
+            # Now remove it, and ensure that it was removed properly.
+            doc_clause.seller_accepted = False; doc_clause.save()
+            self.assertNotIn(doc_clause.title,
                     [c.clause.title for c in document.approved_clauses])
-            self.assertIn(clause.title,
+            self.assertIn(doc_clause.title,
                     [c.clause.title for c in document.pending_clauses])
 
     ''' Ensure that the Notice of Fulfillment document is created with
         the requisite pending clauses. '''
     def test_notice_of_fulfillment_add_pending_clauses(self):
 
-        closing = self.transaction.create_closing(closing_type='condo')
+        closing = self.transaction.create_closing()
         nof = closing.notice_of_fulfillment
         self.assertGreater(len(nof.document_clauses.all()), 0)
         self.assertGreater(nof.pending_clauses.count(), 0)
+
+    """ When both parties accept an amendment, the actual clause in the
+        contract should have its `value` set to the accepted amendment. """
+    def test_accept_amendment(self):
+
+        closing = self.transaction.create_closing()
+        clause = self.contract.dynamic_clauses.all()[0].actual_type
+
+        # Ensure the clauses's value is not changed on creation.
+        amendment_value = False
+        amended_clause = closing.amendments.add_clause(
+                clause, sender=self.buyer, amendment=amendment_value)
+        self.assertNotEqual(amended_clause.clause.value, amendment_value)
+
+        # Ensure the clauses's value is amended on acceptance.
+        amended_clause.seller_accepted = True; amended_clause.save()
+        self.assertEquals(amended_clause.clause.value, amendment_value)
+
+    """ When both parties agree to waive a clause, the actual clause
+        in the contract should have its `_waived` value set to True. """
+    def test_accept_waiver(self):
+
+        closing = self.transaction.create_closing()
+        clause = self.contract.dynamic_clauses.all()[0].actual_type
+
+        # Ensure the clauses's `_waived` status is initially False.
+        waived_clause = closing.waiver.add_clause(clause, sender=self.buyer)
+        self.assertFalse(waived_clause.clause._waived)
+
+        # Ensure the clauses's `_waived` status is set to True.
+        waived_clause.seller_accepted = True; waived_clause.save()
+        self.assertTrue(waived_clause.clause.value)
+
+    #TODO: Write testcases for API calls.
 
