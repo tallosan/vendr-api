@@ -8,7 +8,8 @@ from django.conf import settings
 
 from rest_framework import serializers
 
-from transaction.models import Closing, Document, DocumentClause
+from transaction.models import Closing, Document, DocumentClause, \
+        AmendmentDocumentClause
 
 
 class ClosingSerializer(serializers.ModelSerializer):
@@ -57,6 +58,38 @@ class DocumentClauseSerializer(serializers.ModelSerializer):
     """
     def get_title(self, instance):
         return instance.title
+
+    def to_representation(self, instance):
+
+        document_clause = super(DocumentClauseSerializer, self).\
+                to_representation(instance)
+        try:
+            document_clause['generator'] = instance.clause.generator
+        except AttributeError: pass
+
+        return document_clause
+
+
+class AmendmentClauseSerializer(DocumentClauseSerializer):
+
+    class Meta(DocumentClauseSerializer.Meta):
+        model = AmendmentDocumentClause
+        fields = DocumentClauseSerializer.Meta.fields + ('amendment', )
+
+    def create(self, validated_data):
+
+        document = validated_data.pop('document')
+        clause = validated_data.pop('clause')
+        sender = validated_data.pop('sender')
+        amendment = validated_data.pop('amendment')
+
+        document_clause = document.add_clause(clause, sender=sender,
+                amendment=amendment)
+        return document_clause
+
+    def to_representation(self, instance):
+        instance = instance.amendmentdocumentclause
+        return super(AmendmentClauseSerializer, self).to_representation(instance)
 
 
 class ClauseDocumentSerializer(DocumentSerializer):
