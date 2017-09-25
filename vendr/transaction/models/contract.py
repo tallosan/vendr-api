@@ -555,7 +555,7 @@ class DynamicClause(Clause):
         Args:
             clause_key (str) -- The clauses's key in the dynamic clauses dict.
     '''
-    def save(self, clause_key, *args, **kwargs):
+    def save(self, clause_key=None, *args, **kwargs):
 
         if not self.pk:
             self.actual_type = self
