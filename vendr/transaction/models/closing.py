@@ -285,6 +285,8 @@ class DocumentClause(models.Model):
     seller_accepted = models.BooleanField(default=False)
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='sender',
                 null=True, on_delete=models.CASCADE)
+    _type = models.CharField(default='', max_length=12,
+            editable=False)
 
     def save(self, *args, **kwargs):
         
@@ -297,9 +299,13 @@ class DocumentClause(models.Model):
                         format(self.clause_type.model_class().__class__)
                 )
 
-        # Apply action.
+        # Upon clause acceptance, we want to apply the associated document's
+        # acceptance action. Note, we'll need to downcast for this to work.
         if (self.buyer_accepted and self.seller_accepted):
-            self.apply_action()
+            if hasattr(self, 'amendmentdocumentclause'):
+                self.amendmentdocumentclause.acceptance_action()
+            elif hasattr(self, 'waiverdocumentclause'):
+                self.waiverdocumentclause.acceptance_action()
 
         super(DocumentClause, self).save(*args, **kwargs)
 
@@ -333,26 +339,49 @@ class DocumentClause(models.Model):
 
 class AmendmentDocumentClause(DocumentClause):
 
-    _type = models.CharField(default='dc_amendment', max_length=12,
-            editable=False)
+    amendment = models.TextField()
 
-    def acceptance_action(self, clause):
-        print 'amend'
+    def save(self, *args, **kwargs):
+        if self._state.adding:
+            self._type = 'dc_amendment'
+
+        super(AmendmentDocumentClause, self).save(*args, **kwargs)
+        
+    """ If both parties accept the amendment, set the actual clause object's
+        value to the amended value. """
+    def acceptance_action(self):
+
+        self.clause.actual_type.value = self.amendment
+        self.clause.actual_type.save()
+
 
 class WaiverDocumentClause(DocumentClause):
 
-    _type = models.CharField(default='dc_waiver', editable=False,
-            max_length=9)
+    def save(self, *args, **kwargs):
+        if self._state.adding:
+            self._type = 'dc_waiver'
+        
+        super(WaiverDocumentClause, self).save(*args, **kwargs)
 
-    def acceptance_action(self, clause):
-        print 'waiv'
+    """ If both parties agree to waive the clause, then set its `_waived`
+        flag to True. """
+    def acceptance_action(self):
+        self.clause._waived = True; self.clause.save()
+
 
 class NoticeOfFulfillmentDocumentClause(DocumentClause):
 
-    _type = models.CharField(default='dc_nof', editable=False, max_length=6)
+    def save(self, *args, **kwargs):
+        if self._state.adding:
+            _type = 'dc_nof'
 
-    def acceptance_action(self, clause):
-        print 'nof'
+        super(NoticeOfFulfillmentDocumentClause, self).save(*args, **kwargs)
+
+    """ If both parties agree that the clause has been fulfilled, then
+        we don't really need to do anything, as the `DocumentClause` has
+        a set for accepted clauses that is updated automatically. """
+    def acceptance_action(self):
+        pass
 
 
 """ Factory method for `DocumentClause` creation.
@@ -360,13 +389,21 @@ class NoticeOfFulfillmentDocumentClause(DocumentClause):
         clause (StaticClause or DynamicClause) -- The clause to be added.
         doc_type (string) -- The type of document we're binding to.
 """
-def create_document_clause(document, clause, buyer_accepted, seller_accepted):
+def create_document_clause(document, clause,
+        buyer_accepted, seller_accepted,
+        amendment):
     
+    # Determine the document type, and create the corresponding clause.
     doc_type = document.__class__.__name__.lower()
     if doc_type == 'amendments':
+        assert amendment is not None, (
+                'error: amendment document clauses must be initialized with '
+                'a `amendment` value ... none given.'
+        )
         doc_clause = AmendmentDocumentClause.objects.create(
                 document=document, clause=clause,
-                buyer_accepted=buyer_accepted, seller_accepted=seller_accepted)
+                buyer_accepted=buyer_accepted, seller_accepted=seller_accepted,
+                amendment=amendment)
     elif doc_type == 'waiver':
         doc_clause = WaiverDocumentClause.objects.create(
                 document=document, clause=clause,
@@ -398,7 +435,7 @@ class ClauseDocumentMixin(object):
             clause (StaticClause or DynamicClause) -- The clause to be added.
             sender (User) -- The user adding this clause.
     '''
-    def add_clause(self, clause, sender):
+    def add_clause(self, clause, sender, amendment=None):
  
         # Ensure that the clause we're adding hasn't already been added.
         if clause.title in \
@@ -417,7 +454,7 @@ class ClauseDocumentMixin(object):
         # Create (add) the clause to the document.
         new_clause = create_document_clause(document=self,
                 clause=clause, buyer_accepted=buyer_accepted,
-                seller_accepted=seller_accepted
+                seller_accepted=seller_accepted, amendment=amendment
         )
 
         return new_clause
