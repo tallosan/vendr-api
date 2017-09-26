@@ -303,7 +303,8 @@ class DocumentClause(models.Model):
         # acceptance action. Note, we'll need to downcast for this to work.
         if (self.buyer_accepted and self.seller_accepted):
             if hasattr(self, 'amendmentdocumentclause'):
-                self.amendmentdocumentclause.acceptance_action()
+                #self.amendmentdocumentclause.acceptance_action()
+                pass
             elif hasattr(self, 'waiverdocumentclause'):
                 self.waiverdocumentclause.acceptance_action()
 
@@ -345,14 +346,17 @@ class AmendmentDocumentClause(DocumentClause):
         if self._state.adding:
             self._type = 'dc_amendment'
 
+        # Perform acceptance. For whatever reason this call doesn't
+        # work properly if pulled up into the parent.
+        if (self.buyer_accepted and self.seller_accepted):
+            self.acceptance_action()
+
         super(AmendmentDocumentClause, self).save(*args, **kwargs)
         
     """ If both parties accept the amendment, set the actual clause object's
         value to the amended value. """
     def acceptance_action(self):
-
-        self.clause.actual_type.value = self.amendment
-        self.clause.actual_type.save()
+        self.clause.value = self.amendment; self.clause.save()
 
 
 class WaiverDocumentClause(DocumentClause):

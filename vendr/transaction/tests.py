@@ -1210,7 +1210,6 @@ class TestClosingList(APITestCase):
 
     def setUp(self):
         
-        #self.view = ClauseDetail.as_view()
         self.factory = APIRequestFactory()
  
         # Create the buyer, and seller.
@@ -1252,7 +1251,7 @@ class TestClosingList(APITestCase):
         self.transaction.seller_accepted_contract = True
         self.transaction.save()
         
-        self.path = '/v1/transactions/{}/'.format(self.transaction.pk)
+        self.path = '/v1/transactions/{}/closing/'.format(self.transaction.pk)
    
     ''' Ensure that we can create a Closing model. '''
     def test_closing_model_create(self):
@@ -1341,7 +1340,8 @@ class TestClosingList(APITestCase):
         amendment_value = False
         amended_clause = closing.amendments.add_clause(
                 clause, sender=self.buyer, amendment=amendment_value)
-        self.assertNotEqual(amended_clause.clause.value, amendment_value)
+        self.assertNotEqual(amended_clause.clause.value,
+                amendment_value)
 
         # Ensure the clauses's value is amended on acceptance.
         amended_clause.seller_accepted = True; amended_clause.save()
@@ -1362,5 +1362,37 @@ class TestClosingList(APITestCase):
         waived_clause.seller_accepted = True; waived_clause.save()
         self.assertTrue(waived_clause.clause.value)
 
-    #TODO: Write testcases for API calls.
+    '''
+    """ Add a clause to an Amendment document. """
+    def test_api_ammendment_create(self):
 
+        closing = self.transaction.create_closing()
+        clause = self.contract.dynamic_clauses.all()[0]
+        view = AmendmentsClauseList.as_view()
+        path = self.path + 'amendments/clauses/'
+        data = {"clause": str(clause.pk)}
+
+        request = self.factory.post(path, data, format='json')
+        force_authenticate(request, self.buyer)
+        response = view(request, self.transaction.pk, clause.pk)
+        self.assertEquals(response.status_code, 201)
+        self.assertIn(clause.title,
+                [c.clause.title for c in closing.amendments.pending_clauses])
+
+    """ Add a clause to a Waiver document. """
+    def test_api_waiver_create(self):
+
+        closing = self.transaction.create_closing()
+        clause = self.contract.dynamic_clauses.all()[0]
+        view = WaiverClauseList.as_view()
+        path = self.path + 'waiver/clauses/'
+        data = {"clause": str(clause.pk)}
+
+        request = self.factory.post(path, data, format='json')
+        force_authenticate(request, self.buyer)
+        response = view(request, self.transaction.pk, clause.pk)
+        self.assertEquals(response.status_code, 201)
+        self.assertIn(clause.title,
+                [c.clause.title for c in closing.waiver.pending_clauses])
+
+    '''
