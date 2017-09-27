@@ -1334,18 +1334,25 @@ class TestClosingList(APITestCase):
     def test_accept_amendment(self):
 
         closing = self.transaction.create_closing()
-        clause = self.contract.dynamic_clauses.all()[0].actual_type
 
-        # Ensure the clauses's value is not changed on creation.
-        amendment_value = False
-        amended_clause = closing.amendments.add_clause(
-                clause, sender=self.buyer, amendment=amendment_value)
-        self.assertNotEqual(amended_clause.clause.value,
-                amendment_value)
+        # Test a regular text clause.
+        clauses = [
+                self.contract.dynamic_clauses.get(title='UFFI and Vermiculite'),
+                self.contract.dynamic_clauses.get(title='Payment Method'),
+                self.contract.dynamic_clauses.get(title='Chattels Included')
+        ]
+        values = [False, 'Cash or Cheque']
+        for clause, value in zip(clauses, values):
+            # Ensure the clauses's value is not changed on creation.
+            ac_pk = closing.amendments.add_clause(
+                    clause, sender=self.buyer, amendment=value).pk
+            amended_clause = closing.amendments.document_clauses.get(pk=ac_pk)
+            self.assertNotEqual(amended_clause.clause.value,
+                    value)
 
-        # Ensure the clauses's value is amended on acceptance.
-        amended_clause.seller_accepted = True; amended_clause.save()
-        self.assertEquals(amended_clause.clause.value, amendment_value)
+            # Ensure the clauses's value is amended on acceptance.
+            amended_clause.seller_accepted = True; amended_clause.save()
+            self.assertEquals(amended_clause.clause.actual_type.value, value)
 
     """ When both parties agree to waive a clause, the actual clause
         in the contract should have its `_waived` value set to True. """
@@ -1361,8 +1368,7 @@ class TestClosingList(APITestCase):
         # Ensure the clauses's `_waived` status is set to True.
         waived_clause.seller_accepted = True; waived_clause.save()
         self.assertTrue(waived_clause.clause.value)
-
-    '''
+    
     """ Add a clause to an Amendment document. """
     def test_api_ammendment_create(self):
 
@@ -1395,4 +1401,3 @@ class TestClosingList(APITestCase):
         self.assertIn(clause.title,
                 [c.clause.title for c in closing.waiver.pending_clauses])
 
-    '''
