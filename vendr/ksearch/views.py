@@ -145,7 +145,6 @@ class PropertySearch(generics.ListAPIView):
 
         filter_args = []
         
-        #TODO: Fix the case sensitive search!
         # Parse any map filters.
         map_filters = {}; map_coordinates = ['ne_lng', 'ne_lat', 'sw_lng', 'sw_lat']
         if any(map_filter in filters.keys() for map_filter in map_coordinates):
