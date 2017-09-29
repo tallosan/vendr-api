@@ -28,6 +28,13 @@ app.conf.beat_schedule = {
         'openhouse_clear': {
             'task': 'kproperty.tasks.openhouse_clear_task',
             'schedule': crontab(hour='*/2')
+        },
+
+        # Notify anyone who has rsvp'd to an open house that
+        # is starting soon.
+        'openhouse_start': {
+            'task': 'kproperty.tasks.openhouse_start',
+            'schedule': crontab(minute='*/15')
         }
 }
 

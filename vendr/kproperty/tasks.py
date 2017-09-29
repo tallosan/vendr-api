@@ -6,7 +6,10 @@
 from __future__ import absolute_import
 from celery import shared_task
 
+import django.dispatch
+
 from kproperty.models import Property, OpenHouse, RSVP
+from kproperty.signals.dispatch import openhouse_start_signal
 
 
 """ Unfeature a property after a day. """
@@ -22,7 +25,16 @@ def property_unfeature_task():
     been completed. """
 @shared_task
 def openhouse_clear_task():
-
     #TODO: Pending design.
     pass
+
+
+""" Send the user a notification if an open house is starting soon. """
+@shared_task
+def openhouse_start():
+    
+    # Notify anyone who has RSVP'd to an open house that is starting soon.
+    for openhouse in OpenHouse.objects.starting_soon_queue():
+        if not openhouse._recipients_notified:
+            openhouse_start_signal.send(sender=openhouse)
 
