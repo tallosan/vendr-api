@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import re
 import uuid
+from itertools import chain
 
 from django.db import models
 from django.conf import settings
@@ -102,6 +103,17 @@ class KUser(AbstractBaseUser, PermissionsMixin):
     @property
     def full_name(self):
         return self.profile.first_name + ' ' + self.profile.last_name
+
+    """ Returns a list of all Notifications belonging to a user. """
+    @property
+    def all_notifications(self):
+        notifications = list(chain(
+                self.notifications.all(),
+                self.openhouse_notifications.all()
+            )
+        )
+
+        return sorted(notifications, key=lambda n:n.timestamp, reverse=True)
 
     def get_short_name():
         return self.email

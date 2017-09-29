@@ -43,7 +43,7 @@ class NotificationList(APIView):
     def get_queryset(self, user_pk):
 
         user = self.request.user
-        return user.notifications.all().order_by('-timestamp')
+        return user.all_notifications
 
     ''' Get a list of notifications for a given user.
         Args:
@@ -89,8 +89,12 @@ class NotificationDetail(APIView):
         try:
 
             # Get the user and notification, and check their permissions.
-            user         = User.objects.get(pk=user_pk)
-            notification = user.notifications.all().get(pk=pk)
+            user = User.objects.get(pk=user_pk)
+            notifications = user.all_notifications
+            notification = [_notification
+                            for _notification in notifications
+                            if str(_notification.pk) == str(pk)
+            ][0]
             self.check_object_permissions(self.request, notification)
             
             if notification.actual_type:
@@ -104,8 +108,10 @@ class NotificationDetail(APIView):
             return notification
 
 	# Raise exception if the notification does not exist.
-	except (TransactionNotification.DoesNotExist, OfferNotification.DoesNotExist, \
-	       ContractNotification.DoesNotExist) as dne:
+	except (IndexError,
+                TransactionNotification.DoesNotExist,
+                OfferNotification.DoesNotExist, \
+	        ContractNotification.DoesNotExist) as dne:
 		error_msg = {'error': 'notification with id ' + str(pk) + \
 				      ' does not exist.'}
 		raise NotificationNotFound(detail=error_msg)
