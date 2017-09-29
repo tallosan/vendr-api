@@ -16,6 +16,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.dispatch import receiver
 
+from vendr_core.dispatch import receiver_extended
 from transaction.models import Transaction, Offer, Contract
 from transaction.models import HouseContract, CoOpContract, CondoContract, \
         TownhouseContract, ManufacturedContract, VacantLandContract
@@ -32,30 +33,6 @@ CLAUSES = [CompletionDateClause, IrrevocabilityClause, MortgageDeadlineClause,
         BuyerArrangesMortgageClause, EquipmentClause, EnvironmentClause,
         MaintenanceClause, UFFIClause, PaymentMethodClause, ChattelsIncludedClause,
         FixturesExcludedClause, RentalItemsClause]
-
-
-''' An augmented version of the @receiver decorator that can attach multiple
-    signals to multiple senders. Really useful for attaching models belonging to
-    any sized inheritance scheme.
-    Args:
-        signals -- A list of signals that we want to connect.
-        senders -- A list of entities (models, functions, etc.) that we want to
-                   connect to.
-'''
-def receiver_extended(signals, senders, **kwargs):
-
-    ''' Attach the signals to each sender.
-        Args:
-            func -- The function handler (i.e. the function using the decorator).
-    '''
-    def _decorator(func):
-        for signal in signals:
-            for sender in senders:
-                signal.connect(receiver=func, sender=sender, **kwargs)
-        
-        return func
-
-    return _decorator
 
 
 ''' [Static] Handler for creating notifications. We determine the type of
@@ -80,8 +57,7 @@ def handler(sender, instance, **kwargs):
     
     # Update notification.
     elif (kwargs['signal'] == post_save) and (not kwargs['created']):
-        #notification = notification_type.objects.create_update_notifiation(instance)
-        return
+        notification = notification_type.objects.create_update_notifiation(instance)
 
     # Deletion notification.
     elif kwargs['signal'] == post_delete:
@@ -246,14 +222,13 @@ class BaseNotification(models.Model):
     def save(self, *args, **kwargs):
         
         # Set the actual type if we're creating the model.
-        if not self.pk:
+        if self._state.adding:
             self.actual_type = self
-        
+
         super(BaseNotification, self).save(*args, **kwargs)
 
     ''' Custom string representation. '''
     def __str__(self):
-        
         return self.description
 
     ''' [Abstract] Returns the serializer type for this notification type. '''
@@ -320,4 +295,47 @@ class DynamicClauseNotification(ContractNotification):
     @property
     def serialized(self):
         pass
+
+
+class OpenHouseStartNotification(BaseNotification):
+
+    _type = models.CharField(default='openhouse_start', max_length=15, editable=False)
+    recipient   = models.ForeignKey(settings.AUTH_USER_MODEL,
+                    related_name='openhouse_notifications', on_delete=models.CASCADE)
+    openhouse_owner = models.CharField(default='openhouse_owner',
+            max_length=20, editable=False)
+    openhouse_address = models.CharField(default='kproperty',
+            max_length=35, editable=False)
+
+    def save(self, *args, **kwargs):
+
+        if self._state.adding:
+            self.description = "Hey {}, just a reminder that the open house " \
+                "on {}'s home at {} is starting in an hour!".format(
+                        self.recipient.profile.first_name,
+                        self.openhouse_owner,
+                        self.openhouse_address
+            )
+
+        super(OpenHouseStartNotification, self).save(*args, **kwargs)
+    
+    """ A serialized representation of the notification. """
+    @property
+    def serialized(self):
+
+        from kuser.serializers import OpenHouseStartNotificaitonSerializer
+        return OpenHouseStartNotificaitonSerializer(self).data
+
+    """ Returns the serializer for this notification type. """
+    @staticmethod
+    def get_serializer():
+        return 'OpenHouseStartNotificaitonSerializer'
+
+    """ Publish the notification to the appropriate channel. """
+    def publish(self):
+
+        channel = 'users.{}.notifications'.format(self.recipient.pk)
+        notification_json = json.dumps(self.serialized)
+        r = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0)
+        r.publish(channel, notification_json)
 
