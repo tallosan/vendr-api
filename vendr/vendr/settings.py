@@ -120,6 +120,7 @@ CACHE_TTL = ( 60 ) * 30
 BROKER_URL = 'redis://{}:{}'.format(REDIS_HOST, REDIS_PORT)
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
+CELERY_TASK_TIME_LIMIT = 600
 CELERY_RESULT_SERIALIZER = 'json'
 
 # Authorized user model.
