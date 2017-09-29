@@ -10,4 +10,5 @@ class KuserConfig(AppConfig):
     def ready(self):
 
         from .models.notification import handler
-
+        from .signals import *
+        
