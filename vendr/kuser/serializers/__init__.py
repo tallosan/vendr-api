@@ -3,6 +3,7 @@ from profile_serializer import ProfileSerializer
 from notification_serializer import TransactionNotificationSerializer, \
                                     OfferNotificationSerializer, \
                                     ContractNotificationSerializer, \
+                                    TransactionWithdrawNotificationSerializer, \
                                     OpenHouseStartNotificaitonSerializer
 from chat_serializers import ChatSerializer, MessageSerializer
 from schedule_serializer import ScheduleSerializer

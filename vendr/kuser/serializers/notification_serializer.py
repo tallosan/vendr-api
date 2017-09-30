@@ -8,7 +8,9 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from kuser.models import TransactionNotification, OfferNotification, \
-                            ContractNotification, OpenHouseStartNotification
+                            ContractNotification, \
+                            TransactionWithdrawNotification, \
+                            OpenHouseStartNotification
 
 
 class NotificationSerializer(serializers.ModelSerializer):
@@ -22,6 +24,13 @@ class NotificationSerializer(serializers.ModelSerializer):
                   'is_viewed',
                   'timestamp'
         )
+
+
+class TransactionWithdrawNotificationSerializer(NotificationSerializer):
+
+    class Meta(NotificationSerializer.Meta):
+        model = TransactionWithdrawNotification
+
 
 class OpenHouseStartNotificaitonSerializer(NotificationSerializer):
 
