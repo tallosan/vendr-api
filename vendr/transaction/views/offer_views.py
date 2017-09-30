@@ -11,6 +11,7 @@ from kproperty.models import Property
 from transaction.models import Transaction, Offer
 from transaction.serializers import OfferSerializer
 from transaction.exceptions import BadTransactionRequest
+from transaction.signals.dispatch import offer_withdraw_signal
 
 import transaction.permissions as transaction_permissions
 
@@ -75,6 +76,7 @@ class OfferList(APIView):
         serializer  = self.serializer_class(data=request.data)
         if serializer.is_valid():
             serializer.save(owner=self.request.user, transaction=transaction)
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -147,9 +149,13 @@ class OfferDetail(APIView):
         # Ensure that the user both owns the offer, and the offer is the most recent.
         transaction = Transaction.objects.get(pk=transaction_pk)
         if offer != transaction.offers.filter(owner=request.user).latest('timestamp'):
-            error_msg = {'error': 'only active (i.e. most recent) offers can be deleted.'}
+            error_msg = {
+                    'error': 'only active (i.e. most recent) offers can be deleted.'
+            }
             raise BadTransactionRequest(detail=error_msg)
         
+        # Send offer withdrawal notification, and delete the offer.
+        offer_withdraw_signal.send(sender=offer)
         offer.delete()
         
         return Response(status=status.HTTP_204_NO_CONTENT)
