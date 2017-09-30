@@ -44,7 +44,7 @@ CLAUSES = [CompletionDateClause, IrrevocabilityClause, MortgageDeadlineClause,
         instance: The instance of the class that was saved.
 '''
 @staticmethod
-@receiver(signal=[post_save, post_delete], sender=Offer)
+@receiver(signal=[post_save], sender=Offer)
 @receiver_extended(signals=[post_save, post_delete], senders=CONTRACTS)
 @receiver_extended(signals=[post_save, post_delete], senders=CLAUSES)
 def handler(sender, instance, **kwargs):
@@ -227,6 +227,14 @@ class BaseNotification(models.Model):
 
         super(BaseNotification, self).save(*args, **kwargs)
 
+    """ Publish the notification to the appropriate channel. """
+    def publish(self):
+
+        channel = 'users.{}.notifications'.format(self.recipient.pk)
+        notification_json = json.dumps(self.serialized)
+        r = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0)
+        r.publish(channel, notification_json)
+
     ''' Custom string representation. '''
     def __str__(self):
         return self.description
@@ -330,12 +338,4 @@ class OpenHouseStartNotification(BaseNotification):
     @staticmethod
     def get_serializer():
         return 'OpenHouseStartNotificaitonSerializer'
-
-    """ Publish the notification to the appropriate channel. """
-    def publish(self):
-
-        channel = 'users.{}.notifications'.format(self.recipient.pk)
-        notification_json = json.dumps(self.serialized)
-        r = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0)
-        r.publish(channel, notification_json)
 
