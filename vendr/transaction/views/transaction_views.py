@@ -11,7 +11,8 @@ from kproperty.models import Property
 from transaction.models import Transaction
 from transaction.serializers import TransactionSerializer
 from transaction.permissions import TransactionAccessPermission
-from transaction.signals.dispatch import transaction_withdraw_signal
+from transaction.signals.dispatch import transaction_withdraw_signal, \
+        advance_stage_signal
 
 from transaction.exceptions import BadTransactionRequest
 
@@ -103,7 +104,7 @@ class TransactionDetail(APIView):
             *format: Specified data format (e.g. JSON).
     '''
     def put(self, request, transaction_pk, format=None):
-
+        
         # Handle invalid nested updates.
         if request.data.get('offers') or request.data.get('contracts'):
             error_msg = { 'error': 'nested fields should be handled through ' +\
@@ -118,7 +119,6 @@ class TransactionDetail(APIView):
             return Response(serializer.data)
     
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
     ''' Handles DELETE requests for Transaction models.
         Args:
@@ -160,5 +160,10 @@ class AdvanceStageList(APIView):
             raise BadTransactionRequest(detail=error_msg)
         
         response = { 'stage': transaction.stage }
+        
+        # Send the user a notification about the stage change.
+        advance_stage_signal.send(sender=transaction,
+                request_sender=request.user)
+
         return Response(response, status=status.HTTP_200_OK)
 
