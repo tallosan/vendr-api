@@ -4,6 +4,7 @@ from notification_serializer import TransactionNotificationSerializer, \
                                     OfferNotificationSerializer, \
                                     ContractNotificationSerializer, \
                                     TransactionWithdrawNotificationSerializer, \
+                                    AdvanceStageNotificationSerializer, \
                                     OpenHouseStartNotificaitonSerializer
 from chat_serializers import ChatSerializer, MessageSerializer
 from schedule_serializer import ScheduleSerializer

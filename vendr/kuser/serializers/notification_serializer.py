@@ -10,6 +10,7 @@ from rest_framework import serializers
 from kuser.models import TransactionNotification, OfferNotification, \
                             ContractNotification, \
                             TransactionWithdrawNotification, \
+                            AdvanceStageNotification, \
                             OpenHouseStartNotification
 
 
@@ -30,6 +31,11 @@ class TransactionWithdrawNotificationSerializer(NotificationSerializer):
 
     class Meta(NotificationSerializer.Meta):
         model = TransactionWithdrawNotification
+
+
+class AdvanceStageNotificationSerializer(NotificationSerializer):
+    class Meta(NotificationSerializer.Meta):
+        model = AdvanceStageNotification
 
 
 class OpenHouseStartNotificaitonSerializer(NotificationSerializer):
