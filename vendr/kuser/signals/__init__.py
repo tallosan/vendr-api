@@ -1,0 +1,1 @@
+from kproperty_signals import openhouse_start_receiver
