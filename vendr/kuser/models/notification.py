@@ -382,5 +382,48 @@ class OpenHouseStartNotification(BaseNotification):
     """ Returns the serializer for this notification type. """
     @staticmethod
     def get_serializer():
-        return 'OpenHouseStartNotificaitonSerializer'
+        return 'OpenHouseStartNotificationSerializer'
+
+
+class AdvanceStageNotification(BaseNotification):
+    
+    _type = models.CharField(default='advance', max_length=7, editable=False)
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL,
+                    related_name='advance_notifications', on_delete=models.CASCADE)
+    stage = models.PositiveIntegerField()
+    kproperty_address = models.CharField(default='kproperty',
+            max_length=35, editable=False)
+    _is_owner = models.BooleanField(default=False, editable=False)
+
+    def save(self, *args, **kwargs):
+
+        if self._state.adding:
+            resources = {
+                    1: 'offer',
+                    2: 'contract',
+            }
+            
+            owner_term = 'your'
+            if not self._is_owner: owner_term = 'their'
+            self.description = "{} has accepted your {} on {} " \
+                    "property {}!".format(
+                            self.sender,
+                            resources[self.stage],
+                            owner_term,
+                            self.kproperty_address
+            )
+
+        super(AdvanceStageNotification, self).save(*args, **kwargs)
+    
+    """ A serialized representation of the notification. """
+    @property
+    def serialized(self):
+
+        from kuser.serializers import AdvanceStageNotificationSerializer
+        return AdvanceStageNotificationSerializer(self).data
+
+    """ Returns the serializer for this notification type. """
+    @staticmethod
+    def get_serializer():
+        return 'AdvanceStageNotificationSerializer'
 
