@@ -11,6 +11,7 @@ from kproperty.models import Property
 from transaction.models import Transaction
 from transaction.serializers import TransactionSerializer
 from transaction.permissions import TransactionAccessPermission
+from transaction.signals.dispatch import transaction_withdraw_signal
 
 from transaction.exceptions import BadTransactionRequest
 
@@ -128,6 +129,10 @@ class TransactionDetail(APIView):
     def delete(self, request, transaction_pk, format=None):
 
         transaction = self.get_object(transaction_pk)
+         
+        # Send transaction withdrawal notification, and delete the transaction.
+        transaction_withdraw_signal.send(sender=transaction,
+                request_sender=request.user)
         transaction.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)

@@ -13,8 +13,9 @@ from rest_framework import status, permissions
 from transaction.models import Transaction, Contract, StaticClause, DynamicClause
 from transaction.serializers import ContractSerializer, StaticClauseSerializer
 from transaction.exceptions import BadTransactionRequest
-import transaction.permissions as transaction_permissions
+from transaction.signals.dispatch import contract_withdraw_signal
 
+import transaction.permissions as transaction_permissions
 import transaction.serializers as serializers
 
 User = get_user_model()
@@ -137,6 +138,9 @@ class ContractDetail(APIView):
     def delete(self, request, transaction_pk, pk, format=None):
         
         contract = self.get_object(transaction_pk, pk)
+
+        # Send contract withdrawal notification, and delete the contract.
+        contract_withdraw_signal.send(sender=contract)
         contract.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
