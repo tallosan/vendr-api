@@ -45,7 +45,7 @@ CLAUSES = [CompletionDateClause, IrrevocabilityClause, MortgageDeadlineClause,
 '''
 @staticmethod
 @receiver(signal=[post_save], sender=Offer)
-@receiver_extended(signals=[post_save, post_delete], senders=CONTRACTS)
+@receiver_extended(signals=[post_save], senders=CONTRACTS)
 @receiver_extended(signals=[post_save, post_delete], senders=CLAUSES)
 def handler(sender, instance, **kwargs):
     
@@ -135,8 +135,10 @@ class TransactionNotificationManager(BaseNotificationManager):
         recipient   = transaction.buyer if (instance.owner == transaction.seller) \
                                         else transaction.seller
         sender      = instance.owner.profile.first_name
-        description = '{} has withdrawn their {} on your property {}.'.format(
-                       sender, self.resource, str(transaction.kproperty))
+        description = '{} has withdrawn their {} on your property at {}.'.format(
+                       sender,
+                       self.resource,
+                       str(transaction.kproperty.location.address))
         
         # Create the notification.
         create_kwargs = {
@@ -282,7 +284,6 @@ class ContractNotification(TransactionNotification):
     ''' Returns the serializer for this notification type. '''
     @staticmethod
     def get_serializer():
-        
         return 'ContractNotificationSerializer'
 
     ''' Return an offer notification serialized. '''
@@ -305,10 +306,54 @@ class DynamicClauseNotification(ContractNotification):
         pass
 
 
+class TransactionWithdrawNotification(BaseNotification):
+
+    _type = models.CharField(default='transaction_withdraw',
+            max_length=20, editable=False)
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL,
+                    related_name='transaction_notifications',
+                    on_delete=models.CASCADE)
+    kproperty_address = models.CharField(default='kproperty',
+            max_length=35, editable=False)
+    _is_owner = models.BooleanField(default=False, editable=False)
+
+    def save(self, *args, **kwargs):
+
+        # Note, the description is different according to the recipient's
+        # role in the transaction.
+        if self._state.adding:
+            if self._is_owner:
+                self.description = "{} has ended the transaction with you " \
+                    "on your home {}".format(
+                            self.sender,
+                            self.kproperty_address
+                )
+            else:
+                self.description = "{} has ended the transaction with you " \
+                    "on their home {}".format(
+                            self.sender,
+                            self.kproperty_address
+                )
+                
+        super(TransactionWithdrawNotification, self).save(*args, **kwargs)
+
+    """ A serialized representation of the notification. """
+    @property
+    def serialized(self):
+
+        from kuser.serializers import TransactionWithdrawNotificationSerializer
+        return TransactionWithdrawNotificationSerializer(self).data
+
+    """ Returns the serializer for this notification type. """
+    @staticmethod
+    def get_serializer():
+        return 'TransactionWithdrawNotificationSerializer'
+
+
 class OpenHouseStartNotification(BaseNotification):
 
     _type = models.CharField(default='openhouse_start', max_length=15, editable=False)
-    recipient   = models.ForeignKey(settings.AUTH_USER_MODEL,
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL,
                     related_name='openhouse_notifications', on_delete=models.CASCADE)
     openhouse_owner = models.CharField(default='openhouse_owner',
             max_length=20, editable=False)
