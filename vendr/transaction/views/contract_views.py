@@ -13,7 +13,8 @@ from rest_framework import status, permissions
 from transaction.models import Transaction, Contract, StaticClause, DynamicClause
 from transaction.serializers import ContractSerializer, StaticClauseSerializer
 from transaction.exceptions import BadTransactionRequest
-from transaction.signals.dispatch import contract_withdraw_signal
+from transaction.signals.dispatch import contract_withdraw_signal, \
+        clause_change_signal
 
 import transaction.permissions as transaction_permissions
 import transaction.serializers as serializers
@@ -322,6 +323,10 @@ class ClauseBatchDetail(ClauseDetail):
                         serializer.errors,
                         status=status.HTTP_400_BAD_REQUEST
                 )
+        
+        n_changes = len(response)
+        contract = Contract.objects.get(pk=contract_pk)
+        clause_change_signal.send(sender=contract, n_changes=n_changes)
 
         return Response(response)
 
