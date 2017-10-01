@@ -6,12 +6,12 @@
 from django.dispatch import receiver
 
 from transaction.signals.dispatch import transaction_withdraw_signal, \
-        offer_withdraw_signal, contract_withdraw_signal, \
+        offer_withdraw_signal, contract_withdraw_signal, clause_change_signal, \
         advance_stage_signal
 from kuser.models import TransactionNotification, \
         OfferNotification, ContractNotification, \
         TransactionWithdrawNotification, \
-        AdvanceStageNotification
+        AdvanceStageNotification, ClauseChangeNotification
 
 
 @receiver(transaction_withdraw_signal)
@@ -49,6 +49,29 @@ def contract_withdraw_receiver(sender, **kwargs):
     contract = sender
     notification = ContractNotification.objects.\
             create_deletion_notification(contract)
+    notification.publish()
+
+
+@receiver(clause_change_signal)
+def clause_change_receiver(sender, **kwargs):
+
+    # Determine the recipient's role in the transaction.
+    transaction = sender.transaction; request_sender = sender.owner
+    n_changes = kwargs['n_changes']
+
+    recipient = transaction.buyer \
+        if (request_sender == transaction.seller) \
+        else transaction.seller
+
+    # Determine the recipient's role in the transaction.
+    is_owner = recipient == transaction.kproperty.owner
+    notification = ClauseChangeNotification.objects.create(
+            sender=request_sender.profile.first_name,
+            recipient=recipient,
+            n_changes=n_changes,
+            kproperty_address=transaction.kproperty.location.address,
+            _is_owner=is_owner
+    )
     notification.publish()
 
 
