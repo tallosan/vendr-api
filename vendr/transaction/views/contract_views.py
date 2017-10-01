@@ -276,24 +276,6 @@ class ClauseDetail(APIView):
         
         return Response(serializer.data)
     
-    ''' Handles PUT requests on Clause models.
-        Args:
-            request: The PUT request.
-            transaction_pk: The transaction that the clause contract belongs to.
-            contract_pk: The primary key of the contract the clause belongs to.
-            pk: The primary key of the clause to update.
-            *format: Specified data format (e.g. JSON).
-    '''
-    def put(self, request, transaction_pk, contract_pk, pk, format=None):
-        
-        clause = self.get_object(transaction_pk, contract_pk, pk)
-        serializer = self.serializer_class(clause, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
     ''' Handles DELETE requests on Clause models.
         Args:
             request: The DELETE request.
@@ -308,4 +290,38 @@ class ClauseDetail(APIView):
         clause.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+'''   Clause view for batch updates. '''
+class ClauseBatchDetail(ClauseDetail):
+
+    ''' Handles PUT requests on Clause models.
+        Args:
+            request: The PUT request.
+            transaction_pk: The transaction that the clause contract belongs to.
+            contract_pk: The primary key of the contract the clause belongs to.
+            pk: The primary key of the clause to update.
+            *format: Specified data format (e.g. JSON).
+    '''
+    def put(self, request, transaction_pk, contract_pk, format=None):
+        
+        response = []
+        for clause_data in request.data:
+            pk = clause_data['pk']; data = clause_data['data']
+            clause = self.get_object(transaction_pk, contract_pk, pk)
+            serializer = self.serializer_class(
+                    clause,
+                    data=data,
+                    partial=True
+            )
+            if serializer.is_valid():
+                serializer.save()
+                response.append(serializer.data)
+            else:
+                return Response(
+                        serializer.errors,
+                        status=status.HTTP_400_BAD_REQUEST
+                )
+
+        return Response(response)
 
