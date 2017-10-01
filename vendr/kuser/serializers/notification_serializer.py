@@ -11,12 +11,16 @@ from kuser.models import TransactionNotification, OfferNotification, \
                             ContractNotification, \
                             TransactionWithdrawNotification, \
                             AdvanceStageNotification, \
+                            ClauseChangeNotification, \
                             OpenHouseStartNotification
 
 
 class NotificationSerializer(serializers.ModelSerializer):
 
-    recipient = serializers.PrimaryKeyRelatedField(source='recipient.pk', read_only=True)
+    recipient = serializers.PrimaryKeyRelatedField(
+            source='recipient.pk',
+            read_only=True
+    )
 
     class Meta:
         fields = ('id',
@@ -32,6 +36,10 @@ class TransactionWithdrawNotificationSerializer(NotificationSerializer):
     class Meta(NotificationSerializer.Meta):
         model = TransactionWithdrawNotification
 
+
+class ClauseChangeNotificationSerializer(NotificationSerializer):
+    class Meta(NotificationSerializer.Meta):
+        model = ClauseChangeNotification
 
 class AdvanceStageNotificationSerializer(NotificationSerializer):
     class Meta(NotificationSerializer.Meta):
