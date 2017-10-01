@@ -46,7 +46,7 @@ CLAUSES = [CompletionDateClause, IrrevocabilityClause, MortgageDeadlineClause,
 @staticmethod
 @receiver(signal=[post_save], sender=Offer)
 @receiver_extended(signals=[post_save], senders=CONTRACTS)
-@receiver_extended(signals=[post_save, post_delete], senders=CLAUSES)
+#@receiver_extended(signals=[post_save, post_delete], senders=CLAUSES)
 def handler(sender, instance, **kwargs):
     
     notification_type = resolve_type(instance.__class__)
@@ -350,39 +350,43 @@ class TransactionWithdrawNotification(BaseNotification):
         return 'TransactionWithdrawNotificationSerializer'
 
 
-class OpenHouseStartNotification(BaseNotification):
-
-    _type = models.CharField(default='openhouse_start', max_length=15, editable=False)
+class ClauseChangeNotification(BaseNotification):
+    
+    _type = models.CharField(default='clause_change', max_length=15, editable=False)
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL,
-                    related_name='openhouse_notifications', on_delete=models.CASCADE)
-    openhouse_owner = models.CharField(default='openhouse_owner',
-            max_length=20, editable=False)
-    openhouse_address = models.CharField(default='kproperty',
+                    related_name='clause_change_notifications',
+                    on_delete=models.CASCADE)
+    n_changes = models.PositiveIntegerField()
+    kproperty_address = models.CharField(default='kproperty',
             max_length=35, editable=False)
+    _is_owner = models.BooleanField(default=False, editable=False)
 
     def save(self, *args, **kwargs):
 
         if self._state.adding:
-            self.description = "Hey {}, just a reminder that the open house " \
-                "on {}'s home at {} is starting in an hour!".format(
-                        self.recipient.profile.first_name,
-                        self.openhouse_owner,
-                        self.openhouse_address
+            owner_term = 'your'
+            if not self._is_owner: owner_term = 'their'
+            self.description = "{} has made {} changes to their contract " \
+                    "on {} property {}".format(
+                            self.sender,
+                            self.n_changes,
+                            owner_term,
+                            self.kproperty_address
             )
 
-        super(OpenHouseStartNotification, self).save(*args, **kwargs)
+        super(ClauseChangeNotification, self).save(*args, **kwargs)
     
     """ A serialized representation of the notification. """
     @property
     def serialized(self):
 
-        from kuser.serializers import OpenHouseStartNotificaitonSerializer
-        return OpenHouseStartNotificaitonSerializer(self).data
+        from kuser.serializers import ClauseChangeNotificationSerializer
+        return ClauseChangeNotificationSerializer(self).data
 
     """ Returns the serializer for this notification type. """
     @staticmethod
     def get_serializer():
-        return 'OpenHouseStartNotificationSerializer'
+        return 'ClauseChangeNotificationSerializer'
 
 
 class AdvanceStageNotification(BaseNotification):
@@ -426,4 +430,39 @@ class AdvanceStageNotification(BaseNotification):
     @staticmethod
     def get_serializer():
         return 'AdvanceStageNotificationSerializer'
+
+
+class OpenHouseStartNotification(BaseNotification):
+
+    _type = models.CharField(default='openhouse_start', max_length=15, editable=False)
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL,
+                    related_name='openhouse_notifications', on_delete=models.CASCADE)
+    openhouse_owner = models.CharField(default='openhouse_owner',
+            max_length=20, editable=False)
+    openhouse_address = models.CharField(default='kproperty',
+            max_length=35, editable=False)
+
+    def save(self, *args, **kwargs):
+
+        if self._state.adding:
+            self.description = "Hey {}, just a reminder that the open house " \
+                "on {}'s home at {} is starting in an hour!".format(
+                        self.recipient.profile.first_name,
+                        self.openhouse_owner,
+                        self.openhouse_address
+            )
+
+        super(OpenHouseStartNotification, self).save(*args, **kwargs)
+    
+    """ A serialized representation of the notification. """
+    @property
+    def serialized(self):
+
+        from kuser.serializers import OpenHouseStartNotificaitonSerializer
+        return OpenHouseStartNotificaitonSerializer(self).data
+
+    """ Returns the serializer for this notification type. """
+    @staticmethod
+    def get_serializer():
+        return 'OpenHouseStartNotificationSerializer'
 
