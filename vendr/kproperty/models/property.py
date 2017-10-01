@@ -68,7 +68,7 @@ class Property(models.Model):
     created_time = models.DateTimeField(auto_now_add=True)
     views        = models.IntegerField(default=0)
     offers       = models.IntegerField(default=0)
-    is_featured  = models.BooleanField(default=False)
+    is_featured  = models.BooleanField(default=True)
     display_pic  = models.PositiveIntegerField(default=0)
     
     ''' (Abstract) Returns the serializer type for this model. '''
