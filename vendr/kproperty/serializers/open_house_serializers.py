@@ -20,5 +20,7 @@ class OpenHouseSerializer(serializers.ModelSerializer):
         model = OpenHouse
         fields = ('pk',
                   'rsvp_list',
-                  'start', 'end')
+                  'start', 'end',
+                  '_is_active'
+        )
 
