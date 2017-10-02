@@ -46,7 +46,7 @@ class AdvanceStageNotificationSerializer(NotificationSerializer):
         model = AdvanceStageNotification
 
 
-class OpenHouseStartNotificaitonSerializer(NotificationSerializer):
+class OpenHouseStartNotificationSerializer(NotificationSerializer):
 
     class Meta(NotificationSerializer.Meta):
         model = OpenHouseStartNotification

@@ -6,7 +6,7 @@ from notification_serializer import TransactionNotificationSerializer, \
                                     TransactionWithdrawNotificationSerializer, \
                                     AdvanceStageNotificationSerializer, \
                                     ClauseChangeNotificationSerializer, \
-                                    OpenHouseStartNotificaitonSerializer
+                                    OpenHouseStartNotificationSerializer
 from chat_serializers import ChatSerializer, MessageSerializer
 from schedule_serializer import ScheduleSerializer
 from favourites_serializer import FavouritesSerializer

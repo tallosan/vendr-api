@@ -464,5 +464,6 @@ class OpenHouseStartNotification(BaseNotification):
     """ Returns the serializer for this notification type. """
     @staticmethod
     def get_serializer():
+                OpenHouseStartNotificationSerializer
         return 'OpenHouseStartNotificationSerializer'
 
