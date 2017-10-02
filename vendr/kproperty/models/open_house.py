@@ -28,6 +28,16 @@ class OpenHouseManager(models.Manager):
 
         return starting_soon_queue
 
+    """ Queue of inactive Open Houses. We define 'inactive' to mean
+        any open house that has already taken place. """
+    def inactive_queue(self):
+
+        inactive_queue = super(OpenHouseManager, self).get_queryset().\
+                filter(_is_active=True).\
+                filter(end__lte=timezone.now())
+
+        return inactive_queue
+
 
 """   Container for RSVP models. """
 class OpenHouse(models.Model):
@@ -45,6 +55,10 @@ class OpenHouse(models.Model):
     start = models.DateTimeField()
     end   = models.DateTimeField()
 
+    # Determines if the open house has taken place yet.
+    _is_active = models.BooleanField(default=True)
+
+    # Used to prevent duplicate notifications.
     _recipients_notified = models.BooleanField(default=False)
 
 

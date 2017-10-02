@@ -25,8 +25,10 @@ def property_unfeature_task():
     been completed. """
 @shared_task
 def openhouse_clear_task():
-    #TODO: Pending design.
-    pass
+
+    for open_house in OpenHouse.objects.inactive_queue():
+        open_house._is_active = False
+        open_house.save()
 
 
 """ Send the user a notification if an open house is starting soon. """
