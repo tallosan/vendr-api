@@ -7,56 +7,43 @@ from django.contrib.auth import get_user_model
 
 from rest_framework import serializers
 
-from kuser.models import TransactionNotification, OfferNotification, \
-                            ContractNotification, \
-                            TransactionWithdrawNotification, \
-                            AdvanceStageNotification, \
-                            ClauseChangeNotification, \
-                            OpenHouseStartNotification
+from kuser.models import BaseNotification, \
+        TransactionNotification, OfferNotification, \
+        ContractNotification, \
+        TransactionWithdrawNotification, \
+        AdvanceStageNotification, \
+        ClauseChangeNotification, \
+        OpenHouseStartNotification
 
 
-class NotificationSerializer(serializers.ModelSerializer):
+class BaseNotificationSerializer(serializers.ModelSerializer):
 
     recipient = serializers.PrimaryKeyRelatedField(
             source='recipient.pk',
             read_only=True
     )
+    _type = serializers.SerializerMethodField()
 
     class Meta:
+        model = BaseNotification
         fields = ('id',
                   'recipient',
                   'description',
+                  'resource',
                   'is_viewed',
-                  'timestamp'
+                  'timestamp',
+                  '_type'
         )
 
-
-class TransactionWithdrawNotificationSerializer(NotificationSerializer):
-
-    class Meta(NotificationSerializer.Meta):
-        model = TransactionWithdrawNotification
+    def get__type(self, instance):
+        return instance._type
 
 
-class ClauseChangeNotificationSerializer(NotificationSerializer):
-    class Meta(NotificationSerializer.Meta):
-        model = ClauseChangeNotification
+class TransactionNotificationSerializer(BaseNotificationSerializer):
 
-class AdvanceStageNotificationSerializer(NotificationSerializer):
-    class Meta(NotificationSerializer.Meta):
-        model = AdvanceStageNotification
-
-
-class OpenHouseStartNotificationSerializer(NotificationSerializer):
-
-    class Meta(NotificationSerializer.Meta):
-        model = OpenHouseStartNotification
-
-
-class TransactionNotificationSerializer(NotificationSerializer):
-
-    class Meta(NotificationSerializer.Meta):
+    class Meta(BaseNotificationSerializer.Meta):
         model  = TransactionNotification
-        fields = NotificationSerializer.Meta.fields + ('transaction', '_type')
+        fields = BaseNotificationSerializer.Meta.fields + ('transaction', )
 
 
 class OfferNotificationSerializer(TransactionNotificationSerializer):

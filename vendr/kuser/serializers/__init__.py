@@ -1,12 +1,9 @@
 from user_serializer import UserCreateUpdateSerializer, UserReadSerializer
 from profile_serializer import ProfileSerializer
-from notification_serializer import TransactionNotificationSerializer, \
+from notification_serializer import BaseNotificationSerializer, \
+                                    TransactionNotificationSerializer, \
                                     OfferNotificationSerializer, \
-                                    ContractNotificationSerializer, \
-                                    TransactionWithdrawNotificationSerializer, \
-                                    AdvanceStageNotificationSerializer, \
-                                    ClauseChangeNotificationSerializer, \
-                                    OpenHouseStartNotificationSerializer
+                                    ContractNotificationSerializer
 from chat_serializers import ChatSerializer, MessageSerializer
 from schedule_serializer import ScheduleSerializer
 from favourites_serializer import FavouritesSerializer
