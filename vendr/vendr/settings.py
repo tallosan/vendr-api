@@ -177,9 +177,11 @@ USE_L10N = True
 
 USE_TZ = True
 
-# Base URL for hyperlinking resources.
+# Base URL for hyperlinking resources, and BASE_API URL for use with
+# a view's `request.path`.
 VERSION  = 1
 BASE_URL = 'http://api.vendr.xyz/v{}/'.format(VERSION)
+BASE_API_URL = 'http://api.vendr.xyz'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
