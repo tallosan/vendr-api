@@ -36,9 +36,9 @@ def transaction_withdraw_receiver(sender, **kwargs):
 def offer_withdraw_receiver(sender, **kwargs):
 
     # Create offer notification, and publish it.
-    offer = sender
+    offer = sender; resource = kwargs['resource']
     notification = OfferNotification.objects.\
-            create_deletion_notification(offer)
+            create_deletion_notification(offer, resource=resource)
     notification.publish()
 
 
@@ -46,9 +46,9 @@ def offer_withdraw_receiver(sender, **kwargs):
 def contract_withdraw_receiver(sender, **kwargs):
 
     # Create contract notification, and publish it.
-    contract = sender
+    contract = sender; resource = kwargs['resource']
     notification = ContractNotification.objects.\
-            create_deletion_notification(contract)
+            create_deletion_notification(contract, resource=resource)
     notification.publish()
 
 
@@ -57,7 +57,7 @@ def clause_change_receiver(sender, **kwargs):
 
     # Determine the recipient's role in the transaction.
     transaction = sender.transaction; request_sender = sender.owner
-    n_changes = kwargs['n_changes']
+    n_changes = kwargs['n_changes']; resource = kwargs['resource']
 
     recipient = transaction.buyer \
         if (request_sender == transaction.seller) \
@@ -70,6 +70,7 @@ def clause_change_receiver(sender, **kwargs):
             recipient=recipient,
             n_changes=n_changes,
             kproperty_address=transaction.kproperty.location.address,
+            resource=resource,
             _is_owner=is_owner
     )
     notification.publish()

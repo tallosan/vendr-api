@@ -15,6 +15,7 @@ def openhouse_start_receiver(sender, **kwargs):
 
     # Send a notification to each user that has RSVP'd.
     openhouse = sender
+    resource = kwargs['resource']
     for rsvp in openhouse.rsvp_list.all():
 
         # Create notification.
@@ -22,7 +23,8 @@ def openhouse_start_receiver(sender, **kwargs):
         notification = OpenHouseStartNotification.objects.create(
                 recipient=recipient,
                 openhouse_owner=openhouse.owner.profile.first_name,
-                openhouse_address=openhouse.kproperty.location.address
+                openhouse_address=openhouse.kproperty.location.address,
+                resource=resource
         )
 
         # Publish notification.
