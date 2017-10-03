@@ -4,6 +4,7 @@
 # ===========================================================================
 
 from django.contrib.auth import get_user_model
+from django.conf import settings
 
 from rest_framework.views import APIView
 from rest_framework.exceptions import APIException
@@ -141,7 +142,14 @@ class ContractDetail(APIView):
         contract = self.get_object(transaction_pk, pk)
 
         # Send contract withdrawal notification, and delete the contract.
-        contract_withdraw_signal.send(sender=contract)
+        resource = '{}transactions/{}/'.format(
+                settings.BASE_URL,
+                transaction_pk
+        )
+        contract_withdraw_signal.send(
+                sender=contract,
+                resource=resource
+        )
         contract.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -326,7 +334,15 @@ class ClauseBatchDetail(ClauseDetail):
         
         n_changes = len(response)
         contract = Contract.objects.get(pk=contract_pk)
-        clause_change_signal.send(sender=contract, n_changes=n_changes)
+        resource = '{}{}'.format(
+                settings.BASE_API_URL,
+                request.path.replace('batch/', '')
+        )
+        clause_change_signal.send(
+                sender=contract,
+                n_changes=n_changes,
+                resource=resource
+        )
 
         return Response(response)
 

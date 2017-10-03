@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.shortcuts import render
 
 from rest_framework.views import APIView
@@ -155,7 +156,11 @@ class OfferDetail(APIView):
             raise BadTransactionRequest(detail=error_msg)
         
         # Send offer withdrawal notification, and delete the offer.
-        offer_withdraw_signal.send(sender=offer)
+        resource = '{}transactions/{}/offers/'.format(
+                settings.BASE_URL,
+                transaction_pk
+        )
+        offer_withdraw_signal.send(sender=offer, resource=resource)
         offer.delete()
         
         return Response(status=status.HTTP_204_NO_CONTENT)
