@@ -30,7 +30,7 @@ class ChatSerializer(serializers.ModelSerializer):
         participants = validated_data.pop('participants')
         
         chat = Chat.objects.create()
-        sender = self.context.pop('sender'); chat.participants.add(sender)
+        sender = self.context.get('sender'); chat.participants.add(sender)
         for participant in participants:
             chat.participants.add(participant)
 
@@ -44,17 +44,23 @@ class ChatSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         
         chat = super(ChatSerializer, self).to_representation(instance)
+
+        # Get all participants minus the user making the request.
         participants = []
+        request_sender = self.context.get('sender')
         for participant in instance.participants.all():
-            participants.append({
-                        'user_pk': participant.pk,
-                        'prof_pic': participant.profile.prof_pic.name
-            })
+            if participant != request_sender:
+                participants.append({
+                            'user_pk': participant.pk,
+                            'name': participant.profile.first_name,
+                            'prof_pic': participant.profile.prof_pic.name
+                })
         
         # Get the latest message (if any).
         try:
-            last_message = MessageSerializer(instance.\
-                           messages.latest('timestamp')).data
+            last_message = MessageSerializer(
+                    instance.messages.latest('timestamp')
+            ).data
         except Message.DoesNotExist:
             last_message = ''
         

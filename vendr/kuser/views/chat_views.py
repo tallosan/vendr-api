@@ -45,17 +45,21 @@ class ChatList(APIView):
         
         queryset = self.get_queryset(pk)
         self.check_object_permissions(request, User.objects.get(pk=pk))
+        context = {'sender': request.user}
         
-        response = []
+        chats = []
         for convo in queryset:
-            response.append(self.serializer_class(convo).data)
+            chats.append(self.serializer_class(
+                convo,
+                context=context).data
+        )
 
         # Add the number of uonpened chats to our response.
-        response.append(
-                {'unopened_chat_count': Chat.objects.filter(opened=False).count()}
-        )
-        
-        return Response(response)
+        response = Response({'chats': chats})
+        response.data['unopened_count'] = Chat.objects.\
+                filter(opened=False).count()
+
+        return response
     
     ''' Handles POST requests.
         Args:
@@ -66,8 +70,8 @@ class ChatList(APIView):
     def post(self, request, pk, format=None):
 
         self.check_object_permissions(request, User.objects.get(pk=pk))
-        
         context = {'sender': request.user}
+
         serializer = self.serializer_class(data=request.data, context=context)
         if serializer.is_valid():
             serializer.save()
