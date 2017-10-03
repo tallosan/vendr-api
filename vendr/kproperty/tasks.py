@@ -7,6 +7,7 @@ from __future__ import absolute_import
 from celery import shared_task
 
 import django.dispatch
+from django.conf import settings
 
 from kproperty.models import Property, OpenHouse, RSVP
 from kproperty.signals.dispatch import openhouse_start_signal
@@ -38,5 +39,10 @@ def openhouse_start():
     # Notify anyone who has RSVP'd to an open house that is starting soon.
     for openhouse in OpenHouse.objects.starting_soon_queue():
         if not openhouse._recipients_notified:
-            openhouse_start_signal.send(sender=openhouse)
+            resource = '{}properties/{}/openhouses/{}/'.format(
+                    settings.BASE_URL,
+                    openhouse.kproperty.pk,
+                    openhouse.pk
+            )
+            openhouse_start_signal.send(sender=openhouse, resource=resource)
 
