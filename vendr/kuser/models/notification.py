@@ -11,6 +11,7 @@ import json
 
 from django.db import models
 from django.db.models.signals import post_save, post_delete, pre_delete
+from django.apps import apps
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -35,14 +36,14 @@ CLAUSES = [CompletionDateClause, IrrevocabilityClause, MortgageDeadlineClause,
         FixturesExcludedClause, RentalItemsClause]
 
 
-''' [Static] Handler for creating notifications. We determine the type of
+""" [Static] Handler for creating notifications. We determine the type of
     notification (creation or deletion) first, then route the signal instance
     off to the appropriate Notification class.
     N.b. -- The actual creating is deferred to the routed class's create_*() method.
     Args:
         sender: The class responsible for sending the signal.
         instance: The instance of the class that was saved.
-'''
+"""
 @staticmethod
 @receiver(signal=[post_save], sender=Offer)
 @receiver_extended(signals=[post_save], senders=CONTRACTS)
@@ -72,15 +73,13 @@ def handler(sender, instance, **kwargs):
     r.publish(channel, notification_json)
 
 
-''' Determine the notification type for the given sender.
+""" Determine the notification type for the given sender.
     Args:
         instance_class: The model that sent the notification.
-'''
+"""
 def resolve_type(sender_class):
 
     if sender_class in CONTRACTS: return ContractNotification
-    elif sender_class in CLAUSES: return DynamicClauseNotification
-
     class_mappings = {
                         Offer: OfferNotification,
     }
@@ -88,25 +87,25 @@ def resolve_type(sender_class):
     return class_mappings[sender_class]
 
 
-'''   Abstract Base notification manager. '''
+"""   Abstract Base notification manager. """
 class BaseNotificationManager(models.Manager):
 
-    ''' [Abstract] Notification for instance creation. Children must implement this. '''
-    def create_creation_notification(self, instance):
+    """ [Abstract] Notification for instance creation. Children must implement this. """
+    def create_creation_notification(self, instance, resource):
         raise NotImplementedError('error: all notifications must implement this.')
 
-    ''' [Abstract] Notification for instance deletion. Children must implement this. '''
-    def create_deletion_notification(self, instance):
+    """ [Abstract] Notification for instance deletion. Children must implement this. """
+    def create_deletion_notification(self, instance, resource):
         raise NotImplementedError('error: all notifications must implement this.')
 
 
-'''   Abstract manager for transaction related notifications. '''
+"""   Abstract manager for transaction related notifications. """
 class TransactionNotificationManager(BaseNotificationManager):
     
-    resource = None
+    resource_type = None
 
-    ''' [Abstract] Create a creation transaction notification for a given resource. '''
-    def create_creation_notification(self, instance):
+    """ [Abstract] Create a creation transaction notification for a given resource. """
+    def create_creation_notification(self, instance, resource=None):
         
         transaction = instance.transaction
         
@@ -115,21 +114,24 @@ class TransactionNotificationManager(BaseNotificationManager):
                                       else transaction.seller
         sender      = instance.owner.profile.first_name
         description = '{} has sent you a new {} on your property {}.'.format(
-                       sender, self.resource, transaction.kproperty.location.address)
+                       sender,
+                       self.resource_type,
+                       transaction.kproperty.location.address
+        )
         
         # Create the notification.
         create_kwargs = {
                             'recipient': recipient, 'sender': sender,
                             'description': description,
                             'transaction': transaction.pk,
-                            self.resource: instance.pk
+                            self.resource_type: instance.pk
         }
         notification = self.create(**create_kwargs)
         
         return notification
     
-    ''' [Abstract] Create a deletion transaction notification for a given resource. '''
-    def create_deletion_notification(self, instance):
+    """ [Abstract] Create a deletion transaction notification for a given resource. """
+    def create_deletion_notification(self, instance, resource=None):
         
         transaction = instance.transaction
         recipient   = transaction.buyer if (instance.owner == transaction.seller) \
@@ -137,7 +139,7 @@ class TransactionNotificationManager(BaseNotificationManager):
         sender      = instance.owner.profile.first_name
         description = '{} has withdrawn their {} on your property at {}.'.format(
                        sender,
-                       self.resource,
+                       self.resource_type,
                        str(transaction.kproperty.location.address))
         
         # Create the notification.
@@ -145,7 +147,8 @@ class TransactionNotificationManager(BaseNotificationManager):
                             'recipient': recipient, 'sender': sender,
                             'description': description,
                             'transaction': transaction.pk,
-                            self.resource: instance.pk
+                            self.resource_type: instance.pk,
+                            'resource': resource
         }
         
         notification = self.create(**create_kwargs)
@@ -153,53 +156,17 @@ class TransactionNotificationManager(BaseNotificationManager):
         return notification
 
 
-'''   Responsible for creating all types of offer notifications.'''
+"""   Responsible for creating all types of offer notifications."""
 class OfferNotificationManager(TransactionNotificationManager):
-
-    resource = 'offer'
-    
-    ''' Notification on Offer deletion. Note, we will need to determine if the offer's
-        transaction is dampening the signal. As we use a cascading delete for
-        transaction offers, the default signal behavior will create a new deletion offer
-        for each offer in the transaction. What we want is for ONLY the most recent
-        offer to send a notification, with the others deleting silently. To do this,
-        we check if an offer has fired a signal and, if it has, we dampen the signal
-        so that subsequent offer deletions do not create notifications.
-        Args:
-            instance: The Offer being deleted.
-    '''
-    def create_deletion_notification(self, instance):
-        
-        transaction = instance.transaction
-        if transaction._dampen and transaction._fired:
-            return
-        elif transaction._dampen and (not transaction._fired):
-            transaction._fired = True; transaction.save()
-
-        return super(OfferNotificationManager, self).\
-               create_deletion_notification(instance)
+    resource_type = 'offer'
 
 
-'''   Contract notification manager. '''
+"""   Contract notification manager. """
 class ContractNotificationManager(TransactionNotificationManager):
+    resource_type = 'contract'
 
-    resource = 'contract'
 
-
-class DynamicClauseNotificationManager(BaseNotificationManager):
-
-    resource = 'clause'
-
-    ''' [Abstract] Notification for instance creation. Children must implement this. '''
-    def create_creation_notification(self, instance):
-        return
-
-    ''' [Abstract] Notification for instance deletion. Children must implement this. '''
-    def create_deletion_notification(self, instance):
-        return
-   
-
-'''   [Abstract] Base notification model. '''
+"""   [Abstract] Base notification model. """
 class BaseNotification(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -212,15 +179,13 @@ class BaseNotification(models.Model):
     description = models.CharField(max_length=150, blank=True)
     is_viewed   = models.BooleanField(default=False)
     timestamp   = models.DateTimeField(auto_now_add=True)
+    resource    = models.URLField()
 
     # Meta data for child classes.
     _content_type = models.ForeignKey(ContentType, editable=False)
     actual_type   = GenericForeignKey('_content_type', 'id')
 
-    class Meta:
-        abstract = True
-
-    ''' Custom save method. Sets actual type value. '''
+    """ Custom save method. Sets actual type value. """
     def save(self, *args, **kwargs):
         
         # Set the actual type if we're creating the model.
@@ -234,85 +199,77 @@ class BaseNotification(models.Model):
 
         channel = 'users.{}.notifications'.format(self.recipient.pk)
         notification_json = json.dumps(self.serialized)
-        r = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0)
+        r = redis.StrictRedis(
+                host=settings.REDIS_HOST,
+                port=settings.REDIS_PORT, db=0
+        )
         r.publish(channel, notification_json)
 
-    ''' Custom string representation. '''
+    """ Custom string representation. """
     def __str__(self):
         return self.description
 
-    ''' [Abstract] Returns the serializer type for this notification type. '''
+    """ Returns the serializer type for this notification type. """
     @staticmethod
     def get_serializer():
-        raise NotImplementedError('error: all notifications must implement this.')
+        return 'BaseNotificationSerializer'
+
+    """ A serialized version of the notification. """
+    @property
+    def serialized(self):
+        from kuser.serializers import BaseNotificationSerializer
+        return BaseNotificationSerializer(self).data
 
 
-'''   A notification on a transaction. '''
+"""   A notification on a transaction. """
 class TransactionNotification(BaseNotification):
 
     transaction = models.UUIDField()
     
 
-'''   A notification on a transaction's offers. '''
+"""   A notification on a transaction's offers. """
 class OfferNotification(TransactionNotification):
 
     offer = models.UUIDField()
     _type = models.CharField(default='offer', max_length=5, editable=False)
     objects = OfferNotificationManager()
 
-    ''' Returns the serializer for this notification type. '''
+    """ Returns the serializer for this notification type. """
     @staticmethod
     def get_serializer():
         
         return 'OfferNotificationSerializer'
 
-    ''' Return an offer notification serialized. '''
+    """ Return an offer notification serialized. """
     @property
     def serialized(self):
-        
         from kuser.serializers import OfferNotificationSerializer
         return OfferNotificationSerializer(self).data
 
 
-'''   A notification on a transaction's contracts. '''
+"""   A notification on a transaction's contracts. """
 class ContractNotification(TransactionNotification):
  
     contract = models.UUIDField()
     _type = models.CharField(default='contract', max_length=8, editable=False)
     objects = ContractNotificationManager()
     
-    ''' Returns the serializer for this notification type. '''
+    """ Returns the serializer for this notification type. """
     @staticmethod
     def get_serializer():
         return 'ContractNotificationSerializer'
 
-    ''' Return an offer notification serialized. '''
+    """ Return an offer notification serialized. """
     @property
     def serialized(self):
-        
         from kuser.serializers import ContractNotificationSerializer
         return ContractNotificationSerializer(self).data
-
-
-'''   A notification on a transaction contract's clause. '''
-class DynamicClauseNotification(ContractNotification):
-
-    clause  = models.UUIDField()
-    objects = DynamicClauseNotificationManager()
-
-    ''' Return a clause notification serialized. '''
-    @property
-    def serialized(self):
-        pass
 
 
 class TransactionWithdrawNotification(BaseNotification):
 
     _type = models.CharField(default='transaction_withdraw',
             max_length=20, editable=False)
-    recipient = models.ForeignKey(settings.AUTH_USER_MODEL,
-                    related_name='transaction_notifications',
-                    on_delete=models.CASCADE)
     kproperty_address = models.CharField(default='kproperty',
             max_length=35, editable=False)
     _is_owner = models.BooleanField(default=False, editable=False)
@@ -337,25 +294,10 @@ class TransactionWithdrawNotification(BaseNotification):
                 
         super(TransactionWithdrawNotification, self).save(*args, **kwargs)
 
-    """ A serialized representation of the notification. """
-    @property
-    def serialized(self):
-
-        from kuser.serializers import TransactionWithdrawNotificationSerializer
-        return TransactionWithdrawNotificationSerializer(self).data
-
-    """ Returns the serializer for this notification type. """
-    @staticmethod
-    def get_serializer():
-        return 'TransactionWithdrawNotificationSerializer'
-
 
 class ClauseChangeNotification(BaseNotification):
     
-    _type = models.CharField(default='clause_change', max_length=15, editable=False)
-    recipient = models.ForeignKey(settings.AUTH_USER_MODEL,
-                    related_name='clause_change_notifications',
-                    on_delete=models.CASCADE)
+    _type = models.CharField(default='contract', max_length=8, editable=False)
     n_changes = models.PositiveIntegerField()
     kproperty_address = models.CharField(default='kproperty',
             max_length=35, editable=False)
@@ -376,24 +318,10 @@ class ClauseChangeNotification(BaseNotification):
 
         super(ClauseChangeNotification, self).save(*args, **kwargs)
     
-    """ A serialized representation of the notification. """
-    @property
-    def serialized(self):
-
-        from kuser.serializers import ClauseChangeNotificationSerializer
-        return ClauseChangeNotificationSerializer(self).data
-
-    """ Returns the serializer for this notification type. """
-    @staticmethod
-    def get_serializer():
-        return 'ClauseChangeNotificationSerializer'
-
 
 class AdvanceStageNotification(BaseNotification):
     
     _type = models.CharField(default='advance', max_length=7, editable=False)
-    recipient = models.ForeignKey(settings.AUTH_USER_MODEL,
-                    related_name='advance_notifications', on_delete=models.CASCADE)
     stage = models.PositiveIntegerField()
     kproperty_address = models.CharField(default='kproperty',
             max_length=35, editable=False)
@@ -419,24 +347,10 @@ class AdvanceStageNotification(BaseNotification):
 
         super(AdvanceStageNotification, self).save(*args, **kwargs)
     
-    """ A serialized representation of the notification. """
-    @property
-    def serialized(self):
-
-        from kuser.serializers import AdvanceStageNotificationSerializer
-        return AdvanceStageNotificationSerializer(self).data
-
-    """ Returns the serializer for this notification type. """
-    @staticmethod
-    def get_serializer():
-        return 'AdvanceStageNotificationSerializer'
-
 
 class OpenHouseStartNotification(BaseNotification):
 
     _type = models.CharField(default='openhouse_start', max_length=15, editable=False)
-    recipient = models.ForeignKey(settings.AUTH_USER_MODEL,
-                    related_name='openhouse_notifications', on_delete=models.CASCADE)
     openhouse_owner = models.CharField(default='openhouse_owner',
             max_length=20, editable=False)
     openhouse_address = models.CharField(default='kproperty',
@@ -454,15 +368,3 @@ class OpenHouseStartNotification(BaseNotification):
 
         super(OpenHouseStartNotification, self).save(*args, **kwargs)
     
-    """ A serialized representation of the notification. """
-    @property
-    def serialized(self):
-
-        from kuser.serializers import OpenHouseStartNotificaitonSerializer
-        return OpenHouseStartNotificaitonSerializer(self).data
-
-    """ Returns the serializer for this notification type. """
-    @staticmethod
-    def get_serializer():
-        return 'OpenHouseStartNotificationSerializer'
-
