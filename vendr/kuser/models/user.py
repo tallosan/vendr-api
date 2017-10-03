@@ -16,10 +16,10 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager,\
 from custom_storage import VendrMediaStorage
 
 
-'''   Custom Kangaa user manager. '''
+"""   Custom Kangaa user manager. """
 class CustomUserManager(BaseUserManager):
 
-    ''' (private) Create a custom user model. We can create both regular, and super,
+    """ (private) Create a custom user model. We can create both regular, and super,
         users by toggling the 'is_staff' and 'is_superuser' options.
         Args:
             email:  The email address of the new user.
@@ -27,7 +27,7 @@ class CustomUserManager(BaseUserManager):
             is_staff: Is a staff member.
             is_superuser: Is a superuser.
             **extra_fields: Fields like 'first_name', 'address', etc.
-    '''
+    """
     def _create_user(self, email, password, is_staff, is_superuser, **extra_fields):
 
         if not email:
@@ -51,14 +51,14 @@ class CustomUserManager(BaseUserManager):
         
         return user
 
-    ''' Create a regular custom user. '''
+    """ Create a regular custom user. """
     def create_user(self, email, password=None, **extra_fields):
 
         return self._create_user(email, password,
                                  is_staff=False, is_superuser=False,
                                  **extra_fields)
     
-    ''' Create a super user (aka Admin). '''
+    """ Create a super user (aka Admin). """
     def create_superuser(self, email, password, **extra_fields):
 
         return self._create_user(email, password,
@@ -69,7 +69,7 @@ def generate_id():
     return 1
 
 
-'''   Custom Kangaa user class. '''
+"""   Custom Kangaa user class. """
 class KUser(AbstractBaseUser, PermissionsMixin):
     
     email     = models.EmailField(unique=True, db_index=True)
@@ -89,7 +89,7 @@ class KUser(AbstractBaseUser, PermissionsMixin):
         verbose_name = _('user')
         verbose_name_plural = _('users')
 
-    ''' Field validation. '''
+    """ Field validation. """
     def clean(self, *args, **kwargs):
 
         # Check that a valid email was provided.
@@ -99,35 +99,25 @@ class KUser(AbstractBaseUser, PermissionsMixin):
         
         super(KUser, self).clean(*args, **kwargs)
 
-    ''' Returns the full name of the user. '''
+    """ Returns the full name of the user. """
     @property
     def full_name(self):
         return self.profile.first_name + ' ' + self.profile.last_name
 
-    """ Returns a list of all Notifications belonging to a user. """
-    @property
-    def all_notifications(self):
-        notifications = list(chain(
-                self.notifications.all(),
-                self.openhouse_notifications.all()
-            )
-        )
-
-        return sorted(notifications, key=lambda n:n.timestamp, reverse=True)
-
+    """ Returns a short representation of a user. """
     def get_short_name():
         return self.email
 
-    ''' Returns the user's email. '''
+    """ Returns the user's email. """
     def get_email(self):
         return self.email
     
-    ''' Unicode / String representation of a user. '''
+    """ Unicode / String representation of a user. """
     def __unicode__(self):
         return self.email
 
 
-''' (Helper) Generates a file name for a user's profile pic. '''
+""" (Helper) Generates a file name for a user's profile pic. """
 def prof_pic_file_name(instance, filename):
 
     BASE_URL = 'users/prof_pics/'
@@ -136,7 +126,7 @@ def prof_pic_file_name(instance, filename):
     return BASE_URL + ID
 
 
-'''   Profile model for user. '''
+"""   Profile model for user. """
 class Profile(models.Model):
 
     kuser      = models.OneToOneField(settings.AUTH_USER_MODEL,

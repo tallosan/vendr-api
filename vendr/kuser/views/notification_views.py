@@ -43,7 +43,7 @@ class NotificationList(APIView):
     def get_queryset(self, user_pk):
 
         user = self.request.user
-        return user.all_notifications
+        return user.notifications.all()
 
     ''' Get a list of notifications for a given user.
         Args:
