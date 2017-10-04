@@ -1,0 +1,95 @@
+# Proxy servers. Will use round-robin by default.
+upstream vendr {
+	#server unix:/home/john/Documents/em2/em2.sock fail_timeout=0;
+	server 172.31.24.13:8824;
+}
+
+# API Server.
+server {
+	listen 80;
+	client_max_body_size 10M;
+	server_name api.vendr.xyz;
+	
+	access_log /var/log/nginx/access.log;
+	error_log /var/log/nginx/error.log;
+	
+	# Proxy upstream.
+	location / {
+		try_files $uri @proxy_to_app;
+	}
+
+	# Serve static files.
+	location /static {
+		alias /home/ubuntu/vendr/vendr-api/vendr/static;
+	}
+	
+	# Serve media files.
+	location /media {
+		autoindex on;
+		alias /home/ubuntu/vendr/vendr-api/vendr/media;
+	}
+
+	# Perform proxy.
+	location @proxy_to_app {
+		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_set_header Host $http_host;
+		proxy_redirect off;
+		proxy_pass http://vendr;
+	}
+}
+
+# API Docs Server.
+server {
+
+	listen 80;
+	server_name developer.vendr.xyz;
+
+	root /home/ubuntu/vendr/slate/build;
+	index index.html;
+	location / {
+		auth_basic "Restricted Content";
+		auth_basic_user_file /etc/nginx/.htpasswd;
+        	try_files $uri /index.html;
+	}
+}
+
+# Notification proxy.
+upstream notify {
+	server 127.0.0.1:9000;
+}
+
+# Notification server.
+server {
+	listen 80;
+	server_name notify.vendr.xyz;
+	
+	access_log /var/log/nginx/notify_access.log;
+	error_log /var/log/nginx/notify_error.log;
+
+	location / {
+		try_files $uri @proxy_to_app;
+	}
+
+	location @proxy_to_app {
+		proxy_pass http://notify;
+		proxy_http_version 1.1;
+		proxy_set_header Upgrade $http_upgrade;
+		proxy_set_header Connection "upgrade";
+	}
+}
+
+# WWW Server.
+server {
+
+	listen 80;
+	server_name www.vendr.xyz;
+
+	root /home/ubuntu/vendr/vendr-frontend/Kangaa/build;
+	index index.html;
+	location / {
+		auth_basic "Restricted Content";
+		auth_basic_user_file /etc/nginx/.htpasswd;
+        	try_files $uri /index.html;
+	}
+}
+
