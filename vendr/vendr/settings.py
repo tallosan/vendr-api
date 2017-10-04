@@ -85,10 +85,11 @@ TEMPLATES = [
 WSGI_APPLICATION = 'vendr.wsgi.application'
 
 # Database
+# Previous config engine: 'django.db.backends.postgresql_psycopg2'
+# ** incase we need to swap back **.
 # https://docs.djangoproject.com/en/1.10/ref/settings/#databases
 DATABASES = {
     'default': {
-        #'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
         'NAME': 'vendr',
         'USER': 'dier',
@@ -98,23 +99,25 @@ DATABASES = {
     }
 }
 
-# Redis cache.
+# Redis settings.
+# We're using Redis as a pub-sub message broker to our Node.js instance.
 REDIS_HOST = 'localhost'
 REDIS_PORT = 9200
-'''
+
+# Cache settings.
+# Note, we'll be using Memcached here.
+# Memcached uses LRU by default, which works (and makes sense) for our
+# use case. Note, we'll also set the cache time-to-live to 30 minutes.
+CACHE_HOST = 'localhost'
+CACHE_PORT = '11214'
+CACHE_TTL = (60) * 30
 CACHES = {
     'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': 'redis://192.168.0.17:6379',
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient'    
-        },
-        'KEY_PREFIX': 'k'
+        'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+        'LOCATION': '{}:{}'.format(CACHE_HOST, CACHE_PORT),
     }
 }
-'''
-# Cache time to live.
-CACHE_TTL = ( 60 ) * 30
+
 
 # Celery.
 BROKER_URL = 'redis://{}:{}'.format(REDIS_HOST, REDIS_PORT)

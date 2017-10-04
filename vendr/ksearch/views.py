@@ -3,13 +3,14 @@
 #
 # ==========================================================================
 
+from hashlib import sha256
 from operator import and_ as AND
-import ast
 
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import FieldError
+from django.core.cache import cache
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.contrib.gis.geos import Polygon
@@ -28,6 +29,21 @@ from kproperty.serializers import *
 from kuser.serializers import UserReadSerializer
 
 User = get_user_model()
+
+
+""" Create a unique identifier for a request.
+    Args:
+        request_params (OrderedDict) -- The request key=value pairs.
+"""
+def generate_cache_key(request_params):
+
+    # Hash the sorted request, and check if it's in our cache.
+    cache_key = ''
+    for param in sorted(request_params):
+        cache_key += param + request_params[param]
+
+    cache_key = sha256(cache_key).hexdigest()
+    return cache_key
 
 
 """ Handles search requests by routing to the appropriate view depending
@@ -51,10 +67,8 @@ def search_router(request):
     # will raise a 400.
     if search_type == 'property':
         return PropertySearch.as_view()(request)
-    
     elif search_type == 'user':
         return UserSearch.as_view()(request)
-
     else:
         return Response(data={'error': 'invalid search type.'},
                         status=status.HTTP_400_BAD_REQUEST)
@@ -79,31 +93,40 @@ class PropertySearch(generics.ListAPIView):
     """
     def list(self, request):
         
-        # Parse the pagination parameters (if any).
+        # Parse the pagination parameters (if any), and generate the unique
+        # cache key for the request.
         paginator = self.get_paginator(request)
+        cache_key = generate_cache_key(request.GET)
 
-        # Get the queryset, and apply pagination if applicable.
-        queryset = self.get_queryset()
-        if paginator:
-            request.GET['limit'] = paginator.limit
-            request.GET['offset'] = paginator.offset
-            queryset = paginator.paginate_queryset(queryset, request, self)
-        
-        # Serialize queryset.
-        response = []
-        for kproperty in queryset:
-            serializer = kproperty.get_serializer()
-            response.append(serializer(kproperty).data)
-        
+        # Check if the request is in our cache. If not, then we'll have to
+        # handle it and add the result.
+        response = cache.get(cache_key)
+        if not response:
+
+            # Get the queryset, and apply pagination if applicable.
+            queryset = self.get_queryset()
+            if paginator:
+                request.GET['limit'] = paginator.limit
+                request.GET['offset'] = paginator.offset
+                queryset = paginator.paginate_queryset(queryset, request, self)
+            
+            # Serialize queryset, and add it to our cache.
+            response = []
+            for kproperty in queryset:
+                serializer = kproperty.get_serializer()
+                response.append(serializer(kproperty).data)
+
+            cache.set(cache_key, response)
+            
         return Response(response)
     
-    ''' Handle pagination, if any pagination parameters are passed in. If the
+    """ Handle pagination, if any pagination parameters are passed in. If the
         appropriate params are present and valid, then we'll return an instance
         of our pagination class (we're using Limit Offset Pagination). Otherwise,
         we'll return None.
         Args:
             request (OrderedDict) -- The GET request.
-    '''
+    """
     def get_paginator(self, request):
         
         try:
