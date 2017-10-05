@@ -172,14 +172,18 @@ class BaseNotification(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     # Note, we do not need to have a hard reference to the sender.
-    recipient   = models.ForeignKey(settings.AUTH_USER_MODEL,
-                    related_name='notifications', on_delete=models.CASCADE)
-    sender      = models.CharField(max_length=100)
+    recipient   = models.ForeignKey(
+            settings.AUTH_USER_MODEL,
+            related_name='notifications',
+            on_delete=models.CASCADE,
+            db_index=True
+    )
+    sender = models.CharField(max_length=100)
     
     description = models.CharField(max_length=150, blank=True)
-    is_viewed   = models.BooleanField(default=False)
+    is_viewed   = models.BooleanField(default=False, db_index=True)
     timestamp   = models.DateTimeField(auto_now_add=True)
-    resource    = models.URLField()
+    resource    = models.URLField(db_index=True)
 
     # Meta data for child classes.
     _content_type = models.ForeignKey(ContentType, editable=False)
@@ -268,7 +272,7 @@ class ContractNotification(TransactionNotification):
 
 class TransactionWithdrawNotification(BaseNotification):
 
-    _type = models.CharField(default='transaction_withdraw',
+    _type = models.CharField(default='transaction',
             max_length=20, editable=False)
     kproperty_address = models.CharField(default='kproperty',
             max_length=35, editable=False)
@@ -321,7 +325,7 @@ class ClauseChangeNotification(BaseNotification):
 
 class AdvanceStageNotification(BaseNotification):
     
-    _type = models.CharField(default='advance', max_length=7, editable=False)
+    _type = models.CharField(default='advance', max_length=8, editable=False)
     stage = models.PositiveIntegerField()
     kproperty_address = models.CharField(default='kproperty',
             max_length=35, editable=False)
@@ -334,13 +338,14 @@ class AdvanceStageNotification(BaseNotification):
                     1: 'offer',
                     2: 'contract',
             }
-            
+            self._type = resources[self.stage]
+
             owner_term = 'your'
             if not self._is_owner: owner_term = 'their'
             self.description = "{} has accepted your {} on {} " \
                     "property {}!".format(
                             self.sender,
-                            resources[self.stage],
+                            self._type,
                             owner_term,
                             self.kproperty_address
             )
@@ -350,7 +355,7 @@ class AdvanceStageNotification(BaseNotification):
 
 class OpenHouseStartNotification(BaseNotification):
 
-    _type = models.CharField(default='openhouse_start', max_length=15, editable=False)
+    _type = models.CharField(default='openhouse', max_length=15, editable=False)
     openhouse_owner = models.CharField(default='openhouse_owner',
             max_length=20, editable=False)
     openhouse_address = models.CharField(default='kproperty',

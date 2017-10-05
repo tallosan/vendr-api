@@ -78,7 +78,11 @@ class KUser(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     join_date = models.DateTimeField(auto_now_add=True)
     
-    favourites = ArrayField(models.IntegerField(blank=True), default=[])
+    favourites = ArrayField(
+            models.IntegerField(blank=True),
+            default=[],
+            db_index=True
+    )
 
     USERNAME_FIELD  = 'email'
     REQUIRED_FIELDS = []
@@ -129,17 +133,22 @@ def prof_pic_file_name(instance, filename):
 """   Profile model for user. """
 class Profile(models.Model):
 
-    kuser      = models.OneToOneField(settings.AUTH_USER_MODEL,
-                        related_name='profile', on_delete=models.CASCADE)
+    kuser = models.OneToOneField(
+            settings.AUTH_USER_MODEL,
+            related_name='profile',
+            on_delete=models.CASCADE
+    )
 
-    first_name = models.CharField(max_length=25, blank=True)
-    last_name  = models.CharField(max_length=25, blank=True)
+    first_name = models.CharField(max_length=25, blank=True, db_index=True)
+    last_name  = models.CharField(max_length=25, blank=True, db_index=True)
     bio        = models.CharField(max_length=250, blank=True)
     location   = models.CharField(max_length=50, blank=True)
-    prof_pic   = models.ImageField(upload_to=prof_pic_file_name, 
-                    storage=VendrMediaStorage(), max_length=150,
-                    blank=True, null=True,
-                    default='https://s3.ca-central-1.amazonaws.com/'
-                            'media.vendr/users/defaults/default_user_prof.jpg'
+    prof_pic   = models.ImageField(
+            upload_to=prof_pic_file_name, 
+            storage=VendrMediaStorage(), max_length=150,
+            blank=True, null=True,
+            default='https://s3.ca-central-1.amazonaws.com/'
+                    'media.vendr/users/defaults/default_user_prof.jpg',
+            db_index=True
     )
 

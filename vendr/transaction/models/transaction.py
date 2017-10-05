@@ -52,12 +52,27 @@ class Transaction(models.Model):
             editable=False, db_index=True)
     
     # The buyer, seller, and the property this transaction is on.
-    buyer     = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='buyer',
-                    editable=False, on_delete=models.CASCADE)
-    seller    = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='seller',
-                    editable=False, on_delete=models.CASCADE)
-    kproperty = models.ForeignKey(Property, related_name='kproperty',
-                    editable=False, on_delete=models.CASCADE)
+    buyer = models.ForeignKey(
+            settings.AUTH_USER_MODEL,
+            related_name='buyer',
+            editable=False,
+            on_delete=models.CASCADE,
+            db_index=True
+    )
+    seller = models.ForeignKey(
+            settings.AUTH_USER_MODEL,
+            related_name='seller',
+            editable=False,
+            on_delete=models.CASCADE,
+            db_index=True
+    )
+    kproperty = models.ForeignKey(
+            Property,
+            related_name='kproperty',
+            editable=False,
+            on_delete=models.CASCADE,
+            db_index=True
+    )
 
     buyer_accepted_offer  = models.UUIDField(blank=True, null=True)
     seller_accepted_offer = models.UUIDField(blank=True, null=True)

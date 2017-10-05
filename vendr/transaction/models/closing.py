@@ -66,10 +66,11 @@ class BaseClosingManager(models.Manager):
 
         # Create closing model.
         _property_descriptor = self.format_descriptor(transaction)
-        closing = self.create(transaction=transaction,
-                    _property_descriptor=_property_descriptor,
-                    _document_header=DOCUMENTS_TEXT['header'],
-                    _document_footer=DOCUMENTS_TEXT['footer']
+        closing = self.create(
+                transaction=transaction,
+                _property_descriptor=_property_descriptor,
+                _document_header=DOCUMENTS_TEXT['header'],
+                _document_footer=DOCUMENTS_TEXT['footer']
         )
 
         pk = transaction.kproperty.pk
@@ -200,8 +201,12 @@ class Closing(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4,
             editable=False, db_index=True)
 
-    transaction = models.OneToOneField('Transaction', related_name='closing',
-                    on_delete=models.CASCADE)
+    transaction = models.OneToOneField(
+            'Transaction',
+            related_name='closing',
+            on_delete=models.CASCADE,
+            db_index=True
+    )
 
     STATES = (
             ('PCR', 'pending contract requirements'),
@@ -271,18 +276,22 @@ class DocumentClause(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4,
             editable=False, db_index=True)
 
-    document = models.ForeignKey(Document, related_name='document_clauses',
-                on_delete=models.CASCADE)
+    document = models.ForeignKey(
+            Document,
+            related_name='document_clauses',
+            on_delete=models.CASCADE,
+            db_index=True
+    )
 
     # Generic foreign key to allow us to reference both static & dynamic clauses.
-    clause_type = models.ForeignKey(ContentType, null=True)
+    clause_type = models.ForeignKey(ContentType, null=True, db_index=True)
     clause_id = models.UUIDField(null=True)
     clause = GenericForeignKey('clause_type', 'clause_id')
 
     # Clauses must be approved by both parties in order for them to be added
     # to the document. Thus, we'll use this flag to determine a clause's state.
-    buyer_accepted = models.BooleanField(default=False)
-    seller_accepted = models.BooleanField(default=False)
+    buyer_accepted = models.BooleanField(default=False, db_index=True)
+    seller_accepted = models.BooleanField(default=False, db_index=True)
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='sender',
                 null=True, on_delete=models.CASCADE)
     _type = models.CharField(default='', max_length=12,
@@ -496,8 +505,12 @@ class ClauseDocumentMixin(object):
       and/or additions go. '''
 class Amendments(Document, ClauseDocumentMixin):
     
-    closing = models.OneToOneField(Closing, related_name='amendments',
-                on_delete=models.CASCADE)
+    closing = models.OneToOneField(
+            Closing,
+            related_name='amendments',
+            on_delete=models.CASCADE,
+            db_index=True
+    )
     
     def save(self, *args, **kwargs):
 
@@ -525,8 +538,12 @@ class Amendments(Document, ClauseDocumentMixin):
 '''   The Waiver document is where any accepted clause removals go. '''
 class Waiver(Document, ClauseDocumentMixin):
     
-    closing = models.OneToOneField(Closing, related_name='waiver',
-                on_delete=models.CASCADE)
+    closing = models.OneToOneField(
+            Closing,
+            related_name='waiver',
+            on_delete=models.CASCADE,
+            db_index=True
+    )
 
     def save(self, *args, **kwargs):
 
@@ -553,8 +570,12 @@ class Waiver(Document, ClauseDocumentMixin):
       requirements. E.g. has the deposit been sent with the correct amount? '''
 class NoticeOfFulfillment(Document, ClauseDocumentMixin):
     
-    closing = models.OneToOneField(Closing, related_name='notice_of_fulfillment',
-                on_delete=models.CASCADE)
+    closing = models.OneToOneField(
+            Closing,
+            related_name='notice_of_fulfillment',
+            on_delete=models.CASCADE,
+            db_index=True
+    )
 
     def save(self, *args, **kwargs):
 
@@ -597,8 +618,12 @@ class NoticeOfFulfillment(Document, ClauseDocumentMixin):
       a transaction. '''
 class MutualRelease(Document):
     
-    closing = models.OneToOneField(Closing, related_name='mutual_release',
-                on_delete=models.CASCADE)
+    closing = models.OneToOneField(
+            Closing,
+            related_name='mutual_release',
+            on_delete=models.CASCADE,
+            db_index=True
+    )
 
     def save(self, *args, **kwargs):
 

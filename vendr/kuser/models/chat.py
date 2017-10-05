@@ -24,8 +24,12 @@ class Chat(models.Model):
 class Message(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    chat = models.ForeignKey(Chat, related_name='messages',
-            on_delete=models.CASCADE)
+    chat = models.ForeignKey(
+            Chat,
+            related_name='messages',
+            on_delete=models.CASCADE,
+            db_index=True
+    )
     
     # Soft reference to the sender. N.B. -- This is our chosen user
     # representation and, as such, is subject to change.

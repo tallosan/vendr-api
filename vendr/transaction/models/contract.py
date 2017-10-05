@@ -410,11 +410,19 @@ class Contract(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     # The Transaction that this contract belongs to.
-    transaction = models.ForeignKey('Transaction', related_name='contracts',
-                    on_delete=models.CASCADE)
-    timestamp   = models.DateTimeField(auto_now_add=True)
-    owner       = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='contracts',
-                    on_delete=models.CASCADE)
+    transaction = models.ForeignKey(
+            'Transaction',
+            related_name='contracts',
+            on_delete=models.CASCADE,
+            db_index=True
+    )
+    timestamp = models.DateTimeField(auto_now_add=True)
+    owner = models.ForeignKey(
+            settings.AUTH_USER_MODEL,
+            related_name='contracts',
+            on_delete=models.CASCADE,
+            db_index=True
+    )
     
     ''' Returns a list of clauses (static and dynamic) on this contract. '''
     @property
@@ -484,8 +492,12 @@ class Clause(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
     # The Contract this clause belongs to.
-    contract = models.ForeignKey(Contract, related_name='clauses',
-                    on_delete=models.CASCADE)
+    contract = models.ForeignKey(
+            Contract,
+            related_name='clauses',
+            on_delete=models.CASCADE,
+            db_index=True
+    )
     title     = models.CharField(max_length=50)
     is_active = models.BooleanField(default=True)
     preview   = models.TextField()
@@ -513,7 +525,7 @@ class StaticClause(Clause):
     contract = models.ForeignKey(Contract, related_name='static_clauses',
                     on_delete=models.CASCADE)
 
-    is_active = models.BooleanField(default=True, editable=False)
+    is_active = models.BooleanField(default=True, editable=False, db_index=True)
 
     @property
     def serializer(self):
@@ -525,9 +537,13 @@ class StaticClause(Clause):
 '''   Dynamic Clauses are designed on a per-contract basis via user input. '''
 class DynamicClause(Clause):
 
-    prompt    = models.CharField(max_length=75, editable=False)
-    contract  = models.ForeignKey(Contract, related_name='dynamic_clauses',
-                    on_delete=models.CASCADE)
+    prompt   = models.CharField(max_length=75, editable=False)
+    contract = models.ForeignKey(
+            Contract,
+            related_name='dynamic_clauses',
+            on_delete=models.CASCADE,
+            db_index=true
+    )
 
     # Clause category.
     CATEGORIES = (
@@ -536,7 +552,11 @@ class DynamicClause(Clause):
             ('U', 'Upkeep'),
             ('P', 'Possessions')
     )
-    category   = models.CharField(choices=CATEGORIES, max_length=15)
+    category   = models.CharField(
+            choices=CATEGORIES,
+            max_length=15,
+            db_index=True
+    )
 
     # How we display this clause on the front-end.
     UI_TYPES = (
@@ -548,7 +568,11 @@ class DynamicClause(Clause):
     )
 
     # Inheritance scheme.
-    _content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    _content_type = models.ForeignKey(
+            ContentType,
+            on_delete=models.CASCADE,
+            db_index=True
+    )
     actual_type   = GenericForeignKey('_content_type', 'id')
     
     ''' We have to override this in order to create our inheritance scheme.

@@ -64,11 +64,16 @@ class Property(models.Model):
             ('manufactured', 'Manufactured'),
             ('vacant_land', 'Vacant Land')
     )
-    _type        = models.CharField(choices=_TYPES, max_length=12, editable=False)
+    _type = models.CharField(
+            choices=_TYPES,
+            max_length=12,
+            editable=False,
+            db_index=True
+    )
     created_time = models.DateTimeField(auto_now_add=True)
     views        = models.IntegerField(default=0)
     offers       = models.IntegerField(default=0)
-    is_featured  = models.BooleanField(default=True)
+    is_featured  = models.BooleanField(default=True, db_index=True)
     display_pic  = models.PositiveIntegerField(default=0)
     
     ''' (Abstract) Returns the serializer type for this model. '''

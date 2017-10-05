@@ -50,8 +50,7 @@ class Features(models.Model):
     
     kproperty   = models.ForeignKey('Property', related_name='features',
                     on_delete=models.CASCADE)
-    
-    feature     = models.CharField(max_length=50, blank=True)
+    feature     = models.CharField(max_length=50, blank=True, db_index=True)
 
 
 '''   Tax Record model. Contains the tax data for the property. '''
