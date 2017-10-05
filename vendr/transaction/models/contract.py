@@ -542,7 +542,7 @@ class DynamicClause(Clause):
             Contract,
             related_name='dynamic_clauses',
             on_delete=models.CASCADE,
-            db_index=true
+            db_index=True
     )
 
     # Clause category.
