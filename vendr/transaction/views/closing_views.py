@@ -129,6 +129,12 @@ class OneToOneMixin(GenericAPIView):
     
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def delete(self, request, *args, **kwargs):
+
+        instance = self.get_object()
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class DocumentClauseCreateMixin(object):
         
