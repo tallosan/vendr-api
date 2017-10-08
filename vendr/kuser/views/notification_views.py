@@ -90,11 +90,7 @@ class NotificationDetail(APIView):
 
             # Get the user and notification, and check their permissions.
             user = User.objects.get(pk=user_pk)
-            notifications = user.all_notifications
-            notification = [_notification
-                            for _notification in notifications
-                            if str(_notification.pk) == str(pk)
-            ][0]
+            notification = user.notifications.get(pk=pk).actual_type
             self.check_object_permissions(self.request, notification)
             
             if notification.actual_type:
