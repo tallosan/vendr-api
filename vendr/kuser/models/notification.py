@@ -355,7 +355,7 @@ class AdvanceStageNotification(BaseNotification):
 
 class OpenHouseStartNotification(BaseNotification):
 
-    _type = models.CharField(default='openhouse', max_length=15, editable=False)
+    _type = models.CharField(default='schedule', max_length=8, editable=False)
     openhouse_owner = models.CharField(default='openhouse_owner',
             max_length=20, editable=False)
     openhouse_address = models.CharField(default='kproperty',
