@@ -12,8 +12,7 @@ from kuser.models import BaseNotification, \
         ContractNotification, \
         TransactionWithdrawNotification, \
         AdvanceStageNotification, \
-        ClauseChangeNotification, \
-        OpenHouseStartNotification
+        ClauseChangeNotification
 
 
 class BaseNotificationSerializer(serializers.ModelSerializer):
