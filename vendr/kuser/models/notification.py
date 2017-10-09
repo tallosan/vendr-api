@@ -353,13 +353,19 @@ class AdvanceStageNotification(BaseNotification):
         super(AdvanceStageNotification, self).save(*args, **kwargs)
     
 
-class OpenHouseStartNotification(BaseNotification):
+class OpenHouseNotification(BaseNotification):
 
     _type = models.CharField(default='schedule', max_length=8, editable=False)
     openhouse_owner = models.CharField(default='openhouse_owner',
             max_length=20, editable=False)
     openhouse_address = models.CharField(default='kproperty',
             max_length=35, editable=False)
+
+    class Meta:
+        abstract=True
+
+
+class OpenHouseStartNotification(OpenHouseNotification):
 
     def save(self, *args, **kwargs):
 
@@ -372,4 +378,32 @@ class OpenHouseStartNotification(BaseNotification):
             )
 
         super(OpenHouseStartNotification, self).save(*args, **kwargs)
-    
+
+
+class OpenHouseChangeNotification(OpenHouseNotification):
+
+    def save(self, *args, **kwargs):
+
+        if self._state.adding:
+            self.description = "{} has changed the time and/or date of their " \
+                "open house on {} ".format(
+                        self.openhouse_owner,
+                        self.openhouse_address,
+            )
+
+        super(OpenHouseChangeNotification, self).save(*args, **kwargs)
+
+
+class OpenHouseCancelNotification(OpenHouseNotification):
+
+    def save(self, *args, **kwargs):
+
+        if self._state.adding:
+            self.description = "{} has cancelled the open house on their property " \
+                "{}.".format(
+                        self.openhouse_owner,
+                        self.openhouse_address
+            )
+
+        super(OpenHouseCancelNotification, self).save(*args, **kwargs)
+
