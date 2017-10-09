@@ -4,6 +4,7 @@
 # ======================================================================
 
 from django.db import IntegrityError
+from django.conf import settings
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -12,6 +13,8 @@ from rest_framework import status, permissions
 
 from kproperty.models import Property, OpenHouse, RSVP
 from kproperty.serializers import OpenHouseSerializer, RSVPSerializer
+from kproperty.signals.dispatch import openhouse_change_signal, \
+        openhouse_cancel_signal, openhouse_start_signal
 import kproperty.permissions as kproperty_permissions
 
 
@@ -116,6 +119,15 @@ class OpenHouseDetail(APIView):
         serializer = self.serializer_class(open_house, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+
+            # Get the open house's URL resource, and send a change signal.
+            resource = '{}properties/{}/openhouses/{}/'.format(
+                    settings.BASE_URL,
+                    open_house.kproperty.pk,
+                    open_house.pk
+            )
+            openhouse_change_signal.send(sender=open_house, resource=resource)
+
             return Response(serializer.data)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -130,7 +142,16 @@ class OpenHouseDetail(APIView):
     def delete(self, request, pk, oh_pk, format=None):
 
         open_house = self.get_object(oh_pk)
+    
+        # Get the open house's URL resource, and send a change signal.
+        resource = '{}properties/{}/openhouses/{}/'.format(
+                settings.BASE_URL,
+                open_house.kproperty.pk,
+                open_house.pk
+        )
+        openhouse_cancel_signal.send(sender=open_house, resource=resource)
         open_house.delete()
+
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
