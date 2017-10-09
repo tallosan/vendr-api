@@ -5,8 +5,52 @@
 
 from django.dispatch import receiver
 
-from kproperty.signals.dispatch import openhouse_start_signal
-from kuser.models import OpenHouseStartNotification
+from kproperty.signals.dispatch import openhouse_start_signal, \
+    openhouse_change_signal, openhouse_cancel_signal
+from kuser.models import OpenHouseChangeNotification, \
+        OpenHouseCancelNotification, OpenHouseStartNotification
+
+
+""" Notify anyone who has RSVP'd to an Open House of any changes. """
+@receiver(openhouse_change_signal)
+def openhouse_change_receiver(sender, **kwargs):
+
+    openhouse = sender
+    resource = kwargs['resource']
+    for rsvp in openhouse.rsvp_list.all():
+
+        # Create the change notification.
+        recipient = rsvp.owner
+        notification = OpenHouseChangeNotification.objects.create(
+                recipient=recipient,
+                openhouse_owner=openhouse.owner.profile.first_name,
+                openhouse_address=openhouse.kproperty.location.address,
+                resource=resource
+        )
+
+        # Publish notification.
+        notification.publish()
+
+
+""" Notify anyone who has RSVP'd to an Open House of any changes. """
+@receiver(openhouse_cancel_signal)
+def openhouse_cancel_receiver(sender, **kwargs):
+
+    openhouse = sender
+    resource = kwargs['resource']
+    for rsvp in openhouse.rsvp_list.all():
+
+        # Create the change notification.
+        recipient = rsvp.owner
+        notification = OpenHouseCancelNotification.objects.create(
+                recipient=recipient,
+                openhouse_owner=openhouse.owner.profile.first_name,
+                openhouse_address=openhouse.kproperty.location.address,
+                resource=resource
+        )
+
+        # Publish notification.
+        notification.publish()
 
 
 """ Notify anyone who has RSVP'd to an Open House 1 hour before it starts. """
