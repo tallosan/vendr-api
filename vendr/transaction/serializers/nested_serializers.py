@@ -71,6 +71,14 @@ class ClauseSerializer(serializers.ModelSerializer):
     class Meta:
         fields = ('id', 'title', 'is_active', 'preview', 'explanation')
       
+    def to_representation(self, instance):
+
+        clause = super(ClauseSerializer, self).to_representation(instance)
+        if instance.contract.transaction.stage == 2:
+            clause['doc_ref'] = instance._doc_ref
+
+        return clause
+
 
 '''   Serializer for static clauses. '''
 class StaticClauseSerializer(ClauseSerializer):

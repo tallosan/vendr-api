@@ -318,6 +318,14 @@ class DocumentClause(models.Model):
 
         super(DocumentClause, self).save(*args, **kwargs)
 
+    def delete(self, using=None, keep_parents=False):
+
+        self.clause._doc_ref = None; self.clause.save()
+        return super(DocumentClause, self).delete(
+                using=using,
+                keep_parents=keep_parents
+        )
+
     """ Ensure that the user is not attempting to access a restricted field.
         Args:
             user_id (int) -- The ID of the user making the request.
@@ -402,6 +410,7 @@ def create_document_clause(document, clause,
     
     # Determine the document type, and create the corresponding clause.
     doc_type = document.__class__.__name__.lower()
+    clause._doc_ref = doc_type; clause.save()
     if doc_type == 'amendments':
         assert amendment is not None, (
                 'error: amendment document clauses must be initialized with '

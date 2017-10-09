@@ -506,6 +506,9 @@ class Clause(models.Model):
     # Used in Closing stage. Indicates whether or not a clause has been removed.
     _waived = models.BooleanField(default=False)
 
+    # The document this clause is referenced in.
+    _doc_ref = models.CharField(default=None, null=True, blank=True, max_length=19)
+
     # Used in Closing stage. Indicates whether or not a clause is a
     # contract requirement.
     _required = models.BooleanField(default=False, editable=False)
