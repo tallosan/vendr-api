@@ -388,8 +388,8 @@ class TestOpenhouseNotifications(AbstractNotificationSetup):
         from kproperty.views import OpenHouseList, OpenHouseDetail
         from kproperty.models import OpenHouse, RSVP
 
-        self.detail_view = OpenHouseDetail.as_view()
         self.list_view = OpenHouseList.as_view()
+        self.detail_view = OpenHouseDetail.as_view()
 
         self.oh = OpenHouse.objects.create(
                 owner=self.seller,
@@ -415,8 +415,36 @@ class TestOpenhouseNotifications(AbstractNotificationSetup):
                 self.oh.pk,
         )
 
+    """ Ensure that users subscribed to a property are notified of any
+        newly created open houses on it. """
     def test_creation_notification(self):
-        pass
+
+        self.kproperty._subscribers.add(self.buyer_a)
+        self.kproperty._subscribers.add(self.buyer_b)
+        self.kproperty.save()
+
+        data = {
+                "start": "2049-10-07T18:38:39.069638Z",
+                "end": "4049-10-06T18:38:39.069638Z"
+        }
+
+        request = self.factory.post(self.list_path, data, format='json')
+        force_authenticate(request, user=self.seller)
+        response = self.list_view(request, self.kproperty.pk)
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(2, OpenHouseCreateNotification.objects.count())
+        self.assertEqual(
+                OpenHouseCreateNotification.objects.filter(
+                    recipient=self.buyer_a)[0].description,
+                "Hey {}, {} just created a new open house on their property "
+                "that you subscribed to -- {}.".format(
+                    self.buyer_a.profile.first_name,
+                    self.oh.owner.profile.first_name,
+                    self.oh.kproperty.location.address
+                )
+        )
+        self.assertEqual(1, self.buyer_a.notifications.count())
 
     """ Ensure that recipients are notified of any changes to an open house. """
     def test_update_oh_notification_auth(self):
@@ -450,6 +478,7 @@ class TestOpenhouseNotifications(AbstractNotificationSetup):
                 type(self.buyer_a.notifications.all()[0].actual_type).__name__,
                 'OpenHouseChangeNotification'
         )
+        self.assertEqual(self.buyer_a.notifications.count(), 1)
 
     """ Ensure that users with the wrong auth can't trigger notifications. """
     def test_update_oh_notification_wrong_auth(self):
