@@ -13,8 +13,9 @@ from rest_framework import status, permissions
 
 from kproperty.models import Property, OpenHouse, RSVP
 from kproperty.serializers import OpenHouseSerializer, RSVPSerializer
-from kproperty.signals.dispatch import openhouse_change_signal, \
-        openhouse_cancel_signal, openhouse_start_signal
+from kproperty.signals.dispatch import openhouse_create_signal, \
+        openhouse_change_signal, openhouse_cancel_signal, \
+        openhouse_start_signal
 import kproperty.permissions as kproperty_permissions
 
 
@@ -61,7 +62,19 @@ class OpenHouseList(APIView):
         
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            serializer.save(owner=self.request.user, kproperty=kproperty)
+            open_house = serializer.save(
+                    owner=self.request.user,
+                    kproperty=kproperty
+            )
+
+            # Get the open house's URL resource, and send a change signal.
+            resource = '{}properties/{}/openhouses/{}/'.format(
+                    settings.BASE_URL,
+                    open_house.kproperty.pk,
+                    open_house.pk
+            )
+            openhouse_create_signal.send(sender=open_house, resource=resource)
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
