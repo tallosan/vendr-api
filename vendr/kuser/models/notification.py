@@ -386,7 +386,7 @@ class OpenHouseChangeNotification(OpenHouseNotification):
 
         if self._state.adding:
             self.description = "{} has changed the time and/or date of their " \
-                "open house on {} ".format(
+                "open house on {}.".format(
                         self.openhouse_owner,
                         self.openhouse_address,
             )
