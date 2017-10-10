@@ -205,7 +205,8 @@ class BaseNotification(models.Model):
         notification_json = json.dumps(self.serialized)
         r = redis.StrictRedis(
                 host=settings.REDIS_HOST,
-                port=settings.REDIS_PORT, db=0
+                port=settings.REDIS_PORT,
+                db=0
         )
         r.publish(channel, notification_json)
 
@@ -363,6 +364,21 @@ class OpenHouseNotification(BaseNotification):
 
     class Meta:
         abstract=True
+
+
+class OpenHouseCreateNotification(OpenHouseNotification):
+
+    def save(self, *args, **kwargs):
+
+        if self._state.adding:
+            self.description = "Hey {}, {} just created a new open house on " \
+                "their property that you subscribed to -- {}.".format(
+                        self.recipient.profile.first_name,
+                        self.openhouse_owner,
+                        self.openhouse_address
+            )
+
+        super(OpenHouseCreateNotification, self).save(*args, **kwargs)
 
 
 class OpenHouseStartNotification(OpenHouseNotification):

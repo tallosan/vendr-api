@@ -5,7 +5,7 @@ from .notification import BaseNotification, \
         TransactionWithdrawNotification, \
         AdvanceStageNotification, ClauseChangeNotification, \
         OpenHouseNotification, \
-        OpenHouseChangeNotification, OpenHouseCancelNotification, \
-        OpenHouseStartNotification
+        OpenHouseCreateNotification, OpenHouseChangeNotification, \
+        OpenHouseCancelNotification, OpenHouseStartNotification
 from .chat import Chat, Message
 
