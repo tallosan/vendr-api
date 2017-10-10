@@ -5,10 +5,31 @@
 
 from django.dispatch import receiver
 
-from kproperty.signals.dispatch import openhouse_start_signal, \
-    openhouse_change_signal, openhouse_cancel_signal
-from kuser.models import OpenHouseChangeNotification, \
+from kproperty.signals.dispatch import openhouse_create_signal, \
+        openhouse_start_signal, openhouse_change_signal, openhouse_cancel_signal
+from kuser.models import OpenHouseCreateNotification, OpenHouseChangeNotification, \
         OpenHouseCancelNotification, OpenHouseStartNotification
+
+
+""" Notify anyone who has favourited this property that the owner has
+    created an open house on it. """
+@receiver(openhouse_create_signal)
+def openhouse_create_receiver(sender, **kwargs):
+
+    openhouse = sender
+    resource = kwargs['resource']
+    for subscriber in openhouse.kproperty._subscribers.all():
+
+        # Create the change notification.
+        notification = OpenHouseCreateNotification.objects.create(
+                recipient=subscriber,
+                openhouse_owner=openhouse.owner.profile.first_name,
+                openhouse_address=openhouse.kproperty.location.address,
+                resource=resource
+        )
+
+        # Publish notification.
+        notification.publish()
 
 
 """ Notify anyone who has RSVP'd to an Open House of any changes. """
