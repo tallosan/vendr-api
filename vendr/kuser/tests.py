@@ -343,3 +343,183 @@ class TestMessageList(APITestCase):
     def test_delete_message_on_wrong_endpoint(self):
         pass
 
+
+class AbstractNotificationSetup(APITestCase):
+
+    def setUp(self):
+
+        from kproperty.models import Condo, Location, TaxRecords, \
+                Historical, Features
+        
+        self.factory = APIRequestFactory()
+ 
+        # Create the buyer, and seller.
+        self.seller = User.objects.create_user(email='seller@kangaa.xyz',
+                        password='seller_pwd')
+        self.seller.profile.first_name = 'Seller'; self.seller.profile.save()
+        self.buyer_a = User.objects.create_user(email='buyer@kangaa.xyz',
+                        password='buyer_pwd')
+        self.buyer_a.profile.first_name = 'Buyer A'; self.buyer_a.profile.save()
+        self.buyer_b = User.objects.create_user(email='wronguser@kangaa.xyz',
+                        password='wronguser')
+        self.buyer_b.profile.first_name = 'Buyer B'; self.buyer_b.profile.save()
+
+        # Create the property, and set up the necessary sub-models.
+        self.kproperty = Condo.objects.create(owner=self.seller, n_bathrooms=1,
+                            n_bedrooms=2, price=250000, sqr_ftg=3000, unit_num=11,
+                            parking_spaces=1, corporation_name='Test Condos')
+        Location.objects.create(kproperty=self.kproperty, address='74 Ulster St',
+                    city="Toronto", country="Canada", province='Ontario',
+                    postal_code='M1P0B2', latitude=43.773313, longitude=-79.258729)
+        TaxRecords.objects.create(kproperty=self.kproperty)
+        Historical.objects.create(kproperty=self.kproperty, last_sold_price=2000000,
+                    last_sold_date='2011-08-14', year_built=2010)
+        Features.objects.create(kproperty=self.kproperty, feature='Oven')
+   
+
+"""   Test OpenHouse create, update, and cancellation notifications. """
+class TestOpenhouseNotifications(AbstractNotificationSetup):
+
+
+    def setUp(self):
+
+        super(TestOpenhouseNotifications, self).setUp()
+
+        from kproperty.views import OpenHouseList, OpenHouseDetail
+        from kproperty.models import OpenHouse, RSVP
+
+        self.detail_view = OpenHouseDetail.as_view()
+        self.list_view = OpenHouseList.as_view()
+
+        self.oh = OpenHouse.objects.create(
+                owner=self.seller,
+                kproperty=self.kproperty,
+                start="2017-08-06T18:38:39.069638Z",
+                end="2049-08-06T18:38:39.069638Z"
+        )
+
+        self.rsvp_0 = RSVP.objects.create(
+                owner=self.buyer_a,
+                open_house=self.oh
+        )
+        self.rsvp_1 = RSVP.objects.create(
+                owner=self.buyer_b,
+                open_house=self.oh
+        )
+
+        self.list_path = '/v1/properties/{}/openhouses/'.format(
+                self.kproperty.pk
+        )
+        self.detail_path = '/v1/properties/{}/openhouses/{}/'.format(
+                self.kproperty.pk,
+                self.oh.pk,
+        )
+
+    def test_creation_notification(self):
+        pass
+
+    """ Ensure that recipients are notified of any changes to an open house. """
+    def test_update_oh_notification_auth(self):
+        
+        update = {"start": "3049-10-06T18:38:39.069638Z"}
+
+        request = self.factory.put(self.detail_path, update, format='json')
+        force_authenticate(request, user=self.seller)
+        response = self.detail_view(request, self.kproperty.pk, self.oh.pk)
+
+        # Ensure the request was successful.
+        self.assertEqual(response.status_code, 200)
+
+        # Ensure that we notified all recipients.
+        self.assertEqual(2, OpenHouseChangeNotification.objects.count())
+
+        # Ensure that the description is set properly.
+        self.assertEqual(
+                OpenHouseChangeNotification.objects.all()[0].description,
+                "{} has changed the time and/or date of their open house on "
+                "{}.".format(
+                    self.oh.owner.profile.first_name,
+                    self.oh.kproperty.location.address
+                )
+        )
+
+        # Ensure that the users received the notification, and that the
+        # notification is indeed an Open House Change notification.
+        self.assertEqual(1, self.buyer_a.notifications.count())
+        self.assertEqual(
+                type(self.buyer_a.notifications.all()[0].actual_type).__name__,
+                'OpenHouseChangeNotification'
+        )
+
+    """ Ensure that users with the wrong auth can't trigger notifications. """
+    def test_update_oh_notification_wrong_auth(self):
+        
+        update = {"start": "3049-10-06T18:38:39.069638Z"}
+        request = self.factory.put(self.detail_path, update, format='json')
+        force_authenticate(request, user=self.buyer_a)
+        response = self.detail_view(request, self.kproperty.pk, self.oh.pk)
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(0, OpenHouseChangeNotification.objects.count())
+
+    """ Ensure that users without any auth can't trigger notifications. """
+    def test_update_oh_notification_no_auth(self):
+        
+        update = {"start": "3049-10-06T18:38:39.069638Z"}
+        request = self.factory.put(self.detail_path, update, format='json')
+        force_authenticate(request, user=None)
+        response = self.detail_view(request, self.kproperty.pk, self.oh.pk)
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(0, OpenHouseChangeNotification.objects.count())
+
+    """ Ensure that recipients are notified of any open house cancellations. """
+    def test_cancel_oh_notification_auth(self):
+
+        request = self.factory.delete(self.detail_path, format='json')
+        force_authenticate(request, user=self.seller)
+        response = self.detail_view(request, self.kproperty.pk, self.oh.pk)
+
+        # Ensure the request was successful.
+        self.assertEqual(response.status_code, 204)
+
+        # Ensure that we notified all recipients.
+        self.assertEqual(2, OpenHouseCancelNotification.objects.count())
+
+        # Ensure that the description is set properly.
+        self.assertEqual(
+                OpenHouseCancelNotification.objects.all()[0].description,
+                "{} has cancelled the open house on their property {}.".format(
+                    self.oh.owner.profile.first_name,
+                    self.oh.kproperty.location.address
+                )
+        )
+
+        # Ensure that the users received the notification, and that the
+        # notification is indeed an Open House Cancel notification.
+        self.assertEqual(1, self.buyer_a.notifications.count())
+        self.assertEqual(
+                type(self.buyer_a.notifications.all()[0].actual_type).__name__,
+                'OpenHouseCancelNotification'
+        )
+
+    """ Ensure that users with the wrong auth can't trigger notifications. """
+    def test_delete_oh_notification_wrong_auth(self):
+        
+        request = self.factory.delete(self.detail_path, format='json')
+        force_authenticate(request, user=self.buyer_a)
+        response = self.detail_view(request, self.kproperty.pk, self.oh.pk)
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(0, OpenHouseCancelNotification.objects.count())
+
+    """ Ensure that users without any auth can't trigger notifications. """
+    def test_delete_oh_notification_no_auth(self):
+        
+        request = self.factory.delete(self.detail_path, format='json')
+        force_authenticate(request, user=None)
+        response = self.detail_view(request, self.kproperty.pk, self.oh.pk)
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(0, OpenHouseCancelNotification.objects.count())
+
