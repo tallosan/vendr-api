@@ -523,3 +523,279 @@ class TestOpenhouseNotifications(AbstractNotificationSetup):
         self.assertEqual(response.status_code, 401)
         self.assertEqual(0, OpenHouseCancelNotification.objects.count())
 
+
+class TestContractNotifications(AbstractNotificationSetup):
+
+    def setUp(self):
+
+        super(TestContractNotifications, self).setUp()
+
+        from transaction.views import TransactionDetail, OfferDetail, \
+                ContractDetail, ClauseBatchDetail, AdvanceStageList
+        from transaction.models import Transaction, Offer, Contract, \
+                AbstractContractFactory
+
+        self.transaction_detail_view = TransactionDetail.as_view()
+        self.offer_detail_view = OfferDetail.as_view()
+        self.contract_detail_view = ContractDetail.as_view()
+        self.batch_detail_view = ClauseBatchDetail.as_view()
+        self.advance_view = AdvanceStageList.as_view()
+
+        # The transaction data.
+        offer_data = {	
+                        "offer": 350000,
+		        "deposit": 20000,
+		        "comment": "Please consider this offer!"
+	}
+        
+        self.transaction = Transaction.objects.create(buyer=self.buyer_a,
+                seller=self.seller, kproperty=self.kproperty)
+        self.offer = Offer.objects.create(owner=self.buyer_a,
+                transaction=self.transaction, **offer_data)
+        self.contract = AbstractContractFactory.create_contract(contract_type='condo',
+                owner=self.buyer_a, transaction=self.transaction)
+
+        self.transaction_path = '/v1/transactions/{}/'.format(
+                self.transaction.pk
+        )
+        self.offer_path = '/v1/transactions/{}/offer/{}/'.format(
+		self.transaction.pk, self.offer.pk
+        )
+        self.contract_path = '/v1/transactions/{}/contracts/{}/'.format(
+		self.transaction.pk, self.contract.pk
+        )
+        self.batch_clause_path = '/v1/transactions/{}/contracts/{}/clauses/batch/'.\
+            format(
+		self.transaction.pk, self.contract.pk
+	)
+        self.advance_path = '/v1/transactions/{}/advance/'.format(
+                self.transaction.pk
+        )
+
+    """ Ensure that users are notified on transaction withdrawal. """
+    def test_transaction_withdraw_notification(self):
+    
+        request = self.factory.delete(self.transaction_path, format='json')
+        force_authenticate(request, user=self.buyer_a)
+        response = self.transaction_detail_view(
+                request,
+                self.transaction.pk, 
+        )
+        
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(1, TransactionWithdrawNotification.objects.count())
+        self.assertEqual(
+                TransactionWithdrawNotification.objects.all()[0].description,
+                "{} has ended the transaction with you on your home {}".format(
+                    self.buyer_a.profile.first_name,
+                    self.kproperty.location.address
+                )
+        )
+
+    """ Ensure that users are notified on offer creation. Note, we create
+        a contract in `setUp()` so there's no real need to repeat this process. """
+    def test_offer_creation_notification(self):
+        
+        self.assertEqual(1, OfferNotification.objects.count())
+        self.assertEqual(
+                OfferNotification.objects.all()[0].description,
+                "{} has sent you a new {} on your property {}.".format(
+                    self.buyer_a.profile.first_name,
+                    'offer',
+                    self.kproperty.location.address
+                )
+        )
+
+    """ Ensure that users are notified on offer withdrawal. """
+    def test_offer_withdraw_notification(self):
+    
+        request = self.factory.delete(self.offer_path, format='json')
+        force_authenticate(request, user=self.buyer_a)
+        response = self.offer_detail_view(
+                request,
+                self.transaction.pk, 
+                self.offer.pk
+        )
+        
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(2, OfferNotification.objects.count())
+        self.assertEqual(OfferNotification.objects.all()[1].description,
+            "{} has withdrawn their {} on your property at {}.".format(
+                self.buyer_a.profile.first_name,
+                'offer',
+                self.kproperty.location.address
+            )
+        )
+
+        # Note, the seller will have 3 notifications at this point because
+        # they will receive notifications from the offer and contract creation
+        # done in `setUp()`.
+        self.assertEqual(3, self.seller.notifications.count())
+        self.assertEqual(
+            type(self.seller.notifications.all()[0].actual_type).__name__,
+            'OfferNotification'
+        )
+ 
+    """ Ensure that users are notified on contract creation. Note, we create
+        a contract in `setUp()` so there's no real need to repeat this process. """
+    def test_contract_creation_notification(self):
+        
+        self.assertEqual(1, ContractNotification.objects.count())
+        self.assertEqual(
+                ContractNotification.objects.all()[0].description,
+                "{} has sent you a new {} on your property {}.".format(
+                    self.buyer_a.profile.first_name,
+                    'contract',
+                    self.kproperty.location.address
+                )
+        )
+
+    """ Ensure that users are notified on contract withdrawal. """
+    def test_contract_withdraw_notification(self):
+    
+        request = self.factory.delete(self.contract_path, format='json')
+        force_authenticate(request, user=self.buyer_a)
+        response = self.contract_detail_view(
+                request,
+                self.transaction.pk, 
+                self.contract.pk
+        )
+        
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(2, ContractNotification.objects.count())
+        self.assertEqual(ContractNotification.objects.all()[1].description,
+            "{} has withdrawn their {} on your property at {}.".format(
+                self.buyer_a.profile.first_name,
+                'contract',
+                self.kproperty.location.address
+            )
+        )
+
+        # Note, the seller will have 3 notifications at this point because
+        # they will receive notifications from the offer and contract creation
+        # done in `setUp()`.
+        self.assertEqual(3, self.seller.notifications.count())
+        self.assertEqual(
+            type(self.seller.notifications.all()[0].actual_type).__name__,
+            'ContractNotification'
+        )
+    
+    def test_batch_update_notification(self):
+
+        update = [
+                {
+                    "pk": self.contract.dynamic_clauses.get(
+                        title='UFFI and Vermiculite'
+                    ).actual_type.pk,
+                    "data": {
+                        "value": True,
+                        "is_active": True
+                    }
+                },
+                {
+                    "pk": self.contract.dynamic_clauses.get(
+                        title='Payment Method'
+                    ).actual_type.pk,
+                    "data": {
+                        "value": "BTC",
+                    }
+                },
+                {
+                    "pk": self.contract.dynamic_clauses.get(
+                        title='Maintenance'
+                    ).actual_type.pk,
+                    "data": {
+                        "is_active": False
+                    }
+                }
+        ]
+    
+        request = self.factory.put(self.batch_clause_path, update, format='json')
+        force_authenticate(request, user=self.buyer_a)
+        response = self.batch_detail_view(
+                request, 
+                self.transaction.pk, 
+                self.contract.pk
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(1, ClauseChangeNotification.objects.count())
+        self.assertEqual(ClauseChangeNotification.objects.all()[0].description,
+            "{} has made {} changes to their contract on {} "
+            "property {}".format(
+                self.buyer_a.profile.first_name,
+                3,
+                'your',
+                self.kproperty.location.address
+            )
+        )
+
+        # Note, the seller will have 3 notifications at this point because
+        # they will receive notifications from the offer and contract creation
+        # done in `setUp()`.
+        self.assertEqual(3, self.seller.notifications.count())
+        self.assertEqual(
+            type(self.seller.notifications.all()[0].actual_type).__name__,
+            'ClauseChangeNotification'
+        )
+    
+    """ Ensure that stage advancements from 0-1 (offer) generate the
+        correct notification. """
+    def test_advance_stage_0_notification(self):
+    
+        # We need to set these values to ensure that the transaction 
+        # advance will be successful.
+        self.transaction.buyer_accepted_offer = self.offer.pk
+        self.transaction.seller_accepted_offer = self.offer.pk
+        self.transaction.save()
+
+        request = self.factory.post(self.advance_path, {}, format='json')
+        force_authenticate(request, user=self.buyer_a)
+        response = self.advance_view(
+                request,
+                self.transaction.pk, 
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(1, AdvanceStageNotification.objects.count())
+        self.assertEqual(AdvanceStageNotification.objects.all()[0].description,
+            "{} has accepted your {} on {} property {}!".format(
+                self.buyer_a.profile.first_name,
+                'offer',
+                'your',
+                self.kproperty.location.address
+            )
+        )
+
+    """ Ensure that stage advancements from 1-2 (contract) generate the
+        correct notification. """
+    def test_advance_stage_1_notification(self):
+    
+        # We need to set these values to ensure that the transaction 
+        # advance will be successful.
+        self.transaction.stage = 1
+        self.transaction.buyer_accepted_offer = self.offer.pk
+        self.transaction.seller_accepted_offer = self.offer.pk
+        self.transaction.buyer_accepted_contract = True
+        self.transaction.seller_accepted_contract = True
+        self.transaction.contracts_equal = True
+        self.transaction.save()
+
+        request = self.factory.post(self.advance_path, {}, format='json')
+        force_authenticate(request, user=self.buyer_a)
+        response = self.advance_view(
+                request,
+                self.transaction.pk, 
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(1, AdvanceStageNotification.objects.count())
+        self.assertEqual(AdvanceStageNotification.objects.all()[0].description,
+            "{} has accepted your {} on {} property {}!".format(
+                self.buyer_a.profile.first_name,
+                'contract',
+                'your',
+                self.kproperty.location.address
+            )
+        )
+
