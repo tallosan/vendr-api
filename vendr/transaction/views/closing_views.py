@@ -19,7 +19,8 @@ from transaction.models import Transaction, Closing, Amendments, Waiver, \
         NoticeOfFulfillment, MutualRelease, DocumentClause, \
         StaticClause, DynamicClause
 from transaction.serializers import ClosingSerializer, DocumentSerializer, \
-        ClauseDocumentSerializer, DocumentClauseSerializer, AmendmentClauseSerializer
+        ClauseDocumentSerializer, DocumentClauseSerializer, \
+        AmendmentClauseSerializer, AmendmentClauseDocumentSerializer
 import transaction.permissions as transaction_permissions
 
 
@@ -188,7 +189,7 @@ class AmendmentsList(OneToOneMixin, NestedListUpdateAPIView):
             ('amendments', None)
     ]
 
-    serializer_class = ClauseDocumentSerializer
+    serializer_class = AmendmentClauseDocumentSerializer
     permission_classes = ( permissions.IsAuthenticated, )
     
     
