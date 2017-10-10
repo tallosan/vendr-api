@@ -6,7 +6,7 @@ from notification_serializer import BaseNotificationSerializer, \
                                     ContractNotificationSerializer
 from chat_serializers import ChatSerializer, MessageSerializer
 from schedule_serializer import ScheduleSerializer
-from favourites_serializer import FavouritesSerializer
+from subscription_serializer import SubscriptionsSerializer
 from user_property_serializer import UserPropertySerializer
 from user_transaction_serializer import UserTransactionSerializer
 from user_contract_serializer import UserContractSerializer

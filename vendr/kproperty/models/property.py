@@ -54,9 +54,11 @@ class Property(models.Model):
     
     # Foreign key attributes.
     # [ location, history, tax_records, features, images ]
+    _subscribers = models.ManyToManyField(settings.AUTH_USER_MODEL,
+            related_name='subscriptions', db_index=True)
 
     # Meta data.
-    _TYPES       = (
+    _TYPES = (
             ('coop', 'CoOp'),
             ('condo', 'Condo'),
             ('house', 'House'),

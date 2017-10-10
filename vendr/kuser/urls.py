@@ -29,7 +29,7 @@ urlpatterns = [
         url(r'^(?P<pk>[0-9]+)/profile/$', views.ProfileDetail.as_view()),
 
         # Favourites view.
-        url(r'^(?P<pk>[0-9]+)/favourites/$', views.FavouritesList.as_view()),
+        url(r'^(?P<pk>[0-9]+)/subscriptions/$', views.SubscriptionsList.as_view()),
 
         # Property, Transaction, Contract, and Closing views.
         url(r'^(?P<pk>[0-9]+)/properties/$', views.PropertyList.as_view()),

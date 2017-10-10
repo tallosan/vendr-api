@@ -12,9 +12,9 @@ from transaction.models import Transaction
 User = get_user_model()
 
 
-class FavouritesSerializer(serializers.ModelSerializer):
+class SubscriptionsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('favourites', )
+        fields = ('subscriptions', )
 
