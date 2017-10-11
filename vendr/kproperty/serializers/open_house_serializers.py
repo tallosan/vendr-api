@@ -6,11 +6,12 @@ from kproperty.models import OpenHouse, RSVP
 
 class RSVPSerializer(serializers.ModelSerializer):
 
-    kuser = serializers.ReadOnlyField(source='kuser.pk')
+    owner = serializers.ReadOnlyField(source='owner.pk')
 
     class Meta:
         model = RSVP
-        fields = ('pk', 'kuser')
+        fields = ('pk', 'owner')
+
 
 class OpenHouseSerializer(serializers.ModelSerializer):
     
