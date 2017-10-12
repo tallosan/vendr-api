@@ -11,4 +11,5 @@ from user_property_serializer import UserPropertySerializer
 from user_transaction_serializer import UserTransactionSerializer
 from user_contract_serializer import UserContractSerializer
 from user_closing_serializer import UserClosingSerializer
+from tfa_serializer import TwoFactorAuthSerializer
 
