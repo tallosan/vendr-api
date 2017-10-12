@@ -82,6 +82,7 @@ class KUser(AbstractBaseUser, PermissionsMixin):
     phone_num = models.CharField(
             max_length=15,
             blank=True,
+            null=True,
             validators=[
                 RegexValidator(
                     regex='^\+?[1-9]\d{1,15}$',

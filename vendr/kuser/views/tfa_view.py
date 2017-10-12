@@ -79,7 +79,7 @@ class TwoFactorAuth(APIView):
 
         # Generate a two-factor auth code.
         tfa_code = self._generate_tfa_code()
-
+        """
         # Send an SMS message to the user's phone.
         client = messagebird.Client(settings.MESSAGEBIRD_ACCESS_KEY)
         try:
@@ -94,11 +94,12 @@ class TwoFactorAuth(APIView):
             )
             sms_exc.status_code = 403; raise sms_exc
 
+        """
         # Set the user's TFA code, and reset its validation status.
         kuser.tfa_code = tfa_code; kuser._tfa_code_validated = False
         kuser.save()
 
-        return Response({'status': True}, status=status.HTTP_201_CREATED)
+        return Response({'success': True}, status=status.HTTP_201_CREATED)
 
     def get(self, request, pk, *args, **kwargs):
 
