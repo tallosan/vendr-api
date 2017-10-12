@@ -6,6 +6,7 @@ from itertools import chain
 
 from django.db import models
 from django.conf import settings
+from django.core.validators import RegexValidator
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
@@ -72,12 +73,35 @@ def generate_id():
 """   Custom Kangaa user class. """
 class KUser(AbstractBaseUser, PermissionsMixin):
     
-    email     = models.EmailField(unique=True, db_index=True)
+    # The de-facto username for our User models. Note, email validation
+    # is performed in the `clean()` method.
+    email = models.EmailField(unique=True, db_index=True)
+
+    # Check that a valid phone number was provided. We'll define valid to
+    # mean any number the E.164 format.
+    phone_num = models.CharField(
+            max_length=15,
+            blank=True,
+            validators=[
+                RegexValidator(
+                    regex='^\+?[1-9]\d{1,15}$',
+                    message='Phone number must comply with the E.124 format.',
+                    code='invalid phone number'
+                )
+            ]
+    )
+
     is_staff  = models.BooleanField(default=False)
     is_admin  = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     join_date = models.DateTimeField(auto_now_add=True)
     
+    # Flag to indicate whether or not a user has been authenticated,
+    # or re-authenticated.
+    tfa_enabled = models.BooleanField(default=False)
+    tfa_code = models.CharField(max_length=6, blank=True)
+    _tfa_code_validated = models.BooleanField(default=False)
+
     favourites = ArrayField(
             models.IntegerField(blank=True),
             default=[],
