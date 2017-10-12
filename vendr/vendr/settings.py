@@ -167,6 +167,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# Two-Factor authentication.
+MESSAGEBIRD_ACCESS_KEY = 'hvtRG3BG7hZjwPO5r1QNeT0SK'
+MESSAGEBIRD_SENDER = 'vendr-auth'
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.10/topics/i18n/
