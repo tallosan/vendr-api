@@ -670,7 +670,7 @@ class DynamicDropdownClause(DynamicClause):
 
 class DynamicChipClause(DynamicClause):
  
-    value = ArrayField(models.CharField(max_length=15), default=list)
+    value = ArrayField(models.CharField(max_length=25), default=list)
     ui_type = models.CharField(max_length=10, default='CHIP', editable=False)
     
     class Meta: abstract = True
