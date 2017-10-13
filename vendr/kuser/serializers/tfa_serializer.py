@@ -42,3 +42,16 @@ class TwoFactorAuthSerializer(serializers.ModelSerializer):
 
         return instance
 
+    """ We want users to be able to modify their `tfa_code`, however we
+        don't want to actually show it in the serialized response, as
+        that of course would be a security vulnerability.
+        Args:
+            instance (KUser) -- The user model who owns this endpoint.
+    """
+    def to_representation(self, instance):
+
+        tfa = super(TwoFactorAuthSerializer, self).to_representation(instance)
+        tfa.pop('tfa_code')
+
+        return tfa
+
