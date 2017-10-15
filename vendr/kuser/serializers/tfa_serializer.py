@@ -38,7 +38,9 @@ class TwoFactorAuthSerializer(serializers.ModelSerializer):
 
         tfa_enabled = validated_data.pop('tfa_enabled', None)
         if tfa_enabled is not None:
-            instance.tfa_enabled = tfa_enabled; instance.save()
+            if tfa_enabled is True: instance._tfa_code_validated = False
+            instance.tfa_enabled = tfa_enabled
+            instance.save()
 
         return instance
 
