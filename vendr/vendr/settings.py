@@ -168,8 +168,16 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Two-Factor authentication.
-MESSAGEBIRD_ACCESS_KEY = 'hvtRG3BG7hZjwPO5r1QNeT0SK'
-MESSAGEBIRD_SENDER = 'vendr-auth'
+MESSAGEBIRD_ACCESS_KEY = 'beaHim4WCzD2IVUE9zRwThJlt'
+MESSAGEBIRD_SENDER = '+14509905541'
+
+# SMTP settings.
+EMAIL_HOST = 'smtp.sendgrid.net'
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'tallosan'
+EMAIL_HOST_PASSWORD = 'sendgridRonaldo77'
+EMAIL_VERIFICATION_ADDRESS = 'noreply@vendr.xyz'
+EMAIL_USE_TLS = True
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.10/topics/i18n/
