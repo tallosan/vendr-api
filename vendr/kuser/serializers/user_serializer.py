@@ -19,7 +19,15 @@ class UserCreateUpdateSerializer(serializers.ModelSerializer):
     profile = ProfileSerializer()
     class Meta:
         model   = KUser
-        fields  = ('id', 'email', 'password', 'join_date', 'profile')
+        fields  = (
+                'id',
+                'email',
+                'phone_num',
+                'password',
+                'join_date',
+                'profile',
+                'verified'
+        )
     
     """ Handles the creation of a Kangaa User object.
         Args:
@@ -27,9 +35,14 @@ class UserCreateUpdateSerializer(serializers.ModelSerializer):
     """
     def create(self, validated_data):
 
-        email       = validated_data.pop('email')
-        password    = validated_data.pop('password')
-        kuser       = User.objects.create_user(email=email, password=password)
+        email = validated_data.pop('email')
+        phone_num = validated_data.pop('phone_num', None)
+        password = validated_data.pop('password')
+        kuser = User.objects.create_user(
+                email=email,
+                phone_num=phone_num,
+                password=password
+        )
         
         # Create the user profile if any data is given.
         try:
@@ -93,7 +106,14 @@ class UserReadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model   = KUser
-        fields  = ('id', 'email', 'password', 'join_date')
+        fields  = (
+                'id',
+                'email',
+                'phone_num',
+                'password',
+                'join_date',
+                'verified'
+        )
 
     """ Adds a quick profile (i.e. stripped down profile object) to the
         serializers User.
