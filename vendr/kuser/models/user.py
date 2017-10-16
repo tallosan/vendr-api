@@ -97,6 +97,9 @@ class KUser(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     join_date = models.DateTimeField(auto_now_add=True)
     
+    verified = models.BooleanField(default=False)
+    _verification_token = models.UUIDField(default=uuid.uuid4, editable=False)
+    
     # Flag to indicate whether or not a user has been authenticated,
     # or re-authenticated.
     tfa_enabled = models.BooleanField(default=False)
