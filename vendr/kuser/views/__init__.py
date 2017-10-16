@@ -1,4 +1,5 @@
 from user_views import UserList, UserDetail
+from email_verification import RequestEmailVerification, VerifyEmailVerification
 from ws_auth import WSAuth
 from tfa_view import TwoFactorAuth
 from notification_views import NotificationList, NotificationDetail
