@@ -175,7 +175,7 @@ MESSAGEBIRD_SENDER = '+14509905541'
 EMAIL_HOST = 'smtp.sendgrid.net'
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'tallosan'
-EMAIL_HOST_PASSWORD = 'sendgridRonaldo77'
+EMAIL_HOST_PASSWORD = 'iZappNewton42'
 EMAIL_VERIFICATION_ADDRESS = 'noreply@vendr.xyz'
 EMAIL_USE_TLS = True
 
