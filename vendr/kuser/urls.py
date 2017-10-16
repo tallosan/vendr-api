@@ -7,6 +7,11 @@ urlpatterns = [
         url(r'^$', views.UserList.as_view()),
         url(r'^(?P<pk>[0-9]+)/$', views.UserDetail.as_view()),
 
+        # Email verification.
+        url(r'^(?P<pk>[0-9]+)/verify/$', views.RequestEmailVerification.as_view()),
+        url(r'^(?P<pk>[0-9]+)/verify/(?P<token>[0-9a-f-]+)/$',
+            views.VerifyEmailVerification.as_view()),
+
         # Websocket Authentication.
         url(r'^(?P<pk>[0-9]+)/ws_auth/$', views.WSAuth.as_view()),
 
