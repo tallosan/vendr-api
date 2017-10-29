@@ -49,15 +49,13 @@ class ChatList(APIView):
         
         chats = []
         for convo in queryset:
-            chats.append(self.serializer_class(
-                convo,
-                context=context).data
-        )
+            chats.append(
+                    self.serializer_class(convo, context=context).data
+            )
 
         # Add the number of uonpened chats to our response.
         response = Response({'chats': chats})
-        response.data['unopened_count'] = Chat.objects.\
-                filter(opened=False).count()
+        response.data['unopened_count'] = queryset.filter(opened=False).count()
 
         return response
     
