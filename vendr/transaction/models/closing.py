@@ -12,10 +12,18 @@ from django.db.models import Q
 from django.apps import apps
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.postgres.fields import ArrayField
 from django.conf import settings
+
+# TODO: For whatever reason Django has decided to not allow any
+# importing of this module ... wonderful!
+#from transaction.signals.dispatch import amendment_created_signal, \
+        #amendment_accepted_signal, waiver_created_signal, \
+        #waiver_accepted_signal, nof_accepted_signal
 
 from .contract import Clause
 from .text.closing import DOCUMENTS_TEXT
+
 from kproperty.models import Property
    
 
@@ -292,8 +300,13 @@ class DocumentClause(models.Model):
     # to the document. Thus, we'll use this flag to determine a clause's state.
     buyer_accepted = models.BooleanField(default=False, db_index=True)
     seller_accepted = models.BooleanField(default=False, db_index=True)
-    sender = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='sender',
-                null=True, on_delete=models.CASCADE)
+    sender = models.ForeignKey(
+            settings.AUTH_USER_MODEL,
+            related_name='+',
+            null=True,
+            on_delete=models.CASCADE,
+            db_index=True
+    )
     _type = models.CharField(default='', max_length=12,
             editable=False)
 
@@ -356,8 +369,6 @@ class DocumentClause(models.Model):
 
 class AmendmentDocumentClause(DocumentClause):
 
-    amendment = models.TextField()
-
     def save(self, *args, **kwargs):
         if self._state.adding:
             self._type = 'dc_amendment'
@@ -367,7 +378,22 @@ class AmendmentDocumentClause(DocumentClause):
     """ If both parties accept the amendment, set the actual clause object's
         value to the amended value. """
     def acceptance_action(self):
-        self.clause.value = self.amendment; self.clause.save()
+
+        # Update the attached clause object.
+        self.clause.value = self.amendment
+        self.clause.save()
+
+class AmendmentDocumentTextClause(AmendmentDocumentClause):
+    amendment = models.TextField()
+
+class AmendmentDocumentToggleClause(AmendmentDocumentClause):
+    amendment = models.BooleanField()
+
+class AmendmentDocumentChipClause(AmendmentDocumentClause):
+    amendment = ArrayField(models.CharField(max_length=25), default=list)
+
+class AmendmentDocumentDateClause(AmendmentDocumentClause):
+    amendment = models.DateField(auto_now_add=True)
 
 
 class WaiverDocumentClause(DocumentClause):
@@ -381,7 +407,13 @@ class WaiverDocumentClause(DocumentClause):
     """ If both parties agree to waive the clause, then set its `_waived`
         flag to True. """
     def acceptance_action(self):
-        self.clause._waived = True; self.clause.save()
+
+        # Update the attached clause object.
+        self.clause._waived = True
+        self.clause.save()
+
+        # Create a notification.
+        #waiver_acceptance_signal.send(sender=self)
 
 
 class NoticeOfFulfillmentDocumentClause(DocumentClause):
@@ -406,7 +438,7 @@ class NoticeOfFulfillmentDocumentClause(DocumentClause):
 """
 def create_document_clause(document, clause,
         buyer_accepted, seller_accepted,
-        amendment):
+        amendment, sender):
     
     # Determine the document type, and create the corresponding clause.
     doc_type = document.__class__.__name__.lower()
@@ -416,18 +448,41 @@ def create_document_clause(document, clause,
                 'error: amendment document clauses must be initialized with '
                 'a `amendment` value ... none given.'
         )
-        doc_clause = AmendmentDocumentClause.objects.create(
-                document=document, clause=clause,
-                buyer_accepted=buyer_accepted, seller_accepted=seller_accepted,
-                amendment=amendment)
+
+        # Determine the type of the amendment document clause's amendment.
+        # Note, we need to match the wrapped clause's value exactly.
+        if type(clause.value).__name__ == 'bool':
+            amendment_doc_type = AmendmentDocumentToggleClause
+        elif type(clause.value).__name__ == 'list':
+            amendment_doc_type = AmendmentDocumentChipClause
+        elif type(clause.value).__name__ == 'date':
+            amendment_doc_type = AmendmentDocumentDateClause
+        else:
+            amendment_doc_type = AmendmentDocumentTextClause
+
+        doc_clause = amendment_doc_type.objects.create(
+                document=document,
+                clause=clause,
+                buyer_accepted=buyer_accepted,
+                seller_accepted=seller_accepted,
+                amendment=amendment,
+                sender=sender
+        )
     elif doc_type == 'waiver':
         doc_clause = WaiverDocumentClause.objects.create(
-                document=document, clause=clause,
-                buyer_accepted=buyer_accepted, seller_accepted=seller_accepted)
+                document=document,
+                clause=clause,
+                buyer_accepted=buyer_accepted,
+                seller_accepted=seller_accepted,
+                sender=sender
+        )
     elif doc_type == 'noticeoffulfillment':
         doc_clause = NoticeOfFulfillmentDocumentClause.objects.create(
-                document=document, clause=clause,
-                buyer_accepted=buyer_accepted, seller_accepted=seller_accepted)
+                document=document,
+                clause=clause,
+                buyer_accepted=buyer_accepted,
+                seller_accepted=seller_accepted
+        )
     else:
         raise ValidationError("error: `doc_type` isn't valid.")
 
@@ -467,12 +522,15 @@ class ClauseDocumentMixin(object):
             else:
                 seller_accepted = True
 
-
         # Create (add) the clause to the document. Downcast clause if possible.
         if hasattr(clause, 'actual_type'): clause = clause.actual_type
-        new_clause = create_document_clause(document=self,
-                clause=clause, buyer_accepted=buyer_accepted,
-                seller_accepted=seller_accepted, amendment=amendment
+        new_clause = create_document_clause(
+                document=self,
+                clause=clause,
+                buyer_accepted=buyer_accepted,
+                seller_accepted=seller_accepted,
+                amendment=amendment,
+                sender=sender
         )
 
         return new_clause
