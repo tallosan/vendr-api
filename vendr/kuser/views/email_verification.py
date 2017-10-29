@@ -63,11 +63,11 @@ class RequestEmailVerification(APIView):
         subject = 'Authorize your Vendr Account'
 
         header = """<h2 style="text-align:center;" style="color:#0bb3a2;" style="font-family:Circular,Helvetica Neue,Helvetica,Arial,sans-serif;">Vendr Accounts</h2>"""
-        greeting = """<p style="text-align:center;" style="font-family:Circular,Helvetica Neue,Helvetica,Arial,sans-serif;">Hey {}, it's Andrew, CEO of Vendr. You're just a click away from verifying your Vendr account!</p>""".format(kuser.profile.first_name)
-        verify = """<h3 style="text-align:center;"><a style="color:#0bb3a2;" style="text-decoration:none" style="font-weight:500;" style="font-family:Circular,Helvetica Neue,Helvetica,Arial,sans-serif;" href="http://api.vendr.xyz/v1/users/1/{}/">Verify</a></h3>""".format(token)
-        body = """<p style="text-align:center;" style="font-family:Circular,Helvetica Neue,Helvetica,Arial,sans-serif;">We're delighted to have you be a part of our movement, and hope you have a great experience with us!"""
-        footer = """<p style="text-align:center;" style="font-family:Circular,Helvetica Neue,Helvetica,Arial,sans-serif;">If you have any questions, feel free to email us at:<a style="font-family:Circular,Helvetica Neue,Helvetica,Arial,sans-serif;" href="support@vendr.xyz"></a>Our 24 hour on-staff assistants will be happy to help!</p>"""
-        html_message = '{}{}{}{}{}'.format(header, greeting, verify, body, footer)
+        greeting = """<p style="text-align:center;" style="font-family:Circular,Helvetica Neue,Helvetica,Arial,sans-serif;">Hey {},</p>""".format(kuser.profile.first_name)
+        body = """<p style="text-align:center;" style="font-family:Circular,Helvetica Neue,Helvetica,Arial,sans-serif;">You're just a click away from verifying your Vendr account! Please click on the link below to verify your email address, and complete your registration.</p>"""
+        verify = """<div style="border:10px;" style="text-align:center;"><form name="verify" action="http://api.vendr.xyz/v1/users/{}/verify/{}/" method="post"><h3 style="text-align:center;"><button style="color:#0bb3a2;" style="text-decoration:none" style="font-weight:500;" style="font-family:Circular,Helvetica Neue,Helvetica,Arial,sans-serif;">Verify Your Email</button></h3></form></div>""".format(kuser.pk, token)
+        footer = """<p style="text-align:center;" style="font-family:Circular,Helvetica Neue,Helvetica,Arial,sans-serif;">For any additional questions, feel free to contact us at:<p style="text-align:center;" style="font-family:Circular,Helvetica Neue,Helvetica,Arial,sans-serif;"><a style="font-family:Circular,Helvetica Neue,Helvetica,Arial,sans-serif;" href="support@vendr.xyz"></a></p>"""
+        html_message = '{}{}{}{}{}'.format(header, greeting, body, verify, footer)
 
         # Send the email. Note, we only need the HTML message.
         status = send_mail(
@@ -76,7 +76,7 @@ class RequestEmailVerification(APIView):
                 from_email=settings.EMAIL_VERIFICATION_ADDRESS,
                 #recipient_list=[kuser.email],
                 recipient_list=['andrew.tallos@mail.utoronto.ca'],
-                #html_message=html_message,
+                html_message=html_message,
                 fail_silently=False
         )
 
@@ -105,5 +105,5 @@ class VerifyEmailVerification(APIView):
         status = str(kuser._verification_token) == token
         kuser.verified = status; kuser.save()
 
-        return Response({'success': status}, status=200)
+        return Response({'success': status}, status=200) 
 
