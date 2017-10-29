@@ -193,6 +193,7 @@ class MessageList(APIView):
                     sender_name=user_name,
                     chat=chat
             )
+            chat.opened = False; chat.save()
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
