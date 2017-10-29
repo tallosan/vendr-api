@@ -49,7 +49,7 @@ class Message(models.Model):
         return {
                     'chat': str(self.chat.pk), 'content': self.content,
                     'sender': self.sender, 'sender_name': self.sender_name,
-                    'timestamp': self.timestamp, 'pk': str(self.pk)
+                    'timestamp': str(self.timestamp), 'pk': str(self.pk)
         }
 
     ''' There are two behaviors we need to enforce on message saves:
@@ -59,9 +59,9 @@ class Message(models.Model):
     def save(self, *args, **kwargs):
         
         if self._state.adding:
-            self.publish()
-            self.chat.opened = False; self.chat.save()
             super(Message, self).save(*args, **kwargs)
+            self.chat.opened = False; self.chat.save()
+            self.publish()
 
     ''' Push our message into the appropriate channels. '''
     def publish(self):
@@ -70,7 +70,7 @@ class Message(models.Model):
             channels = [
                             'users.{}.inbox'.format(recipient.pk)
                             for recipient in self.chat.participants.all()
-                            if recipient.full_name != self.sender
+                            if recipient.pk != self.sender
             ]
 
             # Push our message alert to the appropriate channels.
