@@ -7,7 +7,9 @@ from django.dispatch import receiver
 
 from transaction.signals.dispatch import transaction_withdraw_signal, \
         offer_withdraw_signal, contract_withdraw_signal, clause_change_signal, \
-        advance_stage_signal
+        advance_stage_signal, amendment_created_signal, \
+        amendment_accepted_signal, waiver_created_signal, \
+        waiver_accepted_signal, nof_accepted_signal
 from kuser.models import TransactionNotification, \
         OfferNotification, ContractNotification, \
         TransactionWithdrawNotification, \
@@ -95,4 +97,29 @@ def advance_stage_receiver(sender, **kwargs):
             _is_owner=is_owner
     )
     notification.publish()
+
+
+@receiver(amendment_created_signal)
+def amendment_created_receiver(sender, **kwargs):
+    pass
+
+
+@receiver(amendment_accepted_signal)
+def amendment_accepted_receiver(sender, **kwargs):
+    pass
+
+
+@receiver(waiver_created_signal)
+def waiver_created_receiver(sender, **kwargs):
+    pass
+
+
+@receiver(waiver_accepted_signal)
+def waiver_accepted_receiver(sender, **kwargs):
+    pass
+
+
+@receiver(nof_accepted_signal)
+def nof_accepted_receiver(sender, **kwargs):
+    pass
 
