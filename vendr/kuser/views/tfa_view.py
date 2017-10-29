@@ -84,6 +84,7 @@ class TwoFactorAuth(APIView):
         phone_number = '1' + kuser.phone_num
         
         # Send an SMS message to the user's phone.
+        """
         client = messagebird.Client(settings.MESSAGEBIRD_ACCESS_KEY)
         try:
             message = client.message_create(
@@ -98,6 +99,7 @@ class TwoFactorAuth(APIView):
             )
             sms_exc.status_code = 403; raise sms_exc
 
+        """
         # Set the user's TFA code, and reset its validation status.
         kuser.tfa_code = tfa_code; kuser._tfa_code_validated = False
         kuser.save()
