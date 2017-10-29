@@ -4,5 +4,7 @@ from .contract import *
 from .closing import Closing, Document, Amendments, Waiver, \
         NoticeOfFulfillment, MutualRelease, DocumentClause, AbstractClosingFactory, \
         AmendmentDocumentClause, WaiverDocumentClause, \
-        NoticeOfFulfillmentDocumentClause
+        NoticeOfFulfillmentDocumentClause, \
+        AmendmentDocumentToggleClause, AmendmentDocumentTextClause, \
+        AmendmentDocumentChipClause, AmendmentDocumentDateClause
 

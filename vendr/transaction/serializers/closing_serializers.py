@@ -9,6 +9,8 @@ from django.conf import settings
 from rest_framework import serializers
 
 from transaction.models import Closing, Document, DocumentClause, \
+        AmendmentDocumentTextClause, AmendmentDocumentToggleClause, \
+        AmendmentDocumentChipClause, AmendmentDocumentDateClause, \
         AmendmentDocumentClause
 
 
@@ -80,9 +82,32 @@ class DocumentClauseSerializer(serializers.ModelSerializer):
 
 class AmendmentClauseSerializer(DocumentClauseSerializer):
 
+    amendment = serializers.SerializerMethodField()
+
     class Meta(DocumentClauseSerializer.Meta):
         model = AmendmentDocumentClause
         fields = DocumentClauseSerializer.Meta.fields + ('amendment', )
+
+    """ Get the amendment value for this serializer. We're using a method
+        field in order to maintaing the psuedo-generic property that allows
+        us to use the same serializer for all AmendmentDocumentClause's.
+    """
+    def get_amendment(self, instance):
+
+        if isinstance(instance, DocumentClause):
+            instance = instance.amendmentdocumentclause
+
+        # Downcast.
+        if hasattr(instance, 'amendmentdocumenttoggleclause'):
+            instance = instance.amendmentdocumenttoggleclause
+        elif hasattr(instance, 'amendmentdocumentdateclause'):
+            instance = instance.amendmentdocumentdateclause 
+        elif hasattr(instance, 'amendmentdocumentchipclause'):
+            instance = instance.amendmentdocumentchipclause
+        else: 
+            instance = instance.amendmentdocumenttextclause
+
+        return instance.amendment
 
     def create(self, validated_data):
 
@@ -95,9 +120,12 @@ class AmendmentClauseSerializer(DocumentClauseSerializer):
                 amendment=amendment)
         return document_clause
 
-    def to_representation(self, instance):
-        instance = instance.amendmentdocumentclause
-        return super(AmendmentClauseSerializer, self).to_representation(instance)
+    """ This is a bit hacky, but it allows us to get access to the
+        full response data, as opposed to the filtered / validated
+        data that Django will return naturally.
+    """
+    def to_internal_value(self, data):
+        return data
 
 
 class ClauseDocumentSerializer(DocumentSerializer):
