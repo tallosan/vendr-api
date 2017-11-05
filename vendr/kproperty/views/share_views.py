@@ -16,10 +16,15 @@
 # ====================================================================
 
 import requests
-import feedparser
 import textwrap
-import itertools
+from itertools import chain
 import base64
+import re
+from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.common.by import By
 
 from django.apps import apps
 from django.conf import settings
@@ -186,7 +191,7 @@ class VendrShare(APIView):
                 """
             ).format(image[0], image[1])
 
-        # The property we're uploading.
+        # The property we're _uploading.
         # Note, we're hardcoding the category to `nfb`, which is
         # the Craigslist FSBO category.
         # Also, we'll need to resolve the property area and subarea
@@ -340,4 +345,138 @@ def get_levenshtein(n, m):
             levenshtein_distance += 1
 
     return levenshtein_distance
+
+
+class KijijiShare(APIView):
+
+    base_url = 'https://www.kijiji.ca/'
+    upload_url_prefix = 'p-post-ad.html?categoryId='
+    email = 'andrew.tallos@mail.utoronto.ca'
+    password = 'kijijiRonaldo77'
+
+    def post(self, request, pk, *args, **kwargs):
+
+        # Get the property.
+        model_type = Property.objects.filter(pk=pk).\
+                        values_list('_type', flat=True)[0]
+        model = apps.get_model(app_label='kproperty', model_name=model_type)
+        kproperty = model.objects.get(pk=pk)
+
+        # Parse it, and _upload to the site.
+        listing_info = self._parse_listing(kproperty)
+        self._upload(listing_info)
+
+    """ Takes a Vendr property and parses any Kijiji-relevant fields into
+        a dictionary.
+        Args:
+            kproperty (KProperty) -- The Vendr property model to be parsed.
+    """
+    def _parse_listing(self, kproperty):
+        
+        listing = {}
+
+        # Parse KProperty info.
+        listing['price'] = kproperty.price
+        listing['n_bedrooms'] = kproperty.n_bedrooms
+        listing['n_bathrooms'] = kproperty.n_bathrooms
+        listing['sqr_ftg'] = kproperty.sqr_ftg
+        listing['description'] = kproperty.description
+
+        # Parse locational info.
+        location = kproperty.location
+        listing['country'] = location.country
+        listing['province'] = location.province
+        listing['city'] = location.city
+        listing['address'] = location.address
+        listing['street_num'] = ''.join(re.findall('\d+', location.address))
+        listing['postal'] = location.postal_code
+        listing['longitude'] = location.longitude
+        listing['latitude'] = location.latitude
+
+        # Parse features.
+        features = kproperty.features.all(); listing['features'] = []
+        for feature in features:
+            listing['features'].append(feature.feature)
+
+        # Parse images.
+        images = kproperty.images.all()
+        listing['main_image'] = images[kproperty.display_pic]
+        listing['images'] = list(chain(images[:kproperty.display_pic],
+            images[kproperty.display_pic + 1:]))
+
+        listing['title'] = 'FSBO: {}'.format(location.address)
+        listing['category_id'] = self._get_category_id(kproperty._type)
+        listing['url'] = '{}{}{}'.format(
+                self.base_url, self.upload_url_prefix, listing['category_id'])
+
+        return listing
+
+    """ Gets the appropriate Kijiji category ID given the Vendr property
+        type. Note, we'll default to `house` if no exact match is found.
+        Args:
+            ktype (string) -- The Vendr property type.
+    """
+    def _get_category_id(self, ktype):
+
+        mapping = {
+                'house': '//*[@id="CategoryId35"]',
+                'condo': '643',
+                'vacant_land': '641'
+        }
+
+        return mapping[ktype] if ktype in mapping.keys() else mapping['house']
+
+    """ Uploads a Vendr property to Kijiji.
+        Args:
+            listing (dict) -- A dict containing the Vendr property's info.
+    """
+    def _upload(self, listing):
+
+        # To upload to Kijiji, we're going to need to use Selenium.
+        path = '/home/ubuntu/downloads/phantomjs-2.1.1-linux-x86_64/bin/phantomjs'
+        driver = webdriver.PhantomJS(path)
+        driver.get('https://www.kijiji.ca/t-login.html')
+
+        # Sign in.
+        print 'signing in ', driver.current_url
+        email = driver.find_element_by_xpath('//*[@id="LoginEmailOrNickname"]')
+        email.send_keys(self.email)
+        password = driver.find_element_by_xpath('//*[@id="login-password"]')
+        password.send_keys(self.password)
+        # Navigate to home page.
+        driver.find_element_by_xpath('//*[@id="SignInButton"]').click()
+        self._wait(driver, '//*[@id="MainContainer"]/div[1]/div/header/div[3]/div[1]'
+                '/div/div[2]/div[2]/a')
+
+        # Navigate to Post Listing page.
+        driver.get(listing['url'])
+        driver.find_element_by_xpath('//*[@id="MainContainer"]/div[1]/div/header/'
+            'div[3]/div[1]/div/div[2]/div[2]/a').click()
+        self._wait(driver, listing['category_id'])
+
+        # Select category, and navigate to posting details.
+        # TODO: There seems to be non-deterministic behaviour here.
+        #       Sometimes we can get to the next page, other times we can't.
+        driver.execute_script("document.getElementById('CategoryId643').click();")
+        self._wait(driver, '//*[@id="PostAdMainForm"]/div[1]/div/div/div')
+        print 'destination ', driver.current_url
+        driver.execute_script("document.getElementsByClassName('button-71444407 button__blue-3811567280')[0].click();")
+
+        print driver.find_element_by_xpath('//*[@id="PackagesDurations"]/h2')
+        print driver.find_element_by_xpath('//*[@id="PackagesDurations"]/h2').text
+       
+    """ (Helper) Waits for a driver to finish a task. We consider the task
+        completed once the given element is loaded/visible.
+        Args:
+            driver (Selenium Driver) -- The driver executing the task.
+            element (Selenium WebElement) -- The element we're waiting for.
+    """
+    def _wait(self, driver, element):
+
+        try:
+            element = WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.XPATH, element))
+            )
+        except TimeoutException:
+            print "error: couldn't move past ", driver.current_url
 

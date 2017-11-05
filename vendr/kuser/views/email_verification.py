@@ -44,7 +44,7 @@ class RequestEmailVerification(APIView):
         kuser = self.get_object(pk)
         status = self.send_mail(kuser)
 
-        return Response({'success': status}, status=200)
+        return Response({'sent': status}, status=200)
 
     """ Send the given user an email containing a randomly generated
         authentication token. Returns the status of the email sending call.

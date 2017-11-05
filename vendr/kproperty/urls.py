@@ -33,6 +33,7 @@ urlpatterns = [
             views.RSVPDetail.as_view()),
 
         # Property sharing view.
-        url(r'^(?P<pk>[0-9+]+)/share/$', views.VendrShare.as_view())
+        url(r'^(?P<pk>[0-9+]+)/share/$', views.VendrShare.as_view()),
+        url(r'^(?P<pk>[0-9+]+)/kijiji-share/$', views.KijijiShare.as_view())
 ]
 
