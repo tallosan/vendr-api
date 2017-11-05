@@ -22,7 +22,15 @@ class ClosingSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Closing
-        fields = ('pk', 'transaction', 'buyer', 'seller')
+        fields = (
+                'pk',
+                'transaction',
+                'buyer',
+                'seller',
+                '_property_descriptor',
+                '_document_header',
+                '_document_footer'
+        )
 
 
 class DocumentSerializer(serializers.ModelSerializer):
