@@ -35,11 +35,21 @@ class DocumentSerializer(serializers.ModelSerializer):
 class DocumentClauseSerializer(serializers.ModelSerializer):
 
     title = serializers.SerializerMethodField()
+    preview = serializers.SerializerMethodField()
+    generator = serializers.SerializerMethodField()
     waived = serializers.SerializerMethodField()
 
     class Meta:
         model = DocumentClause
-        fields = ('pk', 'title', 'buyer_accepted', 'seller_accepted', 'waived')
+        fields = (
+                'pk',
+                'buyer_accepted',
+                'seller_accepted',
+                'title',
+                'preview',
+                'generator',
+                'waived'
+        )
 
     """ We're overiding this function to use our `add_clause()` method.
         Args:
@@ -55,12 +65,32 @@ class DocumentClauseSerializer(serializers.ModelSerializer):
 
         return document_clause
 
-    """ Returns the title of the `DocumentClause` title.
+    """ Returns the title of the `DocumentClause` clause.
         Args:
             instance (DocumentClause) -- The `DocumentClause` being serialized.
     """
     def get_title(self, instance):
         return instance.title
+
+    """ Returns the preview of the `DocumentClause` clause.
+        Args:
+            instance (DocumentClause) -- The `DocumentClause` being serialized.
+    """
+    def get_preview(self, instance):
+        return instance.clause.preview
+
+    """ Returns the generator of the `DocumentClause` clause.
+        Args:
+            instance (DocumentClause) -- The `DocumentClause` being serialized.
+    """
+    def get_generator(self, instance):
+
+        try:
+            generator = instance.clause.generator
+        except AttributeError:
+            generator = None
+
+        return generator
 
     """ Returns the `waived` status of the `DocumentClause`
         Args:
@@ -68,16 +98,6 @@ class DocumentClauseSerializer(serializers.ModelSerializer):
     """
     def get_waived(self, instance):
         return instance.clause._waived
-
-    def to_representation(self, instance):
-
-        document_clause = super(DocumentClauseSerializer, self).\
-                to_representation(instance)
-        try:
-            document_clause['generator'] = instance.clause.generator
-        except AttributeError: pass
-
-        return document_clause
 
 
 class AmendmentClauseSerializer(DocumentClauseSerializer):
