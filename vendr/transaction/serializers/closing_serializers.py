@@ -56,7 +56,8 @@ class DocumentClauseSerializer(serializers.ModelSerializer):
                 'title',
                 'preview',
                 'generator',
-                'waived'
+                'waived',
+                'timestamp'
         )
 
     """ We're overiding this function to use our `add_clause()` method.
@@ -173,20 +174,22 @@ class ClauseDocumentSerializer(DocumentSerializer):
             instance (ClauseDocument) -- The document being serialized.
     """
     def get_approved_clauses(self, instance):
-        return {
-                "approved_clauses": self._clause_serializer(
-                 instance.approved_clauses, many=True).data
-        }
+        
+        return self._clause_serializer(
+                instance.approved_clauses,
+                many=True
+        ).data
 
     """ Set of pending clauses on this Document.
         Args:
             instance (ClauseDocument) -- The document being serialized.
     """
     def get_pending_clauses(self, instance):
-        return {
-                "pending_clauses": self._clause_serializer(
-                 instance.pending_clauses, many=True).data
-        }
+        
+        return self._clause_serializer(
+                instance.pending_clauses,
+                many=True
+        ).data
 
 
 class AmendmentClauseDocumentSerializer(ClauseDocumentSerializer):
