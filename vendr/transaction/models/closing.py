@@ -317,6 +317,7 @@ class DocumentClause(models.Model):
     )
     _type = models.CharField(default='', max_length=12,
             editable=False)
+    timestamp = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
         
