@@ -29,12 +29,12 @@ from kproperty.models import Property
 
 class AbstractClosingFactory(object):
 
-    ''' Create a closing of the given type.
+    """ Create a closing of the given type.
         Args:
             closing_type -- The type of closing to create.
             transaction -- The transaction that this closing will belong to.
             **kwargs: Any additional arguments to create the closing with.
-    '''
+    """
     @staticmethod
     def create_closing(closing_type, transaction, **kwargs):
 
@@ -67,7 +67,7 @@ class AbstractClosingFactory(object):
 
 # ===========================================================================
 
-'''   [Abstract] '''
+"""   [Abstract] """
 class BaseClosingManager(models.Manager):
     
     def create_closing(self, transaction, **kwargs):
@@ -98,10 +98,10 @@ class BaseClosingManager(models.Manager):
 
 class CoOpClosingManager(BaseClosingManager):
     
-    ''' Formats a CoOp transaction's closing document's property descriptor.
+    """ Formats a CoOp transaction's closing document's property descriptor.
         Args:
             transaction (Transaction) -- The transaction this Closing exists on.
-    '''
+    """
     def format_descriptor(self, transaction):
 
         pk = transaction.kproperty.pk
@@ -117,10 +117,10 @@ class CoOpClosingManager(BaseClosingManager):
 
 class CondoClosingManager(BaseClosingManager):
 
-    ''' Formats a Condo transaction's closing document's property descriptor.
+    """ Formats a Condo transaction's closing document's property descriptor.
         Args:
             transaction (Transaction) -- The transaction this Closing exists on.
-    '''
+    """
     def format_descriptor(self, transaction):
 
         pk = transaction.kproperty.pk
@@ -135,10 +135,10 @@ class CondoClosingManager(BaseClosingManager):
 
 class HouseClosingManager(BaseClosingManager):
 
-    ''' Formats a House transaction's closing document's property descriptor.
+    """ Formats a House transaction's closing document's property descriptor.
         Args:
             transaction (Transaction) -- The transaction this Closing exists on.
-    '''
+    """
     def format_descriptor(self, transaction):
 
         pk = transaction.kproperty.pk
@@ -153,10 +153,10 @@ class HouseClosingManager(BaseClosingManager):
 
 class TownhouseClosingManager(BaseClosingManager):
 
-    ''' Formats a Townhouse transaction's closing document's property descriptor.
+    """ Formats a Townhouse transaction's closing document's property descriptor.
         Args:
             transaction (Transaction) -- The transaction this Closing exists on.
-    '''
+    """
     def format_descriptor(self, transaction):
 
         descriptor = DOCUMENTS_TEXT['townhouse_descriptor'].format(
@@ -168,10 +168,10 @@ class TownhouseClosingManager(BaseClosingManager):
 
 class ManufacturedClosingManager(BaseClosingManager):
 
-    ''' Formats a Manufactured transaction's closing document's property descriptor.
+    """ Formats a Manufactured transaction's closing document's property descriptor.
         Args:
             transaction (Transaction) -- The transaction this Closing exists on.
-    '''
+    """
     def format_descriptor(self, transaction):
 
         descriptor = DOCUMENTS_TEXT['manufactured_descriptor'].format(
@@ -188,10 +188,10 @@ class ManufacturedClosingManager(BaseClosingManager):
 
 class VacantLandClosingManager(BaseClosingManager):
 
-    ''' Formats a Vacant Land transaction's closing document's property descriptor.
+    """ Formats a Vacant Land transaction's closing document's property descriptor.
         Args:
             transaction (Transaction) -- The transaction this Closing exists on.
-    '''
+    """
     def format_descriptor(self, transaction):
 
         descriptor = DOCUMENTS_TEXT['vacantland_descriptor'].format(
@@ -203,7 +203,7 @@ class VacantLandClosingManager(BaseClosingManager):
 
 # ===========================================================================
 
-'''   [Abstract] '''
+"""   [Abstract] """
 class Closing(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4,
@@ -256,7 +256,7 @@ class VacantLandClosing(Closing):
 
 # ===========================================================================
 
-'''   [Abstract] '''
+"""   [Abstract] """
 class Document(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4,
@@ -267,10 +267,10 @@ class Document(models.Model):
     explanation = models.TextField()
     signing_date = models.DateField(blank=True, null=True)
     
-    ''' Raises a NotImplementedError. Note, we are not making this class
+    """ Raises a NotImplementedError. Note, we are not making this class
         abstract, as we'd like to use the multiple-inheritance heirarchy. That
         being said, we do want this class to behave like it's abstract -- we
-        never want to actually create an instance of Document(). '''
+        never want to actually create an instance of Document(). """
     def save(self, *args, **kwargs):
         raise NotImplementedError(
                 'error: cannot instantiate a Document. try creating one'
@@ -278,7 +278,7 @@ class Document(models.Model):
         )
 
 
-'''   A clause that is part of a document. '''
+"""   A clause that is part of a document. """
 class DocumentClause(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4,
@@ -298,8 +298,16 @@ class DocumentClause(models.Model):
 
     # Clauses must be approved by both parties in order for them to be added
     # to the document. Thus, we'll use this flag to determine a clause's state.
-    buyer_accepted = models.BooleanField(default=False, db_index=True)
-    seller_accepted = models.BooleanField(default=False, db_index=True)
+    buyer_accepted = models.NullBooleanField(
+            default=False,
+            db_index=True,
+            null=True
+    )
+    seller_accepted = models.NullBooleanField(
+            default=False,
+            db_index=True,
+            null=True
+    )
     sender = models.ForeignKey(
             settings.AUTH_USER_MODEL,
             related_name='+',
@@ -489,15 +497,15 @@ def create_document_clause(document, clause,
     return doc_clause
 
 
-'''   Some Documents have a set of clauses attached to them -- e.g. the
+"""   Some Documents have a set of clauses attached to them -- e.g. the
       Amendments document contains a set of clauses that have been ammended.
       This mixin supports any necessary functionality that a document will need
-      to manage its clauses. '''
+      to manage its clauses. """
 class ClauseDocumentMixin(object):
     
     clause_model = DocumentClause
 
-    ''' Add a clause to the document. As clause objects do not have the
+    """ Add a clause to the document. As clause objects do not have the
         necessary functionality to be useful in a document, this method
         is essentially a wrapper for whichever model we choose to use
         to give them these necessary functionalities -- in this case,
@@ -505,7 +513,7 @@ class ClauseDocumentMixin(object):
         Args:
             clause (StaticClause or DynamicClause) -- The clause to be added.
             sender (User) -- The user adding this clause.
-    '''
+    """
     def add_clause(self, clause, sender, amendment=None):
  
         # Ensure that the clause we're adding hasn't already been added.
@@ -515,7 +523,7 @@ class ClauseDocumentMixin(object):
        
         # Set the user's `role_accepted` field according to their role in
         # the transaction.
-        buyer_accepted = False; seller_accepted = False
+        buyer_accepted = None; seller_accepted = None
         if sender:
             if sender.pk == self.closing.transaction.buyer.pk:
                 buyer_accepted=True
@@ -535,7 +543,7 @@ class ClauseDocumentMixin(object):
 
         return new_clause
 
-    ''' The approved clauses that have been approved on the document. '''
+    """ The approved clauses that have been approved on the document. """
     @property
     def approved_clauses(self):
 
@@ -544,23 +552,23 @@ class ClauseDocumentMixin(object):
 
         return self.document_clauses.filter(buyer_accepted & seller_accepted)
 
-    ''' The pending clauses that have yet to be approved. '''
+    """ The pending clauses that have yet to be approved. """
     @property
     def pending_clauses(self):
 
-        buyer_pending = Q(buyer_accepted=False)
-        seller_pending = Q(seller_accepted=False)
+        buyer_accepted = Q(buyer_accepted=True)
+        seller_accepted = Q(seller_accepted=True)
 
-        return self.document_clauses.filter(buyer_pending | seller_pending)
+        return self.document_clauses.exclude(buyer_accepted & seller_accepted)
 
     @property
     def contract(self):
         return self.closing.transaction.contracts.all()[0]
 
-    ''' Raise NotImplementedError. Updates a document's content by iterating
+    """ Raise NotImplementedError. Updates a document's content by iterating
         through its clauses and checking for any new additions to the
         `approved` set. This should be called after each clause addition.
-    '''
+    """
     def reformat_content(self):
         raise NotImplementedError(
                 'error: `reformat_content()` must implemented by each Document '
@@ -568,8 +576,8 @@ class ClauseDocumentMixin(object):
         )
 
             
-'''   The Amendments document is where any accepted clause changes
-      and/or additions go. '''
+"""   The Amendments document is where any accepted clause changes
+      and/or additions go. """
 class Amendments(Document, ClauseDocumentMixin):
     
     closing = models.OneToOneField(
@@ -587,8 +595,8 @@ class Amendments(Document, ClauseDocumentMixin):
         
         super(Document, self).save(*args, **kwargs)
 
-    ''' Updates an Amendment document's content by iterating through its
-        clauses and checking for any new additions to the `approved` set. '''
+    """ Updates an Amendment document's content by iterating through its
+        clauses and checking for any new additions to the `approved` set. """
     def reformat_content(self):
 
         contract = self.contract
@@ -602,7 +610,7 @@ class Amendments(Document, ClauseDocumentMixin):
         self.save()
 
 
-'''   The Waiver document is where any accepted clause removals go. '''
+"""   The Waiver document is where any accepted clause removals go. """
 class Waiver(Document, ClauseDocumentMixin):
     
     closing = models.OneToOneField(
@@ -620,8 +628,8 @@ class Waiver(Document, ClauseDocumentMixin):
 
         super(Document, self).save(*args, **kwargs)
 
-    ''' Updates a Waiver document's content by iterating through its clauses and
-        checking for any new additions to the `approved` set. '''
+    """ Updates a Waiver document's content by iterating through its clauses and
+        checking for any new additions to the `approved` set. """
     def reformat_content(self):
 
         contract = self.contract
@@ -633,8 +641,8 @@ class Waiver(Document, ClauseDocumentMixin):
         self.save()
 
 
-'''   The Notice of Fullfillment document manages the state of the contract
-      requirements. E.g. has the deposit been sent with the correct amount? '''
+"""   The Notice of Fullfillment document manages the state of the contract
+      requirements. E.g. has the deposit been sent with the correct amount? """
 class NoticeOfFulfillment(Document, ClauseDocumentMixin):
     
     closing = models.OneToOneField(
@@ -656,8 +664,8 @@ class NoticeOfFulfillment(Document, ClauseDocumentMixin):
         else:
             super(Document, self).save(*args, **kwargs)
 
-    ''' Adds a set clauses that require fulfillment to the document's
-        pending queue. '''
+    """ Adds a set clauses that require fulfillment to the document's
+        pending queue. """
     def _add_pending_clauses(self):
         
         # Add each required clause to our pending queue. N.B. -- We're
@@ -668,8 +676,8 @@ class NoticeOfFulfillment(Document, ClauseDocumentMixin):
 
         self.reformat_content()
 
-    ''' Updates a Notice of Fulfillments document's content by iterating through
-        its clauses and checking for any new additions to the `approved` set. '''
+    """ Updates a Notice of Fulfillments document's content by iterating through
+        its clauses and checking for any new additions to the `approved` set. """
     def reformat_content(self):
 
         contract = self.contract
@@ -681,8 +689,8 @@ class NoticeOfFulfillment(Document, ClauseDocumentMixin):
         self.save()
 
 
-'''   The Mutual Release document handles the mutual termination of
-      a transaction. '''
+"""   The Mutual Release document handles the mutual termination of
+      a transaction. """
 class MutualRelease(Document):
     
     closing = models.OneToOneField(
