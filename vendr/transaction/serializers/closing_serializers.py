@@ -161,13 +161,14 @@ class ClauseDocumentSerializer(DocumentSerializer):
 
     approved_clauses = serializers.SerializerMethodField()
     pending_clauses = serializers.SerializerMethodField()
+    rejected_clauses = serializers.SerializerMethodField()
 
     # The serializer to use on the document's clauses.
     _clause_serializer = DocumentClauseSerializer
 
     class Meta(DocumentSerializer.Meta):
         fields = DocumentSerializer.Meta.fields + \
-                ('approved_clauses', 'pending_clauses')
+                ('approved_clauses', 'pending_clauses', 'rejected_clauses')
 
     """ Set of approved clauses on this Document.
         Args:
@@ -188,6 +189,17 @@ class ClauseDocumentSerializer(DocumentSerializer):
         
         return self._clause_serializer(
                 instance.pending_clauses,
+                many=True
+        ).data
+
+    """ Set of rejected clauses on this Document.
+        Args:
+            instance (ClauseDocument) -- The document being serialized.
+    """
+    def get_rejected_clauses(self, instance):
+        
+        return self._clause_serializer(
+                instance.rejected_clauses,
                 many=True
         ).data
 

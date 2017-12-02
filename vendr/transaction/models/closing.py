@@ -563,6 +563,26 @@ class ClauseDocumentMixin(object):
         return self.document_clauses.exclude(buyer_accepted & seller_accepted)
 
     @property
+    def rejected_clauses(self):
+        """
+        The set of clause changes that have been rejected.
+        """
+
+        buyer_rejected = Q(buyer_accepted=False)
+        seller_rejected = Q(buyer_accepted=False)
+    
+        rejected_clauses = []
+        for clause in self.document_clauses.all():
+            if (clause.sender == self.closing.transaction.buyer) and \
+                    (clause.seller_accepted == False):
+                rejected_clauses.append(clause)
+            elif (clause.sender == self.closing.transaction.seller) and \
+                 (clause.buyer_accepted == False):
+                rejected_clauses.append(clause)
+
+        return rejected_clauses
+
+    @property
     def contract(self):
         return self.closing.transaction.contracts.all()[0]
 
