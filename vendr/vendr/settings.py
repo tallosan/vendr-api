@@ -47,6 +47,7 @@ KANGAA_APPS = [
     'kuser',
     'autocomplete',
     'transaction',
+    "payment",
 ]
 
 INSTALLED_APPS = BASE_APPS + KANGAA_APPS
