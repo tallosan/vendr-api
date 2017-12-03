@@ -69,7 +69,7 @@ class OfferSerializer(serializers.ModelSerializer):
 class ClauseSerializer(serializers.ModelSerializer):
 
     class Meta:
-        fields = ('id', 'title', 'is_active', 'preview', 'explanation')
+        fields = ('id', 'title', 'is_active', 'preview', 'explanation', "comment")
       
     def to_representation(self, instance):
 
