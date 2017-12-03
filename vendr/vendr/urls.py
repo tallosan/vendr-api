@@ -30,6 +30,7 @@ urlpatterns = [
     url(r'^v1/users/', include('kuser.urls')),
     url(r'^v1/autocomplete', include('autocomplete.urls')),
     url(r'^v1/transactions/', include('transaction.urls')),
+    url(r'^v1/payments/', include('payment.urls')),
 ]
 
 from django.conf import settings
