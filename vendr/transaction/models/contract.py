@@ -577,7 +577,7 @@ class DynamicClause(Clause):
             on_delete=models.CASCADE,
             db_index=True
     )
-    actual_type   = GenericForeignKey('_content_type', 'id')
+    actual_type = GenericForeignKey('_content_type', 'id')
     
     ''' We have to override this in order to create our inheritance scheme.
         Args:
@@ -595,19 +595,14 @@ class DynamicClause(Clause):
             self.explanation = DYNAMIC_STANDARD_CLAUSES[clause_key]['explanation']
             self._required = DYNAMIC_STANDARD_CLAUSES[clause_key]['required']
  
+        print args
         super(DynamicClause, self).save(*args, **kwargs)
 
-        # Check for contract equality.
+        # Ask the transaction update the contract diff field. Note, we only do
+        # this if the transaction has more than one contract.
         _transaction = self.contract.transaction
         if _transaction.contracts.all().count() == 2:
-            _c0 = { clause.title: clause.actual_type.value
-                    for clause in _transaction.contracts.all()[0].dynamic_clauses.all()
-            }
-            _c1 = { clause.title: clause.actual_type.value
-                    for clause in _transaction.contracts.all()[1].dynamic_clauses.all()
-            }
-            
-            _transaction.contracts_equal = _c0 == _c1; _transaction.save()
+            self.contract.transaction.check_diff()
 
     @property
     def preview(self):
@@ -675,6 +670,20 @@ class DynamicChipClause(DynamicClause):
     ui_type = models.CharField(max_length=10, default='CHIP', editable=False)
     
     class Meta: abstract = True
+
+    def save(self, clause_key, *args, **kwargs):
+        """
+        We need to ensure that our value array is sorted, or our contract
+        equivalence checks will fail. For example, if we have a value array
+        like ["a", "b"], then ["a", "b"] == ["b", "a"], as we care only
+        about combinations, but our contract equivalence algorithm sees
+        clause values as permutatons. If we sort the values then we can
+        avoid this.
+        """
+
+        self.value = sorted(self.value)
+        super(DynamicChipClause, self).save(clause_key=clause_key,
+                *args, **kwargs)
 
 
 class DynamicDateClause(DynamicClause):

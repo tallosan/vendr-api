@@ -12,17 +12,20 @@ from kproperty.models import Property
 from .closing import AbstractClosingFactory
 
 
-'''   Custom Transaction Manager. '''
 class TransactionManager(models.Manager):
+    """
+    Custom Transaction Manager.
+    """
     
-    ''' Creates a Transaction model, along with the given Contract.
-        Args:
-            buyer: The User who wants to buy the property. 
-            seller: The User who is selling the property.
-            kproperty: The Property in question.
-    '''
     def create_transaction(self, buyer, seller, kproperty, **extra_fields):
-        
+        """
+        Creates a Transaction model, along with the given Contract.
+        Args:
+            `buyer` (KUser) -- The User who wants to buy the property. 
+            `seller` (KUser) -- The User who is selling the property.
+            `kproperty` (Property) -- The Property the transaction is on.
+        """
+
         # Ensure that the buyer, seller, and property are specified.
         if any(arg is None for arg in {buyer, seller, kproperty}):
             raise ValueError('buyer, seller, or kproperty not specified.')
@@ -44,9 +47,11 @@ class TransactionManager(models.Manager):
         return transaction
 
 
-'''   Transaction model. Each Transaction has a buyer, a seller, and a property, along 
-      with a set of Offers and a Contract. Each Transaction has 3 stages. '''
 class Transaction(models.Model):
+    """
+    Transaction model. Each Transaction has a buyer, a seller, and a property, along 
+    with a set of Offers and a Contract. Each Transaction has 3 stages.
+    """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4,
             editable=False, db_index=True)
@@ -99,13 +104,14 @@ class Transaction(models.Model):
     class Meta:
         unique_together = ['buyer', 'seller', 'kproperty']
 
-    ''' Returns True if the user has permission to access the given fields,
+    def check_field_permissions(self, user_id, fields):
+        """
+        Returns True if the user has permission to access the given fields,
         and False if not.
         Args:
             user_id: The ID of the User.
             fields: The fields the User is attempting to modify.
-    '''
-    def check_field_permissions(self, user_id, fields):
+        """
 
         # Mapping between users and the restricted fields that
         # they cannot access.
@@ -127,9 +133,11 @@ class Transaction(models.Model):
 
         return True
 
-    ''' Advance the transaction to the next stage. This is really just a bunch of
-        conditionals that need to be passed depending on the stage we're in. '''
     def advance_stage(self):
+        """
+        Advance the transaction to the next stage. This is really just a bunch of
+        conditionals that need to be passed depending on the stage we're in.
+        """
         
         # Ensure that we are not already at the last stage.
         if self.stage == 3:
@@ -160,17 +168,20 @@ class Transaction(models.Model):
         self.stage += 1
         self.save()
 
-    ''' Returns a queryset for the given user's offers.
+    def get_offers(self, user_id):
+        """
+        Returns a queryset for the given user's offers.
         Args:
             user_id: The ID of the given user.
-    '''
-    def get_offers(self, user_id):
+        """
 
         return self.offers.filter(owner=user_id).order_by('-timestamp')
     
-    ''' Create a Closing object for this transaction according to the type
-        of property we're operating on. '''
     def create_closing(self):
+        """
+        Create a Closing object for this transaction according to the type
+        of property we're operating on.
+        """
         
         closing_type = self.kproperty._type
         closing = AbstractClosingFactory.create_closing(
@@ -178,8 +189,33 @@ class Transaction(models.Model):
 
         return closing
 
-    ''' Overrides the default signal handling on related models. '''
+    def check_diff(self):
+        """
+        Update the `contracts_equal` field according to the latest state
+        of both contracts. Note, this can only be called when both contracts
+        belonging to the transaction are in existence.
+        """
+
+        assert self.contracts.all().count() == 2, (
+                "error: `check_diff()` can only be called when the transaction "
+                "in question has both contracts in existence."
+        )
+
+        contracts = self.contracts.all().prefetch_related("dynamic_clauses")
+        _c0 = { clause.title: clause.actual_type.value
+                for clause in contracts[0].dynamic_clauses.all()
+        }
+        _c1 = { clause.title: clause.actual_type.value
+                for clause in contracts[1].dynamic_clauses.all()
+        }
+
+        self.contracts_equal = _c0 == _c1
+        self.save()
+
     def delete(self, *args, **kwargs):
+        """
+        Overrides the default signal handling on related models.
+        """
 
         # Handle signals. If we're in the offer stage then we want to create an
         # offer notification. If we're in the contract stage then we do not.
@@ -190,8 +226,6 @@ class Transaction(models.Model):
 
         super(Transaction, self).delete(*args, **kwargs)
 
-    ''' String representation for Transaction models. '''
     def __str__(self):
-
         return str(self.pk)
 
