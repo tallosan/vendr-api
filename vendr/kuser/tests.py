@@ -828,3 +828,137 @@ class TestContractNotifications(AbstractNotificationSetup):
             )
         )
 
+
+class TestTFA(APITestCase):
+
+    def setUp(self):
+
+        self.view = TwoFactorAuth.as_view()
+        self.factory = APIRequestFactory()
+ 
+        # Create the buyer, and seller.
+        self.user = User.objects.create_user(email='user@vendr.xyz',
+                        phone_num='7782304056', password='user')
+        self.path = '/v1/users/{}/two-factor-auth/'.format(self.user.pk)
+
+    """ Attempt to create a new code without 2FA enabled. """
+    def test_post_tfa_not_enabled(self):
+
+        request = self.factory.post(self.path, {}, format='json')
+        force_authenticate(request, user=self.user)
+        response = self.view(request, pk=self.user.pk)
+ 
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.data,
+                {'error': 'user {} does not have two-factor '
+                'authentication enabled.'.format(self.user.pk)}
+        )
+
+    """ Attempt to create a new code without a phone number. """
+    def test_post_tfa_no_phone_num(self):
+
+        self.user.phone_num = None; self.user.save()
+        request = self.factory.post(self.path, {}, format='json')
+        force_authenticate(request, user=self.user)
+        response = self.view(request, pk=self.user.pk)
+ 
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.data,
+                {'error': 'user {} does not have two-factor authentication '
+                'enabled.'.format(self.user.pk)}
+        )
+
+    """ Create a new code """
+    def test_post_tfa_enabled(self):
+
+        self.user.tfa_enabled = True; self.user.save()
+        request = self.factory.post(self.path, {}, format='json')
+        force_authenticate(request, user=self.user)
+        response = self.view(request, pk=self.user.pk)
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data, {'success': True})
+ 
+    """ Ensure that a user can enable 2FA. """
+    def test_enable_tfa(self):
+
+        request = self.factory.put(
+                self.path,
+                {'tfa_enabled': True},
+                format='json'
+        )
+        force_authenticate(request, user=self.user)
+        response = self.view(request, pk=self.user.pk)
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(self.user.tfa_enabled)
+
+    """ Ensure that a user can disable 2FA. """
+    def test_disable_tfa(self):
+
+        self.user.tfa_enabled = True; self.user.save()
+        request = self.factory.put(
+                self.path,
+                data={'tfa_enabled': False},
+                format='json'
+        )
+        force_authenticate(request, user=self.user)
+        response = self.view(request, pk=self.user.pk)
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(self.user.tfa_enabled)
+    
+    def test_submit_invalid_code(self):
+
+        self.user.tfa_enabled = True; self.user.tfa_code = '123456'
+        self.user.save()
+        request = self.factory.put(
+                self.path,
+                {'tfa_code': 'ABCDEF'},
+                format='json'
+        )
+        force_authenticate(request, user=self.user)
+        response = self.view(request, pk=self.user.pk)
+
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(self.user._tfa_code_validated)
+        self.assertEqual(response.data,
+                {'error': 'the given `tfa_code` does not match.'}
+        )
+ 
+    def test_submit_valid_code(self):
+
+        self.user.tfa_enabled = True
+        self.user.tfa_code = '123ABC'
+        self.user.save()
+
+        request = self.factory.put(
+                self.path,
+                {'tfa_code': '123ABC'},
+                format='json'
+        )
+        force_authenticate(request, user=self.user)
+        response = self.view(request, pk=self.user.pk)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(True, self.user._tfa_code_validated)
+        self.assertTrue(self.user._tfa_code_validated)
+
+    def test_protected_field(self):
+
+        self.user.tfa_enabled = True; self.user.tfa_code = '123456'
+        self.user.save()
+        request = self.factory.put(
+                self.path,
+                {'_tfa_code_validated': True},
+                format='json'
+        )
+        force_authenticate(request, user=self.user)
+        response = self.view(request, pk=self.user.pk)
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.data,
+                {'error': '`_tfa_code_validated` is a protected field, and '
+                'cannot be changed.'}
+        )
+
