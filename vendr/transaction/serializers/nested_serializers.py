@@ -69,7 +69,7 @@ class OfferSerializer(serializers.ModelSerializer):
 class ClauseSerializer(serializers.ModelSerializer):
 
     class Meta:
-        fields = ('id', 'title', 'is_active', 'preview', 'explanation', "comment")
+        fields = ('id', 'title', 'is_active', 'preview', 'explanation', )
       
     def to_representation(self, instance):
 
@@ -91,7 +91,7 @@ class DynamicClauseSerializer(ClauseSerializer):
 
     class Meta(ClauseSerializer.Meta):
         model  = DynamicClause
-        fields = ClauseSerializer.Meta.fields + ('generator', )
+        fields = ClauseSerializer.Meta.fields + ('generator', "comment")
         validators = []
     
     #TODO: This should be done better.

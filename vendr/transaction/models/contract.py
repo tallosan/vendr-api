@@ -502,7 +502,6 @@ class Clause(models.Model):
     is_active = models.BooleanField(default=True)
     preview   = models.TextField()
     explanation = models.TextField()
-    comment = models.CharField(max_length=140)
 
     # Used in Closing stage. Indicates whether or not a clause has been removed.
     _waived = models.BooleanField(default=False)
@@ -548,6 +547,7 @@ class DynamicClause(Clause):
             on_delete=models.CASCADE,
             db_index=True
     )
+    comment = models.CharField(max_length=140, null=True)
 
     # Clause category.
     CATEGORIES = (
