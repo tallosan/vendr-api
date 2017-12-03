@@ -13,6 +13,7 @@ from vendr_core.permissions import IsOwner
 
 from kuser.serializers import ProfileSerializer
 from kuser.models import Profile
+from kuser.permissions import IsOwnerOrReadOnly
 
 User = get_user_model()
 
@@ -25,5 +26,5 @@ class ProfileDetail(NestedListUpdateAPIView):
     
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
-    permission_classes = ( permissions.IsAuthenticated, IsOwner )
+    permission_classes = ( IsOwnerOrReadOnly, )
 
