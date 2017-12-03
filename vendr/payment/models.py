@@ -8,10 +8,14 @@ from __future__ import unicode_literals
 
 import uuid
 import json
+
 import requests
+from requests.auth import HTTPBasicAuth
 
 from django.db import models
 from django.conf import settings
+
+from transaction.models import Transaction
 
 
 def SET_NAME(collector, field, sub_objs, using):
@@ -66,10 +70,21 @@ class VersaPayAdapter(PaymentAdapterInterface):
         """
 
         create_url = "{}/api/transactions".format(self.BASE_URL)
+
+        api_token = "GLCbtpMHVWwctcfNxDVw"
+        api_key = "yce6_WgurFnts8r1my8n"
+
         payment_data = self._format_request(payment)
+        print payment_data
 
         # Send the request, and ensure that it went through successfully.
-        request = requests.post(created_url, data=payment_data)
+        request = requests.post(
+                create_url,
+                data=payment_data,
+                auth=HTTPBasicAuth(api_token, api_key)
+        )
+
+        print request.text
         assert request.status_code == 201, (
                 "error: this payment failed to go through, and returned "
                 "a status code of {}".format(request.status_code)
@@ -85,7 +100,7 @@ class VersaPayAdapter(PaymentAdapterInterface):
 
         recipient_email = payment.recipient.email
         amount_in_cents = payment.amount * 100
-        transaction_type = "send"
+        transaction_type = "request"
 
         payment_data = json.dumps({
                 "email": recipient_email,
@@ -132,10 +147,11 @@ class Payment(models.Model):
             on_delete=SET_NAME
     )
     transaction = models.ForeignKey(
-            "Transaction",
+            Transaction,
             related_name="transaction",
             db_index=True,
-            on_delete=models.SET_NULL
+            on_delete=models.SET_NULL,
+            null=True
     )
 
     amount = models.FloatField()
@@ -145,7 +161,7 @@ class Payment(models.Model):
     _payee = models.CharField(max_length=64, default=None, null=True)
     _recipient = models.CharField(max_length=64, default=None, null=True)
 
-    self.payment_adapter = VersaPayAdapter()
+    payment_adapter = VersaPayAdapter()
 
     def save(self, *args, **kwargs):
         """
@@ -154,7 +170,12 @@ class Payment(models.Model):
         """
 
         if self._state.adding:
-            self.send_payment(payee, recipient, transaction, amount)
+            self.send_payment(
+                    self.payee, 
+                    self.recipient, 
+                    self.transaction, 
+                    self.amount
+            )
 
     def send_payment(self, payee, recipient, transaction, amount):
         """
@@ -169,5 +190,5 @@ class Payment(models.Model):
         """
 
         # TODO: Assert both users have accounts.
-        self.payment_adapter
+        self.payment_adapter.create_payment(self)
 
