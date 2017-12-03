@@ -1367,7 +1367,7 @@ class TestClosingList(APITestCase):
 
         # Ensure the clauses's `_waived` status is set to True.
         waived_clause.seller_accepted = True; waived_clause.save()
-        self.assertTrue(waived_clause.clause.value)
+        self.assertTrue(waived_clause.clause._waived)
     
     """ Add a clause to an Amendment document. """
     def test_api_ammendment_create(self):

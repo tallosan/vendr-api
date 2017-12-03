@@ -228,7 +228,7 @@ class AmendmentsClauseDetail(OneToOneMixin, RetrieveUpdateAPIView):
     )
 
 
-class WaiverList(OneToOneMixin, NestedListCreateAPIView):
+class WaiverList(OneToOneMixin, NestedListUpdateAPIView):
 
     root_parent = Transaction
     root_pk = 'transaction_pk'
@@ -276,7 +276,7 @@ class WaiverClauseDetail(OneToOneMixin, RetrieveUpdateAPIView):
     )
 
 
-class NoticeOfFulfillmentList(OneToOneMixin, NestedListCreateAPIView):
+class NoticeOfFulfillmentList(OneToOneMixin, NestedListUpdateAPIView):
 
     root_parent = Transaction
     root_pk = 'transaction_pk'
