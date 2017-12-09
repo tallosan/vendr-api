@@ -80,17 +80,12 @@ class TwoFactorAuth(APIView):
         # Generate a two-factor auth code.
         tfa_code = self._generate_tfa_code()
 
-        # TODO: Sort this out w/the guys at MessageBird.
-        phone_number = '1' + kuser.phone_num
-        
         # Send an SMS message to the user's phone.
-        """
         client = messagebird.Client(settings.MESSAGEBIRD_ACCESS_KEY)
         try:
             message = client.message_create(
                     originator=settings.MESSAGEBIRD_SENDER,
-                    #recipients=kuser.phone_num,
-                    recipients=phone_number,
+                    recipients=kuser.phone_num,
                     body=tfa_code,
             )
         except messagebird.client.ErrorException as e:
@@ -99,7 +94,6 @@ class TwoFactorAuth(APIView):
             )
             sms_exc.status_code = 403; raise sms_exc
 
-        """
         # Set the user's TFA code, and reset its validation status.
         kuser.tfa_code = tfa_code; kuser._tfa_code_validated = False
         kuser.save()
