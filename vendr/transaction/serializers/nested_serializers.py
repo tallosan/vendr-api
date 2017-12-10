@@ -131,8 +131,13 @@ class ContractSerializer(serializers.ModelSerializer):
     '''
     def get_clauses(self, instance):
 
-        return '{}transactions/{}/contracts/{}/clauses/'.format(
-                settings.BASE_URL, instance.transaction.pk, instance.pk)
+        clauses = None
+        if not instance.is_template:
+            clauses = '{}transactions/{}/contracts/{}/clauses/'.format(
+                settings.BASE_URL, instance.transaction.pk, instance.pk
+            )
+        
+        return clauses
 
     ''' Create a contract of the given type.
         Args:

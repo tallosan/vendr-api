@@ -84,7 +84,11 @@ class BaseContractManager(models.Manager):
     def create_contract(self, owner, transaction, **kwargs):
         
         # Create a contract, and add static clauses to it.
-        contract = self.create(owner=owner, transaction=transaction)
+        contract = self.create(
+                owner=owner,
+                transaction=transaction,
+                **kwargs
+        )
         self.add_static_clauses(contract)
 
         # Create clauses.
@@ -403,9 +407,16 @@ class VacantLandContractManager(BaseContractManager):
 
 # ===========================================================================
 
-'''   [Abstract] Contract model. Each Contract is attached to a single Transaction,
-      and is made up of Clauses. '''
 class Contract(models.Model):
+    """ 
+    [Abstract] Contract model. Each Contract is attached to a single Transaction,
+    and is made up of Clauses.
+    Fields
+        `transaction` (Transaction) -- The transaction this contract belongs to.
+        `timestamp` (date) -- The date this contract was created.
+        `owner` (User) -- The owner of this contract.
+        `is_template` (bool) -- Indicates whether or not this is a template.
+    """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
@@ -414,7 +425,8 @@ class Contract(models.Model):
             'Transaction',
             related_name='contracts',
             on_delete=models.CASCADE,
-            db_index=True
+            db_index=True,
+            null=True
     )
     timestamp = models.DateTimeField(auto_now_add=True)
     owner = models.ForeignKey(
@@ -423,6 +435,8 @@ class Contract(models.Model):
             on_delete=models.CASCADE,
             db_index=True
     )
+    
+    is_template = models.BooleanField(default=False)
     
     ''' Returns a list of clauses (static and dynamic) on this contract. '''
     @property
@@ -455,9 +469,12 @@ class Contract(models.Model):
 
     def save(self, *args, **kwargs):
 
-        if not self.pk:
+        # Check the count if we're creating a new contract that isn't a template.
+        if (not self.pk) and (not self.is_template):
             if self.transaction.contracts.filter(owner=self.owner).count() >= 1:
-                raise ValueError('error: this user already has a contract.')
+                raise ValueError(
+                    "error: the user already has a contract on this transaction."
+                )
 
         super(Contract, self).save(*args, **kwargs)
 
@@ -595,14 +612,15 @@ class DynamicClause(Clause):
             self.explanation = DYNAMIC_STANDARD_CLAUSES[clause_key]['explanation']
             self._required = DYNAMIC_STANDARD_CLAUSES[clause_key]['required']
  
-        print args
         super(DynamicClause, self).save(*args, **kwargs)
 
-        # Ask the transaction update the contract diff field. Note, we only do
-        # this if the transaction has more than one contract.
-        _transaction = self.contract.transaction
-        if _transaction.contracts.all().count() == 2:
-            self.contract.transaction.check_diff()
+        # Ask the transaction to update the contract diff field. Note, we
+        # only do this if the transaction has more than one contract, and is not
+        # a template.
+        if getattr(self.contract, "transaction"):
+            _transaction = self.contract.transaction
+            if _transaction.contracts.all().count() == 2:
+                self.contract.transaction.check_diff()
 
     @property
     def preview(self):
@@ -783,10 +801,14 @@ class DepositClause(DynamicTextClause):
         transaction = self.contract.transaction
 
         # Fields: Deposit amount, Seller name, Deposit Deadline.
-        accepted_offer_pk = transaction.seller_accepted_offer
-        deposit = Offer.objects.get(pk=accepted_offer_pk).deposit
-        seller_name = transaction.seller.full_name
+        accepted_offer_pk = "__"; deposit = "__"; seller_name = "__"
         deposit_deadline = self.value
+        try:
+            accepted_offer_pk = transaction.seller_accepted_offer
+            deposit = Offer.objects.get(pk=accepted_offer_pk).deposit
+            seller_name = transaction.seller.full_name
+        except Exception as e:
+            print str(e)
 
         preview = DYNAMIC_STANDARD_CLAUSES['deposit']['preview'].\
                   format(deposit, seller_name, deposit_deadline)
