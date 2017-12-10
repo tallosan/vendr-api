@@ -8,6 +8,7 @@ from schedule_views import ScheduleList
 from profile_view import ProfileDetail
 from subscription_view import SubscriptionsList
 from property_view import PropertyList
+from template_views import TemplateList, TemplateDetail
 from transaction_view import TransactionList
 from contract_view import ContractList
 from closing_view import ClosingList
