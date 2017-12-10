@@ -136,6 +136,13 @@ class KUser(AbstractBaseUser, PermissionsMixin):
     def full_name(self):
         return self.profile.first_name + ' ' + self.profile.last_name
 
+    @property
+    def templates(self):
+        """
+        Returns a list of the user's contract templates (if any).
+        """
+        return self.contracts.filter(is_template=True)
+
     """ Returns a short representation of a user. """
     def get_short_name():
         return self.email
