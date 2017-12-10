@@ -6,8 +6,8 @@
 from django.dispatch import receiver
 
 from transaction.signals.dispatch import transaction_withdraw_signal, \
-        offer_withdraw_signal, contract_withdraw_signal, clause_change_signal, \
-        advance_stage_signal, amendment_created_signal, \
+        offer_withdraw_signal, contract_create_signal, contract_withdraw_signal, \
+        clause_change_signal, advance_stage_signal, amendment_created_signal, \
         amendment_accepted_signal, waiver_created_signal, \
         waiver_accepted_signal, nof_accepted_signal
 from kuser.models import TransactionNotification, \
@@ -41,6 +41,16 @@ def offer_withdraw_receiver(sender, **kwargs):
     offer = sender; resource = kwargs['resource']
     notification = OfferNotification.objects.\
             create_deletion_notification(offer, resource=resource)
+    notification.publish()
+
+
+@receiver(contract_create_signal)
+def contract_create_receiver(sender, **kwargs):
+    
+    # Create contract creation notification, and publish it.
+    contract = sender
+    notification = ContractNotification.objects.\
+            create_creation_notification(contract)
     notification.publish()
 
 

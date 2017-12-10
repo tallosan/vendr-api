@@ -27,8 +27,6 @@ from transaction.models import CompletionDateClause, IrrevocabilityClause, \
         EnvironmentClause, MaintenanceClause, UFFIClause, PaymentMethodClause, \
         ChattelsIncludedClause, FixturesExcludedClause, RentalItemsClause
 
-CONTRACTS = [HouseContract, CoOpContract, CondoContract, TownhouseContract,
-        ManufacturedContract, VacantLandContract]
 CLAUSES = [CompletionDateClause, IrrevocabilityClause, MortgageDeadlineClause,
         SurveyDeadlineClause, DepositClause, ChattelsAndFixsClause,
         BuyerArrangesMortgageClause, EquipmentClause, EnvironmentClause,
@@ -46,7 +44,6 @@ CLAUSES = [CompletionDateClause, IrrevocabilityClause, MortgageDeadlineClause,
 """
 @staticmethod
 @receiver(signal=[post_save], sender=Offer)
-@receiver_extended(signals=[post_save], senders=CONTRACTS)
 #@receiver_extended(signals=[post_save, post_delete], senders=CLAUSES)
 def handler(sender, instance, **kwargs):
     

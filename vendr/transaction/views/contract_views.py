@@ -14,8 +14,8 @@ from rest_framework import status, permissions
 from transaction.models import Transaction, Contract, StaticClause, DynamicClause
 from transaction.serializers import ContractSerializer, StaticClauseSerializer
 from transaction.exceptions import BadTransactionRequest
-from transaction.signals.dispatch import contract_withdraw_signal, \
-        clause_change_signal
+from transaction.signals.dispatch import contract_create_signal, \
+    contract_withdraw_signal, clause_change_signal
 
 import transaction.permissions as transaction_permissions
 import transaction.serializers as serializers
@@ -81,9 +81,15 @@ class ContractList(APIView):
         transaction = Transaction.objects.get(pk=transaction_pk)
         self.check_object_permissions(self.request, transaction)
 
-        serializer  = self.serializer_class(data=request.data)
+        serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            serializer.save(owner=self.request.user, transaction=transaction, ctype=ctype)
+            contract = serializer.save(
+                    owner=self.request.user,
+                    transaction=transaction,
+                    ctype=ctype
+            )
+            contract_create_signal.send(sender=contract)
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

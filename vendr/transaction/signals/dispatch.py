@@ -13,6 +13,7 @@ transaction_withdraw_signal = Signal(providing_args=['request_sender'])
 offer_withdraw_signal = Signal(providing_args=['resource'])
 
 # Contract signals.
+contract_create_signal = Signal(providing_args=[])
 contract_withdraw_signal = Signal(providing_args=['resource'])
 
 # Clause signals.
