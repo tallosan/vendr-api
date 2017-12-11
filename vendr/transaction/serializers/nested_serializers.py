@@ -74,10 +74,34 @@ class ClauseSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
 
         clause = super(ClauseSerializer, self).to_representation(instance)
-        if instance.contract.transaction.stage == 2:
+        contract = instance.contract
+        if (not contract.is_template) and (contract.transaction.stage == 2):
             clause['doc_ref'] = instance._doc_ref
 
         return clause
+
+
+class GenericClauseSerializer(ClauseSerializer):
+    """
+    Generic serializer for any valid clause type.
+    """
+
+    def to_representation(self, instance):
+        """
+        Serializer the clause with the appropriate serializer type.
+        Args:
+            `instance` (Clause) -- The clause being serializer.
+        """
+
+        if isinstance(instance, StaticClause):
+            serializer = StaticClauseSerializer()
+        elif isinstance(instance, DynamicClause):
+            serializer = DynamicClauseSerializer()
+            instance = instance.actual_type
+        else:
+            raise ValueError("error: invalid clause type given.")
+
+        return serializer.to_representation(instance)
 
 
 '''   Serializer for static clauses. '''
