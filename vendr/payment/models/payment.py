@@ -64,9 +64,9 @@ class VersaPayAdapter(PaymentAdapterInterface):
 
     BASE_URL = "https://demo.versapay.com"
 
-    def create_payment(self, payment):
+    def send_payment(self, payment):
         """
-        Create a payment using the given payment.
+        Send a payment using the given payment.
         """
 
         create_url = "{}/api/transactions".format(self.BASE_URL)
@@ -74,21 +74,20 @@ class VersaPayAdapter(PaymentAdapterInterface):
         api_token = "GLCbtpMHVWwctcfNxDVw"
         api_key = "yce6_WgurFnts8r1my8n"
 
-        payment_data = self._format_request(payment)
-        print payment_data
-
         # Send the request, and ensure that it went through successfully.
+        payment_data = self._format_request(payment)
         request = requests.post(
                 create_url,
                 data=payment_data,
                 auth=HTTPBasicAuth(api_token, api_key)
         )
 
-        print request.text
         assert request.status_code == 201, (
                 "error: this payment failed to go through, and returned "
                 "a status code of {}".format(request.status_code)
         )
+
+        return request.status_code
 
     def _format_request(self, payment):
         """
@@ -102,12 +101,12 @@ class VersaPayAdapter(PaymentAdapterInterface):
         amount_in_cents = payment.amount * 100
         transaction_type = "request"
 
-        payment_data = json.dumps({
+        payment_data = {
                 "email": recipient_email,
                 "amount_in_cents": amount_in_cents,
                 "transaction_type": transaction_type,
                 "message": payment.message
-        })
+        }
 
         return payment_data
 
@@ -165,8 +164,8 @@ class Payment(models.Model):
 
     def save(self, *args, **kwargs):
         """
-        On Payment creation, send the given amount from the payee's account
-        to the recipient's.
+        On Payment creation, we need to send the given amount from the
+        payee's account to the recipient's.
         """
 
         if self._state.adding:
@@ -176,6 +175,11 @@ class Payment(models.Model):
                     self.transaction, 
                     self.amount
             )
+
+            self._payee = self.payee
+            self._recipient = self.recipient
+
+        super(Payment, self).save(*args, **kwargs)
 
     def send_payment(self, payee, recipient, transaction, amount):
         """
@@ -190,5 +194,5 @@ class Payment(models.Model):
         """
 
         # TODO: Assert both users have accounts.
-        self.payment_adapter.create_payment(self)
+        self.payment_adapter.send_payment(self)
 
