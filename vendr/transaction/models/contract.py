@@ -808,7 +808,7 @@ class DepositClause(DynamicTextClause):
             deposit = Offer.objects.get(pk=accepted_offer_pk).deposit
             seller_name = transaction.seller.full_name
         except Exception as e:
-            print str(e)
+            pass
 
         preview = DYNAMIC_STANDARD_CLAUSES['deposit']['preview'].\
                   format(deposit, seller_name, deposit_deadline)

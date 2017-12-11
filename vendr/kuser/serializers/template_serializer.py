@@ -4,8 +4,12 @@
 # @author :: tallosan
 # ================================================================
 
-from transaction.serializers import ContractSerializer
-from transaction.models import AbstractContractFactory
+from rest_framework import serializers
+
+from transaction.serializers import ContractSerializer, StaticClauseSerializer, \
+        DynamicClauseSerializer, GenericClauseSerializer
+from transaction.models import AbstractContractFactory, Contract, \
+        StaticClause, DynamicClause
 
 
 class TemplateContractSerializer(ContractSerializer):
@@ -14,12 +18,22 @@ class TemplateContractSerializer(ContractSerializer):
     method, as that's the only area where the two serializers differ.
     """
 
+    static_clauses = GenericClauseSerializer(StaticClause.objects.all(), many=True)
+    dynamic_clauses = GenericClauseSerializer(DynamicClause.objects.all(), many=True)
+
     class Meta(ContractSerializer.Meta):
-        fields = ContractSerializer.Meta.fields + ("is_template", )
+        model = Contract
+        fields = ContractSerializer.Meta.fields + (
+                "is_template",
+                "static_clauses",
+                "dynamic_clauses",
+        )
 
     def create(self, validated_data):
         """
         Create a contract with the necesasry template-specific settings.
+        Args:
+            `validated_data` (dict) -- The data we're using to create our template.
         """
 
         ctype = validated_data.pop("ctype", None)
