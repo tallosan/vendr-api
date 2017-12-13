@@ -13,34 +13,35 @@
 #  ($arg0) Set the location of the cache files, (`levels`) the cache
 #  levels/hierarchy of dir, (`keys_zone`) location of active keys and their
 #  info, and the (`inactive`) cache TTL (time-to-live).
-proxy_cache_path /etc/nginx/cache levels=1:2 keys_zone=vendr_cache:10m inactive=60m;
+#proxy_cache_path /etc/nginx/cache levels=1:2 keys_zone=vendoor_cache:10m inactive=60m;
 
 # `proxy_cache_key`:
 #  Nginx generates cache keys by applying MD5 to the `fastcgi_cache_key` value
 #  for each request. Naturally, this should be unique. Here, we're concatenating
-#  the scheme (HTTP or HTTPS), the method type (GET, POST, etc.), the host (*.vendr),
+#  the scheme (HTTP or HTTPS), the method type (GET, POST, etc.), the host (*.vendoor),
 #  and the actual request URI.
-proxy_cache_key "$scheme$request_method$host$request_uri";
+#proxy_cache_key "$scheme$host$request_uri";
+#proxy_cache_bypass $http_x_refresh;
 
 # `proxy_cache_valid`
 #  Only cache successful (200) responses.
-proxy_cache_valid 200 60m;
+#proxy_cache_valid 200 60m;
 
 
 # Server directives.
 #
 
 # Proxy servers. Will use round-robin by default.
-upstream vendr {
+upstream vendoor {
 	#server unix:/home/john/Documents/em2/em2.sock fail_timeout=0;
 	server 172.31.24.13:8824;
 }
 
 # API Server.
 server {
-	listen 80;
+    	listen 443 ssl; 
 	client_max_body_size 10M;
-	server_name api.vendr.xyz;
+	server_name api.vendoor.ca;
 	
 	access_log /var/log/nginx/access.log;
 	error_log /var/log/nginx/error.log;
@@ -66,16 +67,22 @@ server {
 		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 		proxy_set_header Host $http_host;
 		proxy_redirect off;
-		proxy_pass http://vendr;
-		proxy_cache vendr_cache;
-		proxy_cache_valid 200 60m;
+		proxy_pass http://vendoor;
+		#proxy_cache vendoor_cache;
+		#proxy_cache_valid 200 60m;
 	}
+
+	ssl_certificate /etc/letsencrypt/live/www.vendoor.ca/fullchain.pem; 
+	ssl_certificate_key /etc/letsencrypt/live/www.vendoor.ca/privkey.pem; 
+    	include /etc/letsencrypt/options-ssl-nginx.conf; 
+    	ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; 
+
 }
 
 # API Docs Server.
 server {
-	listen 80;
-	server_name developer.vendr.xyz;
+	listen 443 ssl;
+	server_name developer.vendoor.ca;
 
 	root /home/ubuntu/vendr/slate/build;
 	index index.html;
@@ -84,6 +91,12 @@ server {
 		auth_basic_user_file /etc/nginx/.htpasswd;
         	try_files $uri /index.html;
 	}
+
+	ssl_certificate /etc/letsencrypt/live/www.vendoor.ca/fullchain.pem; 
+	ssl_certificate_key /etc/letsencrypt/live/www.vendoor.ca/privkey.pem; 
+    	include /etc/letsencrypt/options-ssl-nginx.conf; 
+    	ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; 
+
 }
 
 # Notification proxy.
@@ -94,7 +107,8 @@ upstream notify {
 # Notification server.
 server {
 	listen 80;
-	server_name notify.vendr.xyz;
+    	listen 443 ssl; 
+	server_name notify.vendoor.ca;
 	
 	access_log /var/log/nginx/notify_access.log;
 	error_log /var/log/nginx/notify_error.log;
@@ -109,21 +123,34 @@ server {
 		proxy_set_header Upgrade $http_upgrade;
 		proxy_set_header Connection "upgrade";
 	}
+
+	ssl_certificate /etc/letsencrypt/live/www.vendoor.ca/fullchain.pem; 
+	ssl_certificate_key /etc/letsencrypt/live/www.vendoor.ca/privkey.pem; 
+    	include /etc/letsencrypt/options-ssl-nginx.conf; 
+    	ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; 
+
 }
 
 # WWW Server.
 server {
-	listen 80;
-	server_name www.vendr.xyz;
+    	listen 443 ssl;
+	server_name www.vendoor.ca;
 
+	#https://www.digitalocean.com/community/tutorials/how-to-secure-nginx-with-let-s-encrypt-on-ubuntu-16-04
 	root /home/ubuntu/vendr/vendr-frontend/Kangaa/build;
 	index index.html;
 	location / {
 		auth_basic "Restricted Content";
 		auth_basic_user_file /etc/nginx/.htpasswd;
         	try_files $uri /index.html;
-		proxy_cache vendr_cache;
-		proxy_cache_valid 200 60m;
+		#proxy_cache vendoor_cache;
+		#proxy_cache_valid 200 60m;
 	}
+
+	ssl_certificate /etc/letsencrypt/live/www.vendoor.ca/fullchain.pem; 
+	ssl_certificate_key /etc/letsencrypt/live/www.vendoor.ca/privkey.pem; 
+    	include /etc/letsencrypt/options-ssl-nginx.conf; 
+    	ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; 
+
 }
 
