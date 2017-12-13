@@ -24,7 +24,8 @@ DEBUG = False
 
 ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '192.168.0.17',
                  'api.zappme.xyz', 'notify.zappme.xyz',
-                 'api.vendr.xyz', 'notify.vendr.xyz']
+                 'api.vendr.xyz', 'notify.vendr.xyz',
+                 'api.vendoor.ca', 'notify.vendoor.ca']
 
 # Application definition
 BASE_APPS = [
@@ -152,7 +153,6 @@ PASSWORD_HASHERS = [
 ]
 
 # Password validation
-# https://docs.djangoproject.com/en/1.10/ref/settings/#auth-password-validators
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -168,6 +168,26 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# Logging config.
+LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "handlers": {
+            "error-handler": {
+                "level": "ERROR",
+                "class": "logging.FileHandler",
+                "filename": "/var/log/django/error.log",
+            },
+        },
+        "loggers": {
+            "django": {
+                "handlers": ["error-handler"],
+                "level": "ERROR",
+                "propogate": True,
+            },
+        },
+}
+
 # Two-Factor authentication.
 MESSAGEBIRD_ACCESS_KEY = 'beaHim4WCzD2IVUE9zRwThJlt'
 MESSAGEBIRD_SENDER = '+14509905541'
@@ -177,7 +197,7 @@ EMAIL_HOST = 'smtp.sendgrid.net'
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'tallosan'
 EMAIL_HOST_PASSWORD = 'iZappNewton42'
-EMAIL_VERIFICATION_ADDRESS = 'noreply@vendr.xyz'
+EMAIL_VERIFICATION_ADDRESS = 'noreply@vendoor.ca'
 EMAIL_USE_TLS = True
 
 # Internationalization
@@ -195,8 +215,8 @@ USE_TZ = True
 # Base URL for hyperlinking resources, and BASE_API URL for use with
 # a view's `request.path`.
 VERSION  = 1
-BASE_URL = 'http://api.vendr.xyz/v{}/'.format(VERSION)
-BASE_API_URL = 'http://api.vendr.xyz'
+BASE_URL = 'https://api.vendoor.ca/v{}/'.format(VERSION)
+BASE_API_URL = 'https://api.vendoor.ca'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
