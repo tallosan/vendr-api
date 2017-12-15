@@ -72,11 +72,10 @@ server {
 		#proxy_cache_valid 200 60m;
 	}
 
-	ssl_certificate /etc/letsencrypt/live/www.vendoor.ca/fullchain.pem; 
-	ssl_certificate_key /etc/letsencrypt/live/www.vendoor.ca/privkey.pem; 
+	ssl_certificate /etc/letsencrypt/live/api.vendoor.ca/fullchain.pem;
+	ssl_certificate_key /etc/letsencrypt/live/api.vendoor.ca/privkey.pem;
     	include /etc/letsencrypt/options-ssl-nginx.conf; 
     	ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; 
-
 }
 
 # API Docs Server.
@@ -92,11 +91,10 @@ server {
         	try_files $uri /index.html;
 	}
 
-	ssl_certificate /etc/letsencrypt/live/www.vendoor.ca/fullchain.pem; 
-	ssl_certificate_key /etc/letsencrypt/live/www.vendoor.ca/privkey.pem; 
+	ssl_certificate /etc/letsencrypt/live/developer.vendoor.ca/fullchain.pem;
+	ssl_certificate_key /etc/letsencrypt/live/developer.vendoor.ca/privkey.pem;
     	include /etc/letsencrypt/options-ssl-nginx.conf; 
     	ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; 
-
 }
 
 # Notification proxy.
@@ -106,7 +104,6 @@ upstream notify {
 
 # Notification server.
 server {
-	listen 80;
     	listen 443 ssl; 
 	server_name notify.vendoor.ca;
 	
@@ -128,7 +125,6 @@ server {
 	ssl_certificate_key /etc/letsencrypt/live/www.vendoor.ca/privkey.pem; 
     	include /etc/letsencrypt/options-ssl-nginx.conf; 
     	ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; 
-
 }
 
 # WWW Server.
@@ -151,6 +147,12 @@ server {
 	ssl_certificate_key /etc/letsencrypt/live/www.vendoor.ca/privkey.pem; 
     	include /etc/letsencrypt/options-ssl-nginx.conf; 
     	ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; 
+}
 
+# HTTP-HTTPS Upgrade.
+server {
+	listen 80;
+	server_name *.vendoor.ca;
+	return 301 https://$host$request_uri;
 }
 
