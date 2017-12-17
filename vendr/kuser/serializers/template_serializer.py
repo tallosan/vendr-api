@@ -6,6 +6,8 @@
 
 from rest_framework import serializers
 
+from django.conf import settings
+
 from transaction.serializers import ContractSerializer, StaticClauseSerializer, \
         DynamicClauseSerializer, GenericClauseSerializer
 from transaction.models import AbstractContractFactory, Contract, \
@@ -17,17 +19,6 @@ class TemplateContractSerializer(ContractSerializer):
     Template contract serializer. We just need to override the creation
     method, as that's the only area where the two serializers differ.
     """
-
-    static_clauses = GenericClauseSerializer(StaticClause.objects.all(), many=True)
-    dynamic_clauses = GenericClauseSerializer(DynamicClause.objects.all(), many=True)
-
-    class Meta(ContractSerializer.Meta):
-        model = Contract
-        fields = ContractSerializer.Meta.fields + (
-                "is_template",
-                "static_clauses",
-                "dynamic_clauses",
-        )
 
     def create(self, validated_data):
         """
@@ -50,4 +41,17 @@ class TemplateContractSerializer(ContractSerializer):
         )
 
         return template
+
+    def get_clauses(self, instance):
+        """
+        Custom URL representation.
+        Args:
+            `instance` (Contract) -- The Contract being serialized.
+        """
+
+        clauses = '{}users/{}/templates/{}/clauses/'.format(
+            settings.BASE_URL, instance.owner.pk, instance.pk
+        )
+        
+        return clauses
 
