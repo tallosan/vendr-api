@@ -1,4 +1,4 @@
-# Vendr.xyz
+# Vendoor API
 
 The following rules should be followed when using this repo.
 
