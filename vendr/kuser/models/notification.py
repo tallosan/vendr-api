@@ -76,7 +76,6 @@ def handler(sender, instance, **kwargs):
 """
 def resolve_type(sender_class):
 
-    if sender_class in CONTRACTS: return ContractNotification
     class_mappings = {
                         Offer: OfferNotification,
     }
