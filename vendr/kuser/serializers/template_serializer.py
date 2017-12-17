@@ -20,6 +20,12 @@ class TemplateContractSerializer(ContractSerializer):
     method, as that's the only area where the two serializers differ.
     """
 
+    class Meta(ContractSerializer.Meta):
+        model = Contract
+        fields = ContractSerializer.Meta.fields + (
+                "is_template",
+        )
+
     def create(self, validated_data):
         """
         Create a contract with the necesasry template-specific settings.
@@ -33,6 +39,7 @@ class TemplateContractSerializer(ContractSerializer):
                 "error: contract type and owner must both be specified."
         )
 
+        print validated_data
         template = AbstractContractFactory.create_contract(
                 ctype,
                 owner=owner,
