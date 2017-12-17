@@ -321,34 +321,37 @@ class TownhouseContractManager(HouseContractManager):
 
 class ManufacturedContractManager(BaseContractManager):
     
-    ''' Initialize this manager with any necessary additional static clauses. '''
     def __init__(self):
+        """
+        Initialize this manager with any necessary additional static clauses.
+        """
         
         super(ManufacturedContractManager, self).__init__()
         self.static_clauses += [
 
                 # Generic clauses.
-                STATIC_CLAUSES['residency'],
-                STATIC_CLAUSES['non_residency'],
-                STATIC_CLAUSES['adjustments'],
-                STATIC_CLAUSES['tender'],
+                STATIC_CLAUSES["residency"],
+                STATIC_CLAUSES["non_residency"],
+                STATIC_CLAUSES["adjustments"],
+                STATIC_CLAUSES["tender"],
 
                 # Manufactured specific clauses.
-                MOBILE_STATIC_CLAUSES['rules_and_regs'],
-                MOBILE_STATIC_CLAUSES['lease'],
-                MOBILE_STATIC_CLAUSES['title'],
-                MOBILE_STATIC_CLAUSES['documents_request'],
-                MOBILE_STATIC_CLAUSES['discharge'],
-                MOBILE_STATIC_CLAUSES['inspection'],
-                MOBILE_STATIC_CLAUSES['insurance']
+                MOBILE_STATIC_CLAUSES["rules_and_regs"],
+                MOBILE_STATIC_CLAUSES["lease"],
+                MOBILE_STATIC_CLAUSES["title"],
+                MOBILE_STATIC_CLAUSES["documents_request"],
+                MOBILE_STATIC_CLAUSES["discharge"],
+                MOBILE_STATIC_CLAUSES["inspection"],
+                MOBILE_STATIC_CLAUSES["insurance"]
         ]
     
-    ''' Create a Manufactured Contract.
-        Args:
-            owner: The owner of the contract.
-            transaction: The transaction this contract belongs to.
-    '''
     def create_contract(self, owner, transaction, **kwargs):
+        """
+        Create a Manufactured Contract.
+        Args:
+            `owner` (User) -- The owner of the contract.
+            `transaction` (Transaction) -- The transaction this contract belongs to.
+        """
         
         contract = super(ManufacturedContractManager, self).\
               create_contract(owner, transaction, **kwargs)
@@ -366,11 +369,15 @@ class ManufacturedContractManager(BaseContractManager):
         return contract
 
 
-'''   Vacant land contract manager.'''
 class VacantLandContractManager(BaseContractManager):
+    """
+    Vacant land contract manager.
+    """
     
-    ''' Initialize this manager with any necessary additional static clauses. '''
     def __init__(self):
+        """
+        Initialize this manager with any necessary additional static clauses.
+        """
         
         super(VacantLandContractManager, self).__init__()
         self.static_clauses += [
@@ -390,12 +397,13 @@ class VacantLandContractManager(BaseContractManager):
                 STATIC_CLAUSES['tender'],
         ]
     
-    ''' Create a Vacantland Contract.
-        Args:
-            owner: The owner of the contract.
-            transaction: The transaction this contract belongs to.
-    '''
     def create_contract(self, owner, transaction, **kwargs):
+        """
+        Create a Vacantland Contract.
+        Args:
+            `owner` (User) -- The owner of the contract.
+            `transaction` (Transaction) -- The transaction this contract belongs to.
+        """
         
         contract = super(VacantLandContractManager, self).\
                      create_contract(owner, transaction, **kwargs)
@@ -409,7 +417,8 @@ class VacantLandContractManager(BaseContractManager):
 
 class Contract(models.Model):
     """ 
-    [Abstract] Contract model. Each Contract is attached to a single Transaction,
+    [Abstract]
+    Contract model. Each Contract is attached to a single Transaction,
     and is made up of Clauses.
     Fields
         `transaction` (Transaction) -- The transaction this contract belongs to.
@@ -422,8 +431,8 @@ class Contract(models.Model):
 
     # The Transaction that this contract belongs to.
     transaction = models.ForeignKey(
-            'Transaction',
-            related_name='contracts',
+            "Transaction",
+            related_name="contracts",
             on_delete=models.CASCADE,
             db_index=True,
             null=True
@@ -431,16 +440,18 @@ class Contract(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     owner = models.ForeignKey(
             settings.AUTH_USER_MODEL,
-            related_name='contracts',
+            related_name="contracts",
             on_delete=models.CASCADE,
             db_index=True
     )
     
     is_template = models.BooleanField(default=False)
     
-    ''' Returns a list of clauses (static and dynamic) on this contract. '''
     @property
     def clauses(self):
+        """
+        Returns a list of clauses (static and dynamic) on this contract.
+        """
         
         clauses = []
         clauses += self.static_clauses.all()
@@ -451,12 +462,13 @@ class Contract(models.Model):
         
         return clauses
     
-    ''' Returns a list of 'required' clauses on this contract. Required clauses
-        are simply clauses that contain a condition that must be fulfilled in
-        order to complete the transaction.
-    '''
     @property
     def required_clauses(self):
+        """
+        Returns a list of "required" clauses on this contract. Required clauses
+        are simply clauses that contain a condition that must be fulfilled in
+        order to complete the transaction.
+        """
     
         required_clauses = []
         required_clauses += self.static_clauses.filter(_required=True)
@@ -511,7 +523,7 @@ class Clause(models.Model):
     # The Contract this clause belongs to.
     contract = models.ForeignKey(
             Contract,
-            related_name='clauses',
+            related_name="clauses",
             on_delete=models.CASCADE,
             db_index=True
     )
@@ -535,14 +547,16 @@ class Clause(models.Model):
 
     @property
     def serializer(self):
-        raise NotImplementedError('error: this property must exist for all clauses.')
+        raise NotImplementedError("error: this property must exist for all clauses.")
 
 # ==========================================================================
 
-'''   Static Clauses are immutable and ubiquitous. '''
 class StaticClause(Clause):
+    """
+    Static Clauses are immutable and ubiquitous.
+    """
     
-    contract = models.ForeignKey(Contract, related_name='static_clauses',
+    contract = models.ForeignKey(Contract, related_name="static_clauses",
                     on_delete=models.CASCADE)
 
     is_active = models.BooleanField(default=True, editable=False, db_index=True)
@@ -550,17 +564,19 @@ class StaticClause(Clause):
     @property
     def serializer(self):
         
-        return 'StaticClauseSerializer'
+        return "StaticClauseSerializer"
 
 # ==========================================================================
 
-'''   Dynamic Clauses are designed on a per-contract basis via user input. '''
 class DynamicClause(Clause):
+    """
+    Dynamic Clauses are designed on a per-contract basis via user input.
+    """
 
-    prompt   = models.CharField(max_length=75, editable=False)
+    prompt = models.CharField(max_length=75, editable=False)
     contract = models.ForeignKey(
             Contract,
-            related_name='dynamic_clauses',
+            related_name="dynamic_clauses",
             on_delete=models.CASCADE,
             db_index=True
     )
@@ -568,12 +584,12 @@ class DynamicClause(Clause):
 
     # Clause category.
     CATEGORIES = (
-            ('F', 'Financial'),
-            ('D', 'Deadline'),
-            ('U', 'Upkeep'),
-            ('P', 'Possessions')
+            ("F", "Financial"),
+            ("D", "Deadline"),
+            ("U", "Upkeep"),
+            ("P", "Possessions")
     )
-    category   = models.CharField(
+    category = models.CharField(
             choices=CATEGORIES,
             max_length=15,
             db_index=True
@@ -581,11 +597,11 @@ class DynamicClause(Clause):
 
     # How we display this clause on the front-end.
     UI_TYPES = (
-            ('TEXT', 'text'),
-            ('DATE', 'date'),
-            ('DROPDOWN', 'dropdown'),
-            ('CHIP', 'chip'),
-            ('TOGGLE', 'toggle')
+            ("TEXT", "text"),
+            ("DATE", "date"),
+            ("DROPDOWN", "dropdown"),
+            ("CHIP", "chip"),
+            ("TOGGLE", "toggle")
     )
 
     # Inheritance scheme.
@@ -594,23 +610,24 @@ class DynamicClause(Clause):
             on_delete=models.CASCADE,
             db_index=True
     )
-    actual_type = GenericForeignKey('_content_type', 'id')
+    actual_type = GenericForeignKey("_content_type", "id")
     
-    ''' We have to override this in order to create our inheritance scheme.
-        Args:
-            clause_key (str) -- The clauses's key in the dynamic clauses dict.
-    '''
     def save(self, clause_key=None, *args, **kwargs):
+        """
+        We have to override this in order to create our inheritance scheme.
+        Args:
+            `clause_key` (str) -- The clauses's key in the dynamic clauses dict.
+        """
 
         if not self.pk:
             self.actual_type = self
 
             # Pull clause info from dynamic clauses doc.
-            self.category = DYNAMIC_STANDARD_CLAUSES[clause_key]['category']
-            self.title = DYNAMIC_STANDARD_CLAUSES[clause_key]['title']
-            self.prompt = DYNAMIC_STANDARD_CLAUSES[clause_key]['prompt']
-            self.explanation = DYNAMIC_STANDARD_CLAUSES[clause_key]['explanation']
-            self._required = DYNAMIC_STANDARD_CLAUSES[clause_key]['required']
+            self.category = DYNAMIC_STANDARD_CLAUSES[clause_key]["category"]
+            self.title = DYNAMIC_STANDARD_CLAUSES[clause_key]["title"]
+            self.prompt = DYNAMIC_STANDARD_CLAUSES[clause_key]["prompt"]
+            self.explanation = DYNAMIC_STANDARD_CLAUSES[clause_key]["explanation"]
+            self._required = DYNAMIC_STANDARD_CLAUSES[clause_key]["required"]
  
         super(DynamicClause, self).save(*args, **kwargs)
 
@@ -624,23 +641,23 @@ class DynamicClause(Clause):
 
     @property
     def preview(self):
-        raise NotImplementedError('error: all children must implement this method.')
+        raise NotImplementedError("error: all children must implement this method.")
     
     @property
     def generator(self):
 
         generator = {
-                        'category': self.category,
-                        'prompt': self.prompt,
-                        'value': self.value,
-                        'ui_type': self.ui_type
+                "category": self.category,
+                "prompt": self.prompt,
+                "value": self.value,
+                "ui_type": self.ui_type
         }
 
         return generator
 
     @property
     def serializer(self):
-        return 'DynamicClauseSerializer'
+        return "DynamicClauseSerializer"
 
 
 class DynamicTextClause(DynamicClause):

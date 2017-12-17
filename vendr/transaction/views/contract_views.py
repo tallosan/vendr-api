@@ -58,17 +58,89 @@ class ContractList(APIView):
 
         return Response(response)
 
-    ''' Handles POST requests.
-        Args:
-            request: The POST request.
-            transaction_pk: The primary key of the transaction we're querying over.
-            *format: Specified data format.
-    '''
     def post(self, request, transaction_pk, format=None):
+        """
+        We can either create a contract for this transaction using an existing
+        contract template, or from a given contract type.
+        """
+
+        # Check permissions to ensure the user can create a contract on the
+        # given transaction.
+        transaction = Transaction.objects.get(pk=self.kwargs["transaction_pk"])
+        self.check_object_permissions(self.request, transaction)
         
-        # Get the contract type.
+        # Determine whether or not the user wants to use a template, and
+        # handle creation accordingly.
+        template = request.data.pop("template", None)
+        if template:
+            response, status_code = self._create_from_template(
+                    template,
+                    transaction
+            )
+        else:
+            ctype = request.data.pop("ctype", None)
+            response, status_code = self._create_from_ctype(
+                    ctype,
+                    transaction
+            )
+
+        return Response(response, status=status_code)
+
+    def _create_from_template(self, template, transaction):
+        """
+        Create a new contract from a given template.
+        Args:
+            `template` (str) -- The pk of the template model to copy.
+            `transaction` (Transaction) -- The transaction this contract
+                belongs to.
+        """
+
         try:
-            ctype = request.data.pop('ctype')
+            template = Contract.objects.get(pk=template)
+        except Contract.DoesNotExist:
+            error_msg = {
+                    "error": "template with pk {} does not exist.".\
+                            format(template)
+            }
+            raise BadTransactionRequest(error_msg)
+
+        # Make a copy of the clauses. We'll need this to copy everything over
+        # to the new contract instance.
+        clauses = template.clauses
+
+        # Copy the template.
+        try:
+            template.pk = None
+            template.transaction = transaction
+            template.is_template = False
+            template.save()
+        except ValueError:
+            error_msg = {
+                    "error": "{} already has a contract for this transaction".\
+                            format(template.owner.email)
+            }
+            raise BadTransactionRequest(error_msg)
+
+        # Copy over the clauses.
+        for c in clauses:
+            c.pk = None
+            c.contract = template
+            c.save()
+ 
+        serializer = self.serializer_class()
+        return serializer.to_representation(template), status.HTTP_201_CREATED
+
+    def _create_from_ctype(self, ctype, transaction):
+        """
+        Create a new contract from a given contract type.
+        Args:
+            `ctype` (str) -- The type of contract we're creating.
+            `transaction` (Transaction) -- The transaction this contract
+                belongs to.
+        """
+
+        # Ensure that the contract type is present, and valid.
+        try:
             valid_contract_types = ['coop', 'condo', 'house', 'townhouse', \
                     'manufactured', 'vacant_land']
             if ctype not in valid_contract_types:
@@ -78,10 +150,7 @@ class ContractList(APIView):
             error_msg = {'error': 'contract type must be specified! none given.'}
             raise BadTransactionRequest(error_msg)
         
-        transaction = Transaction.objects.get(pk=transaction_pk)
-        self.check_object_permissions(self.request, transaction)
-
-        serializer = self.serializer_class(data=request.data)
+        serializer = self.serializer_class(data=self.request.data)
         if serializer.is_valid():
             contract = serializer.save(
                     owner=self.request.user,
@@ -90,9 +159,9 @@ class ContractList(APIView):
             )
             contract_create_signal.send(sender=contract)
 
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return serializer.data, status.HTTP_201_CREATED
         
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return serializer.errors, status.HTTP_400_BAD_REQUEST
 
 
 '''   Contract detail view. '''
@@ -118,8 +187,10 @@ class ContractDetail(APIView):
             
             return contract
         except Contract.DoesNotExist:
-            error_msg = {'error': 'contract with pk {} does not exist.'}.\
+            error_msg = {
+                    "error": "contract with pk {} does not exist.".\
                          format(pk)
+            }
             raise BadTransactionRequest(error_msg)
 
     ''' Handles GET requests on Contract models.
@@ -210,8 +281,8 @@ class ClauseList(APIView):
                 dynamic_clauses.append(serializer(clause).data)
 
         response = {
-                        'static_clauses': static_clauses,
-                        'dynamic_clauses': dynamic_clauses
+                "static_clauses": static_clauses,
+                "dynamic_clauses": dynamic_clauses
         }
         
         return Response(response)
