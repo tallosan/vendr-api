@@ -173,6 +173,11 @@ LOGGING = {
         "version": 1,
         "disable_existing_loggers": False,
         "handlers": {
+            "debug-handler": {
+                "level": "DEBUG",
+                "class": "logging.FileHandler",
+                "filename": "/var/log/django/debug.log",
+            },
             "error-handler": {
                 "level": "ERROR",
                 "class": "logging.FileHandler",
@@ -181,8 +186,8 @@ LOGGING = {
         },
         "loggers": {
             "django": {
-                "handlers": ["error-handler"],
-                "level": "ERROR",
+                "handlers": ["debug-handler", "error-handler"],
+                "level": "DEBUG",
                 "propogate": True,
             },
         },
