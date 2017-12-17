@@ -1,3 +1,15 @@
+### Important Update:  Documentation Migration
+
+I've recently started using Slate, and as such the documentation for the VenDoor API has migrated over to our `developer` subdomain, which you can find here:
+
+https://developer.vendoor.ca/#introduction
+
+**Note**, it his highly recommended that use the new site, as the docs here are deprecated and will not contain the most up-to-date information.
+
+
+---
+
+
 ```javascript
 BASE_URL = api.vendr.xyz/v1/
 ```
