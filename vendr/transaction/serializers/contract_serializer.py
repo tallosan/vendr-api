@@ -9,7 +9,7 @@ from django.contrib.auth import get_user_model
 
 from rest_framework import serializers
 
-from transaction.models import Contract
+from transaction.models import Contract, AbstractContractFactory
 from transaction.exceptions import BadTransactionRequest
 
 User = get_user_model()
