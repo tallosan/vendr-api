@@ -106,9 +106,14 @@ class TransactionDetail(APIView):
     def put(self, request, transaction_pk, format=None):
         
         # Handle invalid nested updates.
-        if request.data.get('offers') or request.data.get('contracts'):
-            error_msg = { 'error': 'nested fields should be handled through ' +\
-                                    'their respective endpoints, not transaction/.' }
+        if request.data.get("offers") or request.data.get("contracts"):
+            error_msg = { "error": "nested fields should be handled through " +\
+                                    "their respective endpoints, not transaction/." }
+            raise BadTransactionRequest(detail=error_msg)
+        if request.data.get("stage", None):
+            error_msg = {
+                    "error": "stage must be advanced through the `/advance` endpoint."
+            }
             raise BadTransactionRequest(detail=error_msg)
 
         # Get the given transaction, and perform an update.
