@@ -446,6 +446,7 @@ class Contract(models.Model):
     )
     
     is_template = models.BooleanField(default=False)
+    title = models.CharField(max_length=32, default=None, null=True)
     
     @property
     def clauses(self):
@@ -603,6 +604,8 @@ class DynamicClause(Clause):
             ("CHIP", "chip"),
             ("TOGGLE", "toggle")
     )
+
+    rejected = models.NullBooleanField(default=None)
 
     # Inheritance scheme.
     _content_type = models.ForeignKey(
