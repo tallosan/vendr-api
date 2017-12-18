@@ -93,19 +93,22 @@ class VersaPayAdapter(PaymentAdapterInterface):
         """
         Format a request from the given payment for the VersaPay API. Two
         key things to note here -- firstly, VersaPay requires the amount to be
-        in cents, and secondly, VersaPay requests require a transaction type. As
-        we're always sending requests, we can hardcode this to "send".
+        in cents, and secondly, VersaPay requests require a transaction type.
         """
 
-        recipient_email = payment.recipient.email
         amount_in_cents = payment.amount * 100
-        transaction_type = "request"
+
+        # Convert the payment type accordingly.
+        conv_type = lambda t: "direct_credit" if t == "DEBIT" else "direct_debit"
+        transaction_type = conv_type(payment._payment_type)
 
         payment_data = {
-                "email": recipient_email,
                 "amount_in_cents": amount_in_cents,
                 "transaction_type": transaction_type,
-                "message": payment.message
+                "email": settings.PAYMENT_EMAIL,
+                "fund_token": settings.PAYMENT_FUND_TOKEN,
+                "message": payment.message,
+                "business_name": "WaiHome"
         }
 
         return payment_data
@@ -137,13 +140,15 @@ class Payment(models.Model):
             settings.AUTH_USER_MODEL,
             related_name="payee",
             db_index=True,
-            on_delete=SET_NAME
+            on_delete=models.SET_NULL,
+            null=True
     )
     recipient = models.ForeignKey(
             settings.AUTH_USER_MODEL,
             related_name="recipient",
             db_index=True,
-            on_delete=SET_NAME
+            on_delete=models.SET_NULL,
+            null=True
     )
     transaction = models.ForeignKey(
             Transaction,
@@ -156,6 +161,7 @@ class Payment(models.Model):
     amount = models.FloatField()
     message = models.CharField(max_length=140, blank=True, null=True)
     timestamp = models.DateTimeField(auto_now_add=True, editable=False)
+    _payment_type = models.CharField(max_length=7, default="DEBIT")
 
     _payee = models.CharField(max_length=64, default=None, null=True)
     _recipient = models.CharField(max_length=64, default=None, null=True)
@@ -169,30 +175,17 @@ class Payment(models.Model):
         """
 
         if self._state.adding:
-            self.send_payment(
-                    self.payee, 
-                    self.recipient, 
-                    self.transaction, 
-                    self.amount
-            )
+            self.send_payment()
 
             self._payee = self.payee
             self._recipient = self.recipient
 
         super(Payment, self).save(*args, **kwargs)
 
-    def send_payment(self, payee, recipient, transaction, amount):
+    def send_payment(self):
         """
         Send the given amount from the payee's account to the recipient's.
-        Args:
-            `payee` (KUser) -- The user making the payment.
-            `recipient` (KUser) -- The user receiving the payment.
-            `transaction` (Transaction) -- The transaction this payment is being
-                made on.
-            `amount` (float) -- The payment amount.
-            `timestamp` (date) -- The date the payment was made.
         """
 
-        # TODO: Assert both users have accounts.
         self.payment_adapter.send_payment(self)
 
