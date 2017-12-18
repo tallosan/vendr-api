@@ -24,6 +24,7 @@ class TemplateContractSerializer(ContractSerializer):
         model = Contract
         fields = ContractSerializer.Meta.fields + (
                 "is_template",
+                "title"
         )
 
     def create(self, validated_data):
