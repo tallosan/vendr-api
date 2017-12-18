@@ -205,6 +205,10 @@ EMAIL_HOST_PASSWORD = 'iZappNewton42'
 EMAIL_VERIFICATION_ADDRESS = 'noreply@vendoor.ca'
 EMAIL_USE_TLS = True
 
+# Email settings.
+PAYMENT_EMAIL = "payments@waihome.ca"
+PAYMENT_FUND_TOKEN = "BA4TC34K9LI6"
+
 # Internationalization
 # https://docs.djangoproject.com/en/1.10/topics/i18n/
 LANGUAGE_CODE = 'en-us'
