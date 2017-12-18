@@ -10,7 +10,8 @@ from rest_framework import serializers
 from transaction.models import Transaction, Offer, Contract
 from transaction.exceptions import BadTransactionRequest
 
-from .nested_serializers import OfferSerializer, ContractSerializer
+from .offer_serializer import OfferSerializer
+from .contract_serializer import ContractSerializer
 
 User = get_user_model()
 
