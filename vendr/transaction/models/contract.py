@@ -425,6 +425,7 @@ class Contract(models.Model):
         `timestamp` (date) -- The date this contract was created.
         `owner` (User) -- The owner of this contract.
         `is_template` (bool) -- Indicates whether or not this is a template.
+        `title` (str) -- An optional title used for ID'ing contracts.
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -920,7 +921,10 @@ class UFFIClause(DynamicToggleClause):
 
 class PaymentMethodClause(DynamicDropdownClause):
 
-    value = models.CharField(max_length=15, blank=True, null=True)
+    value = models.CharField(
+            max_length=15,
+            default="Credit Card"
+    )
 
     def save(self, *args, **kwargs):
        
@@ -932,7 +936,9 @@ class PaymentMethodClause(DynamicDropdownClause):
     def preview(self):
 
         payment_method = self.value
-        preview = DYNAMIC_STANDARD_CLAUSES['payment_method']['preview']
+        preview = DYNAMIC_STANDARD_CLAUSES['payment_method']['preview'].format(
+                payment_method
+        )
         
         return preview
 
