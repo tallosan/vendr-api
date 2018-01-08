@@ -19,7 +19,7 @@ const REDIS_PORT = 9200;
 const REDIS_NOTIFICATION_CHANNEL_GLOB = 'users.[0-9]*.notifications';
 const REDIS_MESSAGES_CHANNEL_GLOB = 'users.[0-9]*.inbox';
 
-const BASE_AUTH_URL = 'http://api.vendr.xyz/v1/users/'
+const BASE_AUTH_URL = 'http://api.vendoor.ca/v1/users/'
 const BASE_AUTH_END = '/ws_auth/'
 
 var Regex = require('regex');
