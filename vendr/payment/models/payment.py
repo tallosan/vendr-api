@@ -44,9 +44,15 @@ class PaymentAdapterInterface(object):
 
     BASE_URL = ""
 
-    def create_payment(self, payment):
+    def deposit(self, payment):
         """
-        Create a payment using the given payment.
+        Deposit a payment to VenDoor.
+        """
+        raise NotImplementedError("error: all adapters must implement this.")
+
+    def forward(self, recipient):
+        """
+        Forward a payment from VenDoor.
         """
         raise NotImplementedError("error: all adapters must implement this.")
 
@@ -64,15 +70,17 @@ class VersaPayAdapter(PaymentAdapterInterface):
 
     BASE_URL = "https://demo.versapay.com"
 
-    def send_payment(self, payment):
+    def deposit(self, payment):
         """
-        Send a payment using the given payment.
+        Deposit a payment to VenDoor.
+        Args:
+            `payment` (Payment) -- The Payment to be deposited.
         """
 
         create_url = "{}/api/transactions".format(self.BASE_URL)
 
-        api_token = "GLCbtpMHVWwctcfNxDVw"
-        api_key = "yce6_WgurFnts8r1my8n"
+        api_token = "mH6KaxxNud9tUghmHdfL"
+        api_key = "V5fk96tHMyNvsZyYH5WJ"
 
         # Send the request, and ensure that it went through successfully.
         payment_data = self._format_request(payment)
@@ -89,6 +97,13 @@ class VersaPayAdapter(PaymentAdapterInterface):
 
         return request.status_code
 
+    def forward(self, recipient):
+        """
+        Forward a payment from VenDoor.
+        Args:
+            `recipient` (User) -- The recipient of this payment forwarding.
+        """
+
     def _format_request(self, payment):
         """
         Format a request from the given payment for the VersaPay API. Two
@@ -101,14 +116,17 @@ class VersaPayAdapter(PaymentAdapterInterface):
         # Convert the payment type accordingly.
         conv_type = lambda t: "direct_credit" if t == "DEBIT" else "direct_debit"
         transaction_type = conv_type(payment._payment_type)
-
         payment_data = {
                 "amount_in_cents": amount_in_cents,
                 "transaction_type": transaction_type,
                 "email": settings.PAYMENT_EMAIL,
                 "fund_token": settings.PAYMENT_FUND_TOKEN,
+                "institution_number": settings.PAYMENT_INSTITUTION_NUMBER,
+                "branch_number": settings.PAYMENT_BRANCH_NUMBER,
+                "account_number": settings.PAYMENT_ACCOUNT_NUMBER,
                 "message": payment.message,
-                "business_name": "WaiHome"
+                "memo": "WaiHome memo",
+                "business_name": "WaiHome",
         }
 
         return payment_data
@@ -116,7 +134,12 @@ class VersaPayAdapter(PaymentAdapterInterface):
 
 class Payment(models.Model):
     """
-    Represents a payment in the system, from one user to another.
+    Represents a payment in the system. Payments ultimately have two types on
+    VenDoor. First, we have EFT deposits. These are made by buyers to VenDoor,
+    at the start of the 'Closing' stage. VenDoor will then act as an escrow
+    service and hold said deposit until the transaction completes. If the
+    transaction is successful, then the deposit is forwarded on to the seller.
+    If not, we'll return all the funds back to the buyer.
     Fields:
         `payee` (KUser) -- The user making the payment.
         `recipient` (KUser) -- The user receiving the payment.
@@ -175,17 +198,30 @@ class Payment(models.Model):
         """
 
         if self._state.adding:
-            self.send_payment()
-
+            self.deposit()
             self._payee = self.payee
             self._recipient = self.recipient
 
         super(Payment, self).save(*args, **kwargs)
 
-    def send_payment(self):
+    def deposit(self):
         """
-        Send the given amount from the payee's account to the recipient's.
+        Deposit the payment into a VenDoor account. This is the first step
+        in the payment lifecycle.
         """
 
-        self.payment_adapter.send_payment(self)
+        self.payment_adapter.deposit(self)
+
+    def forward(self, recipient):
+        """
+        Forward the payment from a VenDoor account, where it has been held
+        in escrow, to the target recipient. The recipient is designated
+        according to the state of the transaction. If it was successful, then
+        we'll send it on to the seller. If not, we'll return the funds to
+        the buyer.
+        Args:
+            `recipient` (User) -- The recipient for this payment.
+        """
+
+        self.payment_adapter.forward(self)
 
