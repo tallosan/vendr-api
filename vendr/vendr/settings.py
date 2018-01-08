@@ -206,8 +206,12 @@ EMAIL_VERIFICATION_ADDRESS = 'noreply@vendoor.ca'
 EMAIL_USE_TLS = True
 
 # Email settings.
-PAYMENT_EMAIL = "payments@waihome.ca"
+PAYMENT_EMAIL = "andrew.tallos@mail.utoronto.ca"
 PAYMENT_FUND_TOKEN = "BA4TC34K9LI6"
+PAYMENT_INSTITUTION_NUMBER = 004
+PAYMENT_BRANCH_NUMBER = 99960
+PAYMENT_ACCOUNT_NUMBER = 777777777777
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.10/topics/i18n/
