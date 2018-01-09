@@ -18,6 +18,8 @@ from rest_framework.exceptions import APIException
 
 from model_utils.managers import InheritanceManager
 
+from vendr_core.models import IndexedModel
+
 
 class PropertyManager(InheritanceManager):
 
@@ -34,9 +36,10 @@ class PropertyManager(InheritanceManager):
         return unfeature_queue
 
 
-'''   [Abstract] Property model. Contains all data pertaining to a particular 
-      Property instance. '''
-class Property(models.Model):
+class Property(IndexedModel):
+    """
+    Property model. Contains all data pertaining to a particular Property instance.
+    """
 
     # Allows us to use polymorphism.
     objects = PropertyManager()
@@ -46,11 +49,11 @@ class Property(models.Model):
                     on_delete=models.CASCADE, db_index=True)
 
     # Main attributes.
-    price        = models.FloatField(blank=False, db_index=True)
-    sqr_ftg      = models.FloatField(blank=False, db_index=True)
-    n_bedrooms   = models.IntegerField(blank=False, db_index=True)
-    n_bathrooms  = models.IntegerField(blank=False, db_index=True)
-    description  = models.CharField(max_length=350, blank=True, null=True)
+    price = models.FloatField(blank=False, db_index=True)
+    sqr_ftg = models.FloatField(blank=False, db_index=True)
+    n_bedrooms = models.IntegerField(blank=False, db_index=True)
+    n_bathrooms = models.IntegerField(blank=False, db_index=True)
+    description = models.CharField(max_length=350, blank=True, null=True)
     
     # Foreign key attributes.
     # [ location, history, tax_records, features, images ]
@@ -73,13 +76,15 @@ class Property(models.Model):
             db_index=True
     )
     created_time = models.DateTimeField(auto_now_add=True)
-    views        = models.IntegerField(default=0)
-    offers       = models.IntegerField(default=0)
-    is_featured  = models.BooleanField(default=True, db_index=True)
-    display_pic  = models.PositiveIntegerField(default=0)
-    
-    ''' (Abstract) Returns the serializer type for this model. '''
+    views = models.IntegerField(default=0)
+    offers = models.IntegerField(default=0)
+    is_featured = models.BooleanField(default=True, db_index=True)
+    display_pic = models.PositiveIntegerField(default=0)
+
     def get_serializer(self):
+        """
+        (Abstract) Returns the serializer type for this model.
+        """
         raise NotImplementedError("'get_serializer()' must be implemented.")
 
     def save(self, *args, **kwargs):
@@ -95,8 +100,10 @@ class Property(models.Model):
             
         super(Property, self).save(*args, **kwargs)
 
-    ''' Custom field validation. '''
     def clean(self):
+        """
+        Custom field validation.
+        """
     
         # Ensure that we have no negative values.
         if any((field < 0) for field in [self.price, self.sqr_ftg,
@@ -109,6 +116,27 @@ class Property(models.Model):
 
         super(Property, self).clean()
 
+    @property
+    def _index_meta(self):
+        """
+        Configuration for property indexing.
+        """
+
+        # Meta-Details for indexing.
+        _meta = {
+                "_index": "property",
+                "_indexable": [
+                    "location__country",
+                    "location__province",
+                    "location__city",
+                    "location__address",
+                    "location__postal_code"
+                ],
+                "_doc_type": "property_doc"
+        }
+
+        return _meta
+    
 
 '''   Parent for all cooperative ownership properties. '''
 class CoOp(Property):
