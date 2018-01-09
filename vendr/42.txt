@@ -1,0 +1,2 @@
+# This lets you create an array of dictionaries!
+x = JSONField(default=list([]))
