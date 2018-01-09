@@ -120,6 +120,13 @@ CACHES = {
     }
 }
 
+# Elastic Search config.
+ES_HOST = "localhost"
+ES_PORT = "14000"
+ES_CONFIG = {
+    "host": ES_HOST,
+    "port": ES_PORT
+}
 
 # Celery.
 BROKER_URL = 'redis://{}:{}'.format(REDIS_HOST, REDIS_PORT)
