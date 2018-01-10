@@ -39,6 +39,11 @@ urlpatterns = [
         # Favourites view.
         url(r'^(?P<pk>[0-9]+)/subscriptions/$', views.SubscriptionsList.as_view()),
 
+        # Account views.
+        url(r'^(?P<pk>[0-9]+)/accounts/$', views.AccountList.as_view()),
+        url(r'^(?P<pk>[0-9]+)/accounts/(?P<account_pk>[0-9a-f-]+)/$',
+            views.AccountDetail.as_view()),
+
         # Template views.
         url(r'^(?P<pk>[0-9]+)/templates/$', views.TemplateList.as_view()),
         url(r'^(?P<pk>[0-9]+)/templates/(?P<template_pk>[0-9a-f-]+)/$',
