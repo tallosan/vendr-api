@@ -14,8 +14,8 @@ es = Elasticsearch([settings.ES_CONFIG])
 
 class IndexedModel(models.Model):
     """
-    Mixin for models that require indexing functionality. Note, the
-    core setup here is in the `_index_meta` property, which contains
+    Custom model for models that require indexing functionality. Note,
+    the core setup here is in the `_index_meta` property, which contains
     a persistant and immutable representation of our model's config.
     Fields:
         `_document_id` (int) -- The Elastic search index Id.
@@ -52,9 +52,9 @@ class IndexedModel(models.Model):
         here due to the way this method will be used going forwards.
         """
 
-        _meta = self._index_meta
 
         # Ensure that all ES configs are initialized, and valid.
+        _meta = self._index_meta
         assert _meta["_indexable"] and _meta["_doc_type"], (
                 "error: the `_index_meta` property does not have an "
                 "an entry for `_indexable`. nothing to index!"
@@ -82,6 +82,9 @@ class IndexedModel(models.Model):
     def _create(self, values, _meta):
         """
         Create a document in the given index.
+        Args:
+            `values` (dict) -- The values contained in the document.
+            `_meta` (dict) -- Meta config for index.
         """
 
         response = es.index(
@@ -95,6 +98,9 @@ class IndexedModel(models.Model):
     def _update(self, values, _meta):
         """
         Updates a document in the given index.
+        Args:
+            `values` (dict) -- The values contained in the document.
+            `_meta` (dict) -- Meta config for index.
         """
 
         response = es.update(
