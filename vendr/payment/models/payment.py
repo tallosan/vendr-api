@@ -134,12 +134,21 @@ class VersaPayAdapter(PaymentAdapterInterface):
 
 class Payment(models.Model):
     """
-    Represents a payment in the system. Payments ultimately have two types on
-    VenDoor. First, we have EFT deposits. These are made by buyers to VenDoor,
-    at the start of the 'Closing' stage. VenDoor will then act as an escrow
-    service and hold said deposit until the transaction completes. If the
-    transaction is successful, then the deposit is forwarded on to the seller.
-    If not, we'll return all the funds back to the buyer.
+    Represents a payment in the VenDoor system. There are essentially three
+    parties in the transaction -- VenDoor, the payee, and the recipient. Thus,
+    we have three separate bank accounts for each. The VenDoor details are
+    saved in our `settings` file, whereas the user's details are provided on
+    payment creation.
+
+    Payment Lifecycle:
+
+    - Firstly, the buyer sends an EFT deposit to our (VenDoor) account.
+    - We subsequently will act as an escrow service, and hold this deposit
+      until the transaction completes.
+    - If the transaction is successful, then the deposit is forwarded on to
+      the seller at the agreed upon time (see contract).
+    - If not, we'll return all the funds back to the buyer.
+
     Fields:
         `payee` (KUser) -- The user making the payment.
         `recipient` (KUser) -- The user receiving the payment.
@@ -147,12 +156,16 @@ class Payment(models.Model):
             made on.
         `amount` (float) -- The payment amount.
         `message` (str) -- An optional message from the payee to recipient.
-        `timestamp` (date) -- The date the payment was made.
+        `*_bank` (str) -- The user's bank name (e.g. BMO).
+        `*_insitution_number` (str) -- The user's institution number.
+        `*_branch_number` (str) -- The user's bank branch number.
+        `*_account_number` (str) -- The user's bank account number.
         `_payee` (str) -- The user's name. Used for historical purposes.
         `_recipient` (str) -- The user's name. Used for historical purposes.
+        `timestamp` (date) -- The date the payment was made.
         `payment_adapter` (adapter) -- An adapter for a payment API.
     """
-    
+
     id = models.UUIDField(
             primary_key=True,
             default=uuid.uuid4,
@@ -183,12 +196,26 @@ class Payment(models.Model):
 
     amount = models.FloatField()
     message = models.CharField(max_length=140, blank=True, null=True)
-    timestamp = models.DateTimeField(auto_now_add=True, editable=False)
-    _payment_type = models.CharField(max_length=7, default="DEBIT")
 
+    """
+    # Payee banking details.
+    payee_bank = models.CharField(max_length=64)
+    payee_insitution_number = models.CharField(max_length=3)
+    payee_branch_number = models.CharField(max_length=5)
+    payee_account_number = models.CharField(max_length=12)
+
+    # Recipient banking details.
+    recipient_bank = models.CharField(max_length=64)
+    recipient_insitution_number = models.CharField(max_length=3)
+    recipient_branch_number = models.CharField(max_length=5)
+    recipient_account_number = models.CharField(max_length=12)
+
+    # Meta details.
     _payee = models.CharField(max_length=64, default=None, null=True)
     _recipient = models.CharField(max_length=64, default=None, null=True)
+    timestamp = models.DateTimeField(auto_now_add=True, editable=False)
 
+    """
     payment_adapter = VersaPayAdapter()
 
     def save(self, *args, **kwargs):
@@ -199,8 +226,9 @@ class Payment(models.Model):
 
         if self._state.adding:
             self.deposit()
-            self._payee = self.payee
-            self._recipient = self.recipient
+
+            self._payee = self.payee.full_name
+            self._recipient = self.recipient.full_name
 
         super(Payment, self).save(*args, **kwargs)
 
