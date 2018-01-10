@@ -21,7 +21,12 @@ class IndexedModel(models.Model):
         `_document_id` (int) -- The Elastic search index Id.
     """
     
-    _document_id = models.PositiveIntegerField(null=True, blank=True)
+    # Note, this is optional to keep the model validator happy.
+    _document_id = models.CharField(
+            max_length=32,
+            null=True,
+            blank=True
+    )
 
     class Meta:
         abstract= True
@@ -42,7 +47,9 @@ class IndexedModel(models.Model):
     def _create_or_update_index(self):
         """
         Creates (or updates) an index, and returns a boolean value
-        that represents the result of the operation.
+        that represents the result of the operation. Condensing these
+        two operations into a single wrapping function makes sense
+        here due to the way this method will be used going forwards.
         """
 
         _meta = self._index_meta
@@ -58,14 +65,24 @@ class IndexedModel(models.Model):
                 "be specified!"
         )
 
-        # Index the necessary values. Note, the elasticsearch-py
-        # `index()` method will create or update by default, so we
-        # don't need to work with this any more.
         model_cls = type(self)
         values = model_cls.objects.values(
                 "pk",
                 *_meta["_indexable"]
         ).get(id=self.pk)
+
+        # Index (or re-index) the necessary values.
+        if self._document_id == None:
+            document_id = self._create(values, _meta)
+        else:
+            document_id = self._update(values, _meta)
+
+        return document_id
+
+    def _create(self, values, _meta):
+        """
+        Create a document in the given index.
+        """
 
         response = es.index(
                 index=_meta["_index"],
@@ -73,20 +90,35 @@ class IndexedModel(models.Model):
                 body=values
         )
 
-        return response["result"] == "created"
+        return response["_id"]
+
+    def _update(self, values, _meta):
+        """
+        Updates a document in the given index.
+        """
+
+        response = es.update(
+                index=_meta["_index"],
+                doc_type=_meta["_doc_type"],
+                id=self._document_id,
+                body={"doc": values}
+        )
+
+        return response["_id"]
 
     def _delete_index(self):
         """
         Remove this model's document from the index it belongs to.
         """
 
-        es.delete(
-                index=self._index,
-                doc_type=self._doc_type,
+        _meta = self._index_meta
+        response = es.delete(
+                index=_meta["_index"],
+                doc_type=_meta["_doc_type"],
                 id=self._document_id
         )
 
-        return es
+        return response["result"] == "deleted"
 
     def save(self, *args, **kwargs):
         """
@@ -96,14 +128,16 @@ class IndexedModel(models.Model):
         model (and an recently updated index).
         """
 
-        # TODO: Determine how to update, and route flow accordingly.
-        super(IndexedModel, self).save(*args, **kwargs)
-        #if self._state.adding:
-            #create
+        # We can't create any indices before the initial save because
+        # the related model's fields won't be available. Thus, to get
+        # around this we can keep track of the state, and do a second
+        # save if the model is newly created.
+        set_doc_id = True if self._state.adding else False
 
-        index_created = self._create_or_update_index()
-        if not index_created:
-            raise ValueError("error: index could not be created.")
+        super(IndexedModel, self).save(*args, **kwargs)
+        self._document_id = self._create_or_update_index()
+        if set_doc_id:
+            self.save()
 
     def delete(self, *args, **kwargs):
         """
@@ -111,6 +145,6 @@ class IndexedModel(models.Model):
         subsequently reflected in our index.
         """
 
-        super(IndexedModel, self).delete(*args, **kwargs)
         self._delete_index()
+        super(IndexedModel, self).delete(*args, **kwargs)
 
