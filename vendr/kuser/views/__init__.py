@@ -13,4 +13,5 @@ from template_views import TemplateList, TemplateDetail, TemplateClauseList, \
 from transaction_view import TransactionList
 from contract_view import ContractList
 from closing_view import ClosingList
+from account_views import AccountList, AccountDetail
 
