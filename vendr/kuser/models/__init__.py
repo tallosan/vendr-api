@@ -8,4 +8,5 @@ from .notification import BaseNotification, \
         OpenHouseCreateNotification, OpenHouseChangeNotification, \
         OpenHouseCancelNotification, OpenHouseStartNotification
 from .chat import Chat, Message
+from .accounts import BaseAccount, BankAccount, AbstractAccountFactory
 
