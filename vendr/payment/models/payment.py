@@ -197,7 +197,6 @@ class Payment(models.Model):
     amount = models.FloatField()
     message = models.CharField(max_length=140, blank=True, null=True)
 
-    """
     # Payee banking details.
     payee_bank = models.CharField(max_length=64)
     payee_insitution_number = models.CharField(max_length=3)
@@ -215,7 +214,6 @@ class Payment(models.Model):
     _recipient = models.CharField(max_length=64, default=None, null=True)
     timestamp = models.DateTimeField(auto_now_add=True, editable=False)
 
-    """
     payment_adapter = VersaPayAdapter()
 
     def save(self, *args, **kwargs):
