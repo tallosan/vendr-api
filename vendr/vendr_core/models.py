@@ -143,7 +143,7 @@ class IndexedModel(models.Model):
         super(IndexedModel, self).save(*args, **kwargs)
         self._document_id = self._create_or_update_index()
         if set_doc_id:
-            self.save()
+            super(IndexedModel, self).save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
         """
