@@ -83,7 +83,10 @@ class VersaPayAdapter(PaymentAdapterInterface):
         api_key = "V5fk96tHMyNvsZyYH5WJ"
 
         # Send the request, and ensure that it went through successfully.
-        payment_data = self._format_request(payment)
+        payment_data = self._format_request(
+                payment,
+                transaction_type="direct_debit"
+        )
         request = requests.post(
                 create_url,
                 data=payment_data,
@@ -104,18 +107,25 @@ class VersaPayAdapter(PaymentAdapterInterface):
             `recipient` (User) -- The recipient of this payment forwarding.
         """
 
-    def _format_request(self, payment):
+        # Send the request, and ensure that it went through successfully.
+        payment_data = self._format_request(
+                payment,
+                transaction_type="direct_credit"
+        )
+
+    def _format_request(self, payment, transaction_type):
         """
         Format a request from the given payment for the VersaPay API. Two
         key things to note here -- firstly, VersaPay requires the amount to be
         in cents, and secondly, VersaPay requests require a transaction type.
+        Args:
+            `payment` (Payment) -- The payment model being formatted.
+            `transaction_type` (str) -- The type of transaction (e.g. debit).
         """
 
         amount_in_cents = payment.amount * 100
 
         # Convert the payment type accordingly.
-        conv_type = lambda t: "direct_credit" if t == "DEBIT" else "direct_debit"
-        transaction_type = conv_type(payment._payment_type)
         payment_data = {
                 "amount_in_cents": amount_in_cents,
                 "transaction_type": transaction_type,
@@ -156,12 +166,8 @@ class Payment(models.Model):
             made on.
         `amount` (float) -- The payment amount.
         `message` (str) -- An optional message from the payee to recipient.
-        `*_bank` (str) -- The user's bank name (e.g. BMO).
-        `*_insitution_number` (str) -- The user's institution number.
-        `*_branch_number` (str) -- The user's bank branch number.
-        `*_account_number` (str) -- The user's bank account number.
-        `_payee` (str) -- The user's name. Used for historical purposes.
-        `_recipient` (str) -- The user's name. Used for historical purposes.
+        `payee_account` (Account) -- The payee's payment account.
+        `recipient_account` (Account) -- The recipient's payment account.
         `timestamp` (date) -- The date the payment was made.
         `payment_adapter` (adapter) -- An adapter for a payment API.
     """
@@ -174,14 +180,14 @@ class Payment(models.Model):
 
     payee = models.ForeignKey(
             settings.AUTH_USER_MODEL,
-            related_name="payee",
+            related_name="sent_payments",
             db_index=True,
             on_delete=models.SET_NULL,
             null=True
     )
     recipient = models.ForeignKey(
             settings.AUTH_USER_MODEL,
-            related_name="recipient",
+            related_name="received_payments",
             db_index=True,
             on_delete=models.SET_NULL,
             null=True
@@ -197,17 +203,23 @@ class Payment(models.Model):
     amount = models.FloatField()
     message = models.CharField(max_length=140, blank=True, null=True)
 
-    # Payee banking details.
-    payee_bank = models.CharField(max_length=64)
-    payee_insitution_number = models.CharField(max_length=3)
-    payee_branch_number = models.CharField(max_length=5)
-    payee_account_number = models.CharField(max_length=12)
+    # Payee banking account.
+    payee_account = models.ForeignKey(
+            "kuser.BaseAccount",
+            related_name="payee_account",
+            db_index=True,
+            on_delete=models.SET_NULL,
+            null=True
+    )
 
-    # Recipient banking details.
-    recipient_bank = models.CharField(max_length=64)
-    recipient_insitution_number = models.CharField(max_length=3)
-    recipient_branch_number = models.CharField(max_length=5)
-    recipient_account_number = models.CharField(max_length=12)
+    # Recipient banking account.
+    recipient_account = models.ForeignKey(
+            "kuser.BaseAccount",
+            related_name="recipient_account",
+            db_index=True,
+            on_delete=models.SET_NULL,
+            null=True
+    )
 
     # Meta details.
     _payee = models.CharField(max_length=64, default=None, null=True)
@@ -222,11 +234,12 @@ class Payment(models.Model):
         payee's account to the recipient's.
         """
 
+        # Submit the initial deposit to the VenDoor account, and set the
+        # meta-details (if possible).
         if self._state.adding:
             self.deposit()
-
-            self._payee = self.payee.full_name
-            self._recipient = self.recipient.full_name
+            self._payee = getattr(self.payee, "full_name", None)
+            self._recipient = getattr(self.recipient, "full_name", None)
 
         super(Payment, self).save(*args, **kwargs)
 
