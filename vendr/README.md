@@ -4,7 +4,7 @@ I've recently started using Slate, and as such the documentation for the VenDoor
 
 https://developer.vendoor.ca/#introduction
 
-**Note**, it his highly recommended that use the new site, as the docs here are deprecated and will not contain the most up-to-date information.
+**Note**, it his highly recommended that you use the new site, as the docs here are deprecated and will not contain the most up-to-date information.
 
 
 ---
