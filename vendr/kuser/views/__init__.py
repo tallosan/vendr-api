@@ -14,4 +14,5 @@ from transaction_view import TransactionList
 from contract_view import ContractList
 from closing_view import ClosingList
 from account_views import AccountList, AccountDetail
+from payment_views import PaymentList
 
