@@ -86,13 +86,21 @@ class Transaction(models.Model):
     buyer_accepted_contract  = models.BooleanField(default=False)
     seller_accepted_contract = models.BooleanField(default=False)
 
-    # The transaction stage we're in.
-    STAGES     = (
-                    (0, 'OFFER_STAGE'),
-                    (1, 'NEGOTIATION_STAGE'),
-                    (2, 'CLOSING_STAGE')
+    payment = models.ForeignKey(
+            "payment.Payment",
+            related_name="payment",
+            on_delete=models.SET_NULL,
+            db_index=True,
+            null=True
     )
-    stage      = models.IntegerField(choices=STAGES, default=0)
+
+    # The transaction stage we"re in.
+    STAGES = (
+            (0, "OFFER_STAGE"),
+            (1, "NEGOTIATION_STAGE"),
+            (2, "CLOSING_STAGE")
+    )
+    stage = models.IntegerField(choices=STAGES, default=0)
     start_date = models.DateTimeField(auto_now_add=True)
     
     # Signal handler.
@@ -102,7 +110,7 @@ class Transaction(models.Model):
     objects = TransactionManager()
 
     class Meta:
-        unique_together = ['buyer', 'seller', 'kproperty']
+        unique_together = ["buyer", "seller", "kproperty"]
 
     def check_field_permissions(self, user_id, fields):
         """
@@ -116,14 +124,16 @@ class Transaction(models.Model):
         # Mapping between users and the restricted fields that
         # they cannot access.
         restricted_fields = {
-                                self.buyer.pk: [ 'seller_accepted_offer',
-                                                 'seller_accepted_contract',
-                                                 'contracts_equal'
-                                ],
-                                self.seller.pk: [ 'buyer_accepted_offer',
-                                                  'buyer_accepted_contract',
-                                                  'contracts_equal'
-                                ]
+                self.buyer.pk: [
+                    "seller_accepted_offer",
+                    "seller_accepted_contract",
+                    "contracts_equal"
+                ],
+                self.seller.pk: [
+                    "buyer_accepted_offer",
+                    "buyer_accepted_contract",
+                    "contracts_equal"
+                ]
         }
         
         # Return False if a field is not in the user's permission scope.
@@ -149,21 +159,21 @@ class Transaction(models.Model):
         if self.stage == 0 and \
            (self.buyer_accepted_offer != self.seller_accepted_offer) or \
            (self.buyer_accepted_offer == None):
-                raise ValueError('the buyer and seller offers are not equal.')
+                raise ValueError("the buyer and seller offers are not equal.")
 
         # Contracts. Ensure that contracts are equal, & both parties have accepted.
         elif self.stage == 1:
             if not self.buyer_accepted_contract or not self.seller_accepted_contract:
-                raise ValueError('buyer and seller must both accept contract.')
+                raise ValueError("buyer and seller must both accept contract.")
             if not self.contracts_equal:
-                raise ValueError('contracts must be equal.')
+                raise ValueError("contracts must be equal.")
 
             # Create the closing stage.
             self.create_closing()
 
         # Closing. Check the closing conditions are satisfied.
         elif self.stage == 2:
-            raise ValueError('this has yet to be implemented.')
+            raise ValueError("this has yet to be implemented.")
 
         self.stage += 1
         self.save()
@@ -175,7 +185,7 @@ class Transaction(models.Model):
             user_id: The ID of the given user.
         """
 
-        return self.offers.filter(owner=user_id).order_by('-timestamp')
+        return self.offers.filter(owner=user_id).order_by("-timestamp")
     
     def create_closing(self):
         """
