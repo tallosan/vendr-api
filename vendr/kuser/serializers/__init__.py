@@ -13,5 +13,5 @@ from user_transaction_serializer import UserTransactionSerializer
 from user_contract_serializer import UserContractSerializer
 from user_closing_serializer import UserClosingSerializer
 from tfa_serializer import TwoFactorAuthSerializer
-from accounts_serializer import BankAccountSerializer, GenericAccountSerializer
+from account_serializer import BankAccountSerializer, GenericAccountSerializer
 
