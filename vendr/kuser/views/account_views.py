@@ -19,8 +19,13 @@ from vendr_core.permissions import IsOwner
 
 
 class AccountList(ListCreateAPIView):
-
-    # TODO: Implement LIST view function.
+    """
+    Accounts list view.
+    Fields:
+        `_mapping` (dict of Serializers) -- The model-serializer
+            mapping for the different account type. Note, we'll use
+            a generic serializer for read operations.
+    """
 
     queryset = BaseAccount.objects.all()
     permission_classes = (IsOwner, )
@@ -53,14 +58,22 @@ class AccountList(ListCreateAPIView):
 
 
 class AccountDetail(RetrieveUpdateDestroyAPIView):
+    """
+    Accounts detail view.
+    Fields:
+        `_mapping` (dict of Serializers) -- The model-serializer
+            mapping for the different account type. Note, we'll use
+            a generic serializer for read operations.
+        `_instance_type` (str) -- The type of instance to map to.
+    """
 
     queryset = BaseAccount.objects.all()
     permission_classes = (IsOwner, )
     lookup_url_kwarg = "account_pk"
     _mapping = {
+            "generic": GenericAccountSerializer,
             "bank": BankAccountSerializer
     }
-
     _instance_type = None
 
     def get_object(self):
@@ -79,6 +92,10 @@ class AccountDetail(RetrieveUpdateDestroyAPIView):
         return instance
 
     def get_serializer_class(self):
+
+        if self.request.method == "GET":
+            self._instance_type = "generic"
+
         return self._mapping[self._instance_type]
 
     def update(self, request, *args, **kwargs):

@@ -49,8 +49,6 @@ class GenericAccountSerializer(serializers.ModelSerializer):
         appropriate serializer. 
         """
 
-        # TODO: Allow generic reads.
-
         # Downcast.
         if hasattr(instance, "bankaccount"):
             serializer = BankAccountSerializer()
