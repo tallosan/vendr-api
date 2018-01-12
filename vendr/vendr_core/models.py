@@ -139,10 +139,13 @@ class IndexedModel(models.Model):
         # around this we can keep track of the state, and do a second
         # save if the model is newly created.
         set_doc_id = True if self._state.adding else False
-
         super(IndexedModel, self).save(*args, **kwargs)
         self._document_id = self._create_or_update_index()
+
+        # If the model was just created, we need to toggle `force_insert`
+        # to false, so that we don't attempt to create a duplicate.
         if set_doc_id:
+            kwargs["force_insert"] = False
             super(IndexedModel, self).save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
