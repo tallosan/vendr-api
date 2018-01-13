@@ -68,7 +68,7 @@ class VersaPayAdapter(PaymentAdapterInterface):
     Payment adapter for VersaPay.
     """
 
-    BASE_URL = "https://demo.versapay.com"
+    BASE_URL = "https://demo.versapay.com/api/transactions"
 
     def deposit(self, payment):
         """
@@ -77,41 +77,50 @@ class VersaPayAdapter(PaymentAdapterInterface):
             `payment` (Payment) -- The Payment to be deposited.
         """
 
-        create_url = "{}/api/transactions".format(self.BASE_URL)
-
-        api_token = "mH6KaxxNud9tUghmHdfL"
-        api_key = "V5fk96tHMyNvsZyYH5WJ"
-
-        # Send the request, and ensure that it went through successfully.
-        payment_data = self._format_request(
-                payment,
-                transaction_type="direct_debit"
-        )
-        request = requests.post(
-                create_url,
-                data=payment_data,
-                auth=HTTPBasicAuth(api_token, api_key)
+        result = self._send_request(
+                payment=payment,
+                transaction_type="direct_credit"
         )
 
-        assert request.status_code == 201, (
-                "error: this payment failed to go through, and returned "
-                "a status code of {}".format(request.status_code)
-        )
+        return result
 
-        return request.status_code
-
-    def forward(self, recipient):
+    def forward(self, payment):
         """
         Forward a payment from VenDoor.
         Args:
             `recipient` (User) -- The recipient of this payment forwarding.
         """
 
-        # Send the request, and ensure that it went through successfully.
+        result = self._send_request(
+                payment=payment,
+                transaction_type="direct_debit"
+        )
+
+        return result
+
+    def _send_request(self, payment, transaction_type):
+        """
+        Send a request with the given transaction type.
+        Args:
+            `payment` (Payment) -- The Payment involved in this request.
+            `transaction_type` (str) -- The type of payment to send.
+        """
+
+        # Format the request.
         payment_data = self._format_request(
                 payment,
-                transaction_type="direct_credit"
+                transaction_type=transaction_type
         )
+
+        # Send the request.
+        auth = HTTPBasicAuth(settings.PAYMENT_API_TOKEN, settings.PAYMENT_API_KEY)
+        request = requests.post(
+                self.BASE_URL,
+                data=payment_data,
+                auth=auth
+        )
+
+        return request.status_code
 
     def _format_request(self, payment, transaction_type):
         """
@@ -123,6 +132,7 @@ class VersaPayAdapter(PaymentAdapterInterface):
             `transaction_type` (str) -- The type of transaction (e.g. debit).
         """
 
+        # Note, we need to send the amount in cents.
         amount_in_cents = payment.amount * 100
 
         # Convert the payment type accordingly.
@@ -249,18 +259,30 @@ class Payment(models.Model):
         in the payment lifecycle.
         """
 
-        self.payment_adapter.deposit(self)
+        assert self.payee, (
+                "Payment model must have a `payee` attached."
+        )
+        assert self.payee_account, (
+                "no `payee_account` associated with this payment."
+        )
 
-    def forward(self, recipient):
+        return self.payment_adapter.deposit(self)
+
+    def forward(self):
         """
         Forward the payment from a VenDoor account, where it has been held
         in escrow, to the target recipient. The recipient is designated
         according to the state of the transaction. If it was successful, then
         we'll send it on to the seller. If not, we'll return the funds to
         the buyer.
-        Args:
-            `recipient` (User) -- The recipient for this payment.
         """
 
-        self.payment_adapter.forward(self)
+        assert self.recipient, (
+                "Payment model must have a `recipient` attached."
+        )
+        assert self.recipient_account, (
+                "no `recipient_account` associated with this payment."
+        )
+
+        return self.payment_adapter.forward(self)
 
