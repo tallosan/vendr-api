@@ -1,2 +1,4 @@
-from .payment_views import PaymentList, PaymentDetail
+from .payment_views import (
+        PaymentList, PaymentDetail, PaymentDeposit, PaymentForward
+)
 
