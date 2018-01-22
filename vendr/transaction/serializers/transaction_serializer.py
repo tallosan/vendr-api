@@ -27,7 +27,7 @@ class TransactionSerializer(serializers.ModelSerializer):
     contracts = ContractSerializer(Contract.objects.all(), many=True, required=False)
     closing = serializers.PrimaryKeyRelatedField(read_only=True)
     
-    payment = serializers.PrimaryKeyRelatedField(read_only=True)
+    deposit = serializers.SerializerMethodField()
 
     class Meta:
         model = Transaction
@@ -46,7 +46,8 @@ class TransactionSerializer(serializers.ModelSerializer):
                 "seller_accepted_contract",
                 "contracts",
                 "closing",
-                "payment"
+                "payment",
+                "deposit"
         )
 
     def create(self, validated_data):
@@ -88,6 +89,7 @@ class TransactionSerializer(serializers.ModelSerializer):
             instance (Transaction) -- The Transaction model to update.
             validated_data (dict) -- The Transaction update data.
         """
+        print validated_data
         
         # Go through each given field, and perform an update.
         for field in validated_data.keys():
@@ -139,4 +141,19 @@ class TransactionSerializer(serializers.ModelSerializer):
         }
  
         return offers
+
+    def get_deposit(self, instance):
+        """
+        Retrieves the deposit amount (if any) for the given transaction.
+        Args:
+            `instance` (Transaction) -- The transaction we're serializing.
+        """
+        
+        deposit = None
+        
+        accepted_offer = getattr(instance, "seller_accepted_offer", None)
+        if accepted_offer:
+            deposit = Offer.objects.get(pk=accepted_offer).deposit
+
+        return deposit
 
