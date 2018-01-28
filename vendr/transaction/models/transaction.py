@@ -86,6 +86,9 @@ class Transaction(models.Model):
     buyer_accepted_contract  = models.BooleanField(default=False)
     seller_accepted_contract = models.BooleanField(default=False)
 
+    buyer_accepted_closing  = models.BooleanField(default=False)
+    seller_accepted_closing = models.BooleanField(default=False)
+
     payment = models.ForeignKey(
             "payment.Payment",
             related_name="payment",
@@ -127,12 +130,14 @@ class Transaction(models.Model):
                 self.buyer.pk: [
                     "seller_accepted_offer",
                     "seller_accepted_contract",
-                    "contracts_equal"
+                    "contracts_equal",
+                    "seller_accepted_closing",
                 ],
                 self.seller.pk: [
                     "buyer_accepted_offer",
                     "buyer_accepted_contract",
-                    "contracts_equal"
+                    "contracts_equal",
+                    "buyer_accepted_closing",
                 ]
         }
         

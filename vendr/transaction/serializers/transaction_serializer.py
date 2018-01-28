@@ -47,7 +47,9 @@ class TransactionSerializer(serializers.ModelSerializer):
                 "contracts",
                 "closing",
                 "payment",
-                "deposit"
+                "deposit",
+                "buyer_accepted_closing",
+                "seller_accepted_closing",
         )
 
     def create(self, validated_data):
