@@ -11,7 +11,7 @@ https://developer.vendoor.ca/#introduction
 
 
 ```javascript
-BASE_URL = api.vendr.xyz/v1/
+BASE_URL = api.vendoor.xyz/v1/
 ```
 
 ### OAuth Keys:
@@ -30,16 +30,16 @@ dGoXvLV0vU3EikGHUcBrRXhxLJyyLxW4jlReSmJC2UQbo8EYta5W1MWZsLfgVgHh5k5zkhuSprIIVL6T
 The API is protected via OAuth. The OAuth endpoint is:
 
 ```javascript
-http://api.vendr.xyz/o/token/
+http://api.vendoor.xyz/o/token/
 ```
 
 In order to access protected resources, a user needs an access token.
-The following example shows how the user with *email* 'superdev@vendr.xyz', and *password* 'reallystrongpassword' is able
+The following example shows how the user with *email* 'superdev@vendoor.xyz', and *password* 'reallystrongpassword' is able
   to obtain an access token from the OAuth endpoint.
 
 
 ```javascript
-curl -X POST -d "grant_type=password&username=superdev@vendr.xyz&password=reallystrongpassword" -u"client_id:client_secret" http://api.zappme.xyz/o/token/'
+curl -X POST -d "grant_type=password&username=superdev@vendoor.xyz&password=reallystrongpassword" -u"client_id:client_secret" http://api.zappme.xyz/o/token/'
 ```
 
 Upon issuing the above request, we'll get back a response that looks like ...
@@ -56,7 +56,7 @@ Upon issuing the above request, we'll get back a response that looks like ...
 
 We can now use the access token to query any of superdev0's protected resources by setting the Authorization header.
 ```javascript
-http http://api.vendr.xyz/v1/transactions/8e4ae98c-f40a-4cfc-9e7b-6a6773149170/ 'Authorization:Bearer access_token'
+http http://api.vendoor.xyz/v1/transactions/8e4ae98c-f40a-4cfc-9e7b-6a6773149170/ 'Authorization:Bearer access_token'
 ```
 
 ---
@@ -77,10 +77,10 @@ then you should be omitting pagination terms.
 ```javascript
 
 // Get the first user in the user set.
-GET	api.vendr.xyz/v1/users/?limit=1&offset0
+GET	api.vendoor.xyz/v1/users/?limit=1&offset0
 
 // Get the second and third property.
-GET	api.vendr.xyz/v1/properties/?limit=2&offset=1
+GET	api.vendoor.xyz/v1/properties/?limit=2&offset=1
 ```
 ---
 
@@ -130,7 +130,7 @@ Content-Type: application/json
 Multipart/form-data
 { images ... }
 
-POST	http://api.vendr.xyz/v1/properties/<?ptype>	(Authentication Required)
+POST	http://api.vendoor.xyz/v1/properties/<?ptype>	(Authentication Required)
 ```
 
 #### Request Parameters:
@@ -150,9 +150,9 @@ Get, Update, or Delete the property object with the given ID.
 they can be updated on the Property object directly, this may result in unexpected behaviour*.
 
 ```javascript
-GET	http://api.vendr.xyz/v1/properties/<id>/
-UPDATE	http://api.vendr.xyz/v1/properties/<id>/    (Authentication Required)
-DELETE	http://api.vendr.xyz/v1/properties/<id>/    (Authentication Required)
+GET	http://api.vendoor.xyz/v1/properties/<id>/
+UPDATE	http://api.vendoor.xyz/v1/properties/<id>/    (Authentication Required)
+DELETE	http://api.vendoor.xyz/v1/properties/<id>/    (Authentication Required)
 ```
 
 #### Request Parameters:
@@ -223,13 +223,13 @@ Instead, they should be updated on their respective endpoints as follows:
 
 ```javascript
 List Views:
-POST	http://api.vendr.xyz/v1/properties/<property_id>/nestedmodel/
-GET	http://api.vendr.xyz/v1/properties/<property_id>/nestedmodel/
+POST	http://api.vendoor.xyz/v1/properties/<property_id>/nestedmodel/
+GET	http://api.vendoor.xyz/v1/properties/<property_id>/nestedmodel/
 
 Detail Views:
-GET	http://api.vendr.xyz/v1/properties/<property_id>/nestedmodel/<nested_model_pk>/
-UPDATE	http://api.vendr.xyz/v1/properties/<property_id>/nestedmodel/<nested_model_pk>/   (Authentication Required)
-DELETE	http://api.vendr.xyz/v1/properties/<property_id>/nestedmodel/<nested_model_pk>/   (Authentication Required)
+GET	http://api.vendoor.xyz/v1/properties/<property_id>/nestedmodel/<nested_model_pk>/
+UPDATE	http://api.vendoor.xyz/v1/properties/<property_id>/nestedmodel/<nested_model_pk>/   (Authentication Required)
+DELETE	http://api.vendoor.xyz/v1/properties/<property_id>/nestedmodel/<nested_model_pk>/   (Authentication Required)
 ```
 
 We currently have three nested models directly on Property objects: **Features, Tax Records, and Images**.
@@ -239,7 +239,7 @@ We currently have three nested models directly on Property objects: **Features, 
 Their respective endpoints are as follows:
 
 ```javascript
-BASE = http://api.vendr.xyz/v1/properties/<property_id>
+BASE = http://api.vendoor.xyz/v1/properties/<property_id>
 
 Features:
 List View	BASE/features/
@@ -278,7 +278,7 @@ BODY
 	"end": "2017-08-06T20:38:39.069638Z"
 }
 
-POST	http://api.vendr.xyz/v1/properties/<property_id>/openhouses/    (Authentication Required)
+POST	http://api.vendoor.xyz/v1/properties/<property_id>/openhouses/    (Authentication Required)
 ```
 
 Buyers -- RSVP to an Open House.
@@ -289,7 +289,7 @@ BODY
 
 }
 
-POST	http://api.vendr.xyz/v1/properties/<property_id>/openhouses/<openhouse_id>/rsvp/    (Authentication Required)
+POST	http://api.vendoor.xyz/v1/properties/<property_id>/openhouses/<openhouse_id>/rsvp/    (Authentication Required)
 ```
 
 ---
@@ -302,7 +302,7 @@ Create a new user.
 ```javascript
 BODY
 {
-	"email":"superdev@vendr.xyz",
+	"email":"superdev@vendoor.xyz",
 	"password": "reallystrongpassword",
 	"profile":
 		{
@@ -314,7 +314,7 @@ BODY
 	}
 }
 
-POST	http://api.vendr.xyz/v1/users/
+POST	http://api.vendoor.xyz/v1/users/
 ```
 
 
@@ -340,9 +340,9 @@ prof_pic=@my_image.jpg
 Resolving the actual model to update (in this case, the Profile model) is all taken care of in the API.
 
 ```javascript
-GET	http://api.vendr.xyz/v1/users/<id>/
-UPDATE	http://api.vendr.xyz/v1/users/<id>/    (Authentication Required)
-DELETE	http://api.vendr.xyz/v1/users/<id>/    (Authentication Required)
+GET	http://api.vendoor.xyz/v1/users/<id>/
+UPDATE	http://api.vendoor.xyz/v1/users/<id>/    (Authentication Required)
+DELETE	http://api.vendoor.xyz/v1/users/<id>/    (Authentication Required)
 ```
 
 #### Request Parameters:
@@ -357,7 +357,7 @@ DELETE	http://api.vendr.xyz/v1/users/<id>/    (Authentication Required)
 ```javascript
 [
     {
-        "email": "tallosan@vendr.xyz", 
+        "email": "tallosan@vendoor.xyz", 
         "id": 1, 
         "join_date": "2017-06-19T17:10:41.713149Z", 
         "notifications": [], 
@@ -367,7 +367,7 @@ DELETE	http://api.vendr.xyz/v1/users/<id>/    (Authentication Required)
             "first_name": "", 
             "last_name": "", 
             "location": "", 
-            "prof_pic": "http://api.vendr.xyz/media/profiles/default.svg"
+            "prof_pic": "http://api.vendoor.xyz/media/profiles/default.svg"
         }, 
         "properties": [
 		3
@@ -404,7 +404,7 @@ RESPONSE
 	'id': 'cfbe6be2-0952-4edf-a775-83e84aafe764'
 }
 
-GET	http://api.vendr.xyz/v1/users/<user_id>/    (Authentication Required)
+GET	http://api.vendoor.xyz/v1/users/<user_id>/    (Authentication Required)
 ```
 
 ### Chat & Message Endpoint:
@@ -444,7 +444,7 @@ BODY
 	    "opened": false, 
 	    "participants": [
 		{
-		    "prof_pic": "https://s3.ca-central-1.amazonaws.com/media.vendr/users/prof_pics/62b1ad07-394f-4270-bb88-3d2ac046e29b", 
+		    "prof_pic": "https://s3.ca-central-1.amazonaws.com/media.vendoor/users/prof_pics/62b1ad07-394f-4270-bb88-3d2ac046e29b", 
 		    "user_pk": 1
 		}, 
 		{
@@ -459,7 +459,7 @@ BODY
     }
 ]
 
-POST	http://api.vendr.xyz/v1/users/<user_id>/chat/    (Authentication Required)
+POST	http://api.vendoor.xyz/v1/users/<user_id>/chat/    (Authentication Required)
 ```
 Note the field '*unopened_chat_count*'. This is a count of the number of chats that have yet to be unopened.
 
@@ -477,7 +477,7 @@ RESPONSE
     "opened": true, 
     "participants": [
         {
-            "prof_pic": "https://s3.ca-central-1.amazonaws.com/media.vendr/users/prof_pics/62b1ad07-394f-4270-bb88-3d2ac046e29b", 
+            "prof_pic": "https://s3.ca-central-1.amazonaws.com/media.vendoor/users/prof_pics/62b1ad07-394f-4270-bb88-3d2ac046e29b", 
             "user_pk": 1
         }, 
         {
@@ -488,7 +488,7 @@ RESPONSE
     "pk": "7008de48-a08d-4c4e-886e-2a2bbd8fba27"
 }
 
-GET	http://api.vendr.xyz/v1/users/<user_id>/chat/<chat_id>/    (Authentication Required)
+GET	http://api.vendoor.xyz/v1/users/<user_id>/chat/<chat_id>/    (Authentication Required)
 ```
 
 Again, it is accessible to each participant ONLY on their respective endpoints, and all further actions (message
@@ -503,7 +503,7 @@ BODY
 	"content": "Hey, I love the house! Any chance I could come by to check it out tomorrow?"
 }
 
-POST	http://api.vendr.xyz/v1/users/<user_id>/chat/<chat_id>/messages/    (Authentication Required)
+POST	http://api.vendoor.xyz/v1/users/<user_id>/chat/<chat_id>/messages/    (Authentication Required)
 ```
 
 A user can POST a message to a chat. These messages are now accessible to all of the chat's participants.
@@ -531,7 +531,7 @@ RESPONSE
     }
 }
 
-GET	http://api.vendr.xyz/v1/users/<user_id>/chat/<chat_id>/messages/    (Authentication Required)
+GET	http://api.vendoor.xyz/v1/users/<user_id>/chat/<chat_id>/messages/    (Authentication Required)
 ```
 
 ### Live Endpoints -- Notifications, Messages [GET]:
@@ -539,12 +539,12 @@ GET	http://api.vendr.xyz/v1/users/<user_id>/chat/<chat_id>/messages/    (Authent
 The Vendr API also allows for live updates. These updates exist on the following subdomain:
 
 ```javascript
-BASE_URL = notify.vendr.xyz/
+BASE_URL = notify.vendoor.xyz/
 ```
 
 To access them, you will need to establish a websocket connection using Socket.IO.
 
-An example client can be found [here](https://github.com/tallosan/vendr-api/blob/master/vendr/notify/test_client.js)
+An example client can be found [here](https://github.com/tallosan/vendoor-api/blob/master/vendoor/notify/test_client.js)
 
 Currently our API supports live updates for notifications and messages.
 
@@ -554,8 +554,8 @@ These endpoints are documented below. Note, a user will need to suppy their OAut
 ```javascript
 Resource:	URL:				Channel:
 
-Notifications	http://notify.vendr.xyz/	users.<user_pk>.notifications    (Authentication Required)
-Messages	http://notify.vendr.xyz/	users.<user_pk>.inbox    	 (Authentication Required)
+Notifications	http://notify.vendoor.xyz/	users.<user_pk>.notifications    (Authentication Required)
+Messages	http://notify.vendoor.xyz/	users.<user_pk>.inbox    	 (Authentication Required)
 ```
 
 ***Schedule [GET]***
@@ -575,7 +575,7 @@ BODY
     ...
 ]
 
-GET	http://api.vendr.xyz/v1/users/<user_id>/schedule/	(Authentication Required)
+GET	http://api.vendoor.xyz/v1/users/<user_id>/schedule/	(Authentication Required)
 ```
 Note, this endpoint is **read-only**. If a user wants to update and/or delete an RSVP, they **must** do so on the original **/kproperty/<kproperty_id>/rsvp/** endpoint.
 
@@ -588,7 +588,7 @@ Note, this endpoint is **read-only**. If a user wants to update and/or delete an
 Search on either properties or users.
 
 ```javascript
-GET	http://api.vendr.xyz/v1/search?<stype>&<query=query value>
+GET	http://api.vendoor.xyz/v1/search?<stype>&<query=query value>
 ```
 
 #### Request Parameters:
@@ -653,7 +653,7 @@ search?stype=property&ptypes=[House, Condo]
 Get autocomplete results on the given resource.
 
 ```javascript
-GET	http://api.vendr.xyz/v1/autocomplete?<type>&<term=term value>
+GET	http://api.vendoor.xyz/v1/autocomplete?<type>&<term=term value>
 ```
 
 #### Request Parameters:
@@ -703,7 +703,7 @@ Users should be setting their corresponding accepted resource once they are happ
 To move to the next stage, the user should attempt send an empty POST request to /advance, as shown below. This will only succeed if the 2 accepted resources are not null, and are equal (i.e. point to the same offer).
 
 ```
-POST	http://api.vendr.xyz/v1/transactions<transaction_id>/advance/	(Authentication Required)
+POST	http://api.vendoor.xyz/v1/transactions<transaction_id>/advance/	(Authentication Required)
 ```
 
 **POST**
@@ -713,7 +713,7 @@ Create a new transaction.
 ```javascript
 BODY:
 
-POST	http://api.vendr.xyz/v1/transactions/    (Authentication Required)
+POST	http://api.vendoor.xyz/v1/transactions/    (Authentication Required)
 ```
 
 **GET, UPDATE, DELETE**:
@@ -721,9 +721,9 @@ POST	http://api.vendr.xyz/v1/transactions/    (Authentication Required)
 Get, Update, or Delete the transaction object with the given ID.
 
 ```javascript
-GET	http://api.vendr.xyz/v1/transactions/<id>/    (Authentication Required)
-UPDATE	http://api.vendr.xyz/v1/transactions/<id>/    (Authentication Required)
-DELETE	http://api.vendr.xyz/v1/transactions/<id>/    (Authentication Required)
+GET	http://api.vendoor.xyz/v1/transactions/<id>/    (Authentication Required)
+UPDATE	http://api.vendoor.xyz/v1/transactions/<id>/    (Authentication Required)
+DELETE	http://api.vendoor.xyz/v1/transactions/<id>/    (Authentication Required)
 ```
 
 #### Request Parameters:
@@ -781,7 +781,7 @@ BODY:
 	"comment": "Hello Mr. Owner, I hope you will consider my offer."
 }
 
-POST	http://api.vendr.xyz/v1/transactions/<transaction_id>/offers/    (Authentication Required)
+POST	http://api.vendoor.xyz/v1/transactions/<transaction_id>/offers/    (Authentication Required)
 ```
 
 #### Request Parameters:
@@ -796,8 +796,8 @@ POST	http://api.vendr.xyz/v1/transactions/<transaction_id>/offers/    (Authentic
 Get or Delete the offer object with the given ID. N.B. -- It makes no sense for us to handle updates.
 
 ```javascript
-GET	http://api.vendr.xyz/v1/transactions/<transaction_id>/offers/<offer_id>    (Authentication Required)
-DELETE	http://api.vendr.xyz/v1/transactions/<transaction_id>/offers/<offer_id>    (Authentication Required)
+GET	http://api.vendoor.xyz/v1/transactions/<transaction_id>/offers/<offer_id>    (Authentication Required)
+DELETE	http://api.vendoor.xyz/v1/transactions/<transaction_id>/offers/<offer_id>    (Authentication Required)
 ```
 
 #### Request Parameters:
@@ -854,7 +854,7 @@ Create a new contract.
 
 ```javascript
 
-POST	http://api.vendr.xyz/v1/transactions/<transaction_id>/contracts/?ctype/    (Authentication Required)
+POST	http://api.vendoor.xyz/v1/transactions/<transaction_id>/contracts/?ctype/    (Authentication Required)
 ```
 
 #### Request Parameters:
@@ -870,9 +870,9 @@ POST	http://api.vendr.xyz/v1/transactions/<transaction_id>/contracts/?ctype/    
 Get, Update, or Delete the contract object with the given ID.
 
 ```javascript
-GET	http://api.vendr.xyz/v1/transactions/<transaction_id>/contracts/<contract_id>    (Authentication Required)
-UPDATE	http://api.vendr.xyz/v1/transactions/<transaction_id>/contracts/<contract_id>    (Authentication Required)
-DELETE	http://api.vendr.xyz/v1/transactions/<transaction_id>/contracts/<contract_id>    (Authentication Required)
+GET	http://api.vendoor.xyz/v1/transactions/<transaction_id>/contracts/<contract_id>    (Authentication Required)
+UPDATE	http://api.vendoor.xyz/v1/transactions/<transaction_id>/contracts/<contract_id>    (Authentication Required)
+DELETE	http://api.vendoor.xyz/v1/transactions/<transaction_id>/contracts/<contract_id>    (Authentication Required)
 ```
 
 #### Request Parameters:
@@ -887,7 +887,7 @@ DELETE	http://api.vendr.xyz/v1/transactions/<transaction_id>/contracts/<contract
 
 ```javascript
 {
-    "clauses": "http://api.vendr.xyz/v1/transactions/23fdebcf-82f4-4150-92c7-9724ec02669e/contracts/85336987-4e53-40cd-a02d-253658167c57/clauses/", 
+    "clauses": "http://api.vendoor.xyz/v1/transactions/23fdebcf-82f4-4150-92c7-9724ec02669e/contracts/85336987-4e53-40cd-a02d-253658167c57/clauses/", 
     "id": "85336987-4e53-40cd-a02d-253658167c57", 
     "owner": 1, 
     "timestamp": "2017-06-19T19:43:21.081036Z"
@@ -917,9 +917,9 @@ To update a dynamic clause's value, set its 'value' field.
 Get, Update, or Delete the contract object with the given ID.
 
 ```javascript
-GET	http://api.vendr.xyz/v1/transactions/<transaction_id>/contracts/<contract_id>/clause/<clause_id>    (Authentication Required)
-UPDATE	http://api.vendr.xyz/v1/transactions/<transaction_id>/contracts/<contract_id>/clause/<clause_id>    (Authentication Required)
-DELETE	http://api.vendr.xyz/v1/transactions/<transaction_id>/contracts/<contract_id>/clause/<clause_id>    (Authentication Required)
+GET	http://api.vendoor.xyz/v1/transactions/<transaction_id>/contracts/<contract_id>/clause/<clause_id>    (Authentication Required)
+UPDATE	http://api.vendoor.xyz/v1/transactions/<transaction_id>/contracts/<contract_id>/clause/<clause_id>    (Authentication Required)
+DELETE	http://api.vendoor.xyz/v1/transactions/<transaction_id>/contracts/<contract_id>/clause/<clause_id>    (Authentication Required)
 ```
 
 #### Request Parameters:
@@ -980,7 +980,7 @@ Get the Closing object.
     }
 ]
 
-GET	http://api.vendr.xyz/v1/transactions/<transaction_id>/closing/    (Authentication Required)
+GET	http://api.vendoor.xyz/v1/transactions/<transaction_id>/closing/    (Authentication Required)
 ```
 
 #### Request Parameters:
