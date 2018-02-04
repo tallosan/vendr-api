@@ -16,7 +16,7 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'w^bbsqn0y6lra9xt30idw)^dkle!ej&eytp+j(3m!m2s0qb$m7'
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", None)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 #DEBUG = True
@@ -95,7 +95,7 @@ DATABASES = {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
         'NAME': 'vendr',
         'USER': 'dier',
-        'PASSWORD': 'spurs',
+        'PASSWORD': os.environ.get("DB_PASSWORD", None),
         'HOST': 'localhost',
         'PORT': '',
     }
@@ -201,25 +201,25 @@ LOGGING = {
 }
 
 # Two-Factor authentication.
-MESSAGEBIRD_ACCESS_KEY = 'beaHim4WCzD2IVUE9zRwThJlt'
+MESSAGEBIRD_ACCESS_KEY = os.environ.get("MESSAGEBIRD_ACCESS_KEY", None)
 MESSAGEBIRD_SENDER = '+14509905541'
 
 # SMTP settings.
 EMAIL_HOST = 'smtp.sendgrid.net'
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'tallosan'
-EMAIL_HOST_PASSWORD = 'iZappNewton42'
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", None)
 EMAIL_VERIFICATION_ADDRESS = 'noreply@vendoor.ca'
 EMAIL_USE_TLS = True
 
 # Email settings.
 PAYMENT_EMAIL = "andrew.tallos@mail.utoronto.ca"
-PAYMENT_FUND_TOKEN = "BA4TC34K9LI6"
-PAYMENT_INSTITUTION_NUMBER = 004
-PAYMENT_BRANCH_NUMBER = 99960
-PAYMENT_ACCOUNT_NUMBER = 777777777777
-PAYMENT_API_TOKEN = "mH6KaxxNud9tUghmHdfL"
-PAYMENT_API_KEY = "V5fk96tHMyNvsZyYH5WJ"
+PAYMENT_FUND_TOKEN = os.environ.get("PAYMENT_FUND_TOKEN", None)
+PAYMENT_INSTITUTION_NUMBER = os.environ.get("PAYMENT_INSTITUTION_NUMBER", None)
+PAYMENT_BRANCH_NUMBER = os.environ.get("PAYMENT_BRANCH_NUMBER", None)
+PAYMENT_ACCOUNT_NUMBER = os.environ.get("PAYMENT_ACCOUNT_NUMBER", None)
+PAYMENT_API_TOKEN = os.environ.get("PAYMENT_API_TOKEN", None)
+PAYMENT_API_KEY = os.environ.get("PAYMENT_API_KEY", None)
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.10/topics/i18n/
@@ -237,6 +237,7 @@ USE_TZ = True
 # a view's `request.path`.
 VERSION  = 1
 BASE_URL = 'https://api.vendoor.ca/v{}/'.format(VERSION)
+BASE_WEB_URL = "https://www.vendoor.ca/"
 BASE_API_URL = 'https://api.vendoor.ca'
 
 # Static files (CSS, JavaScript, Images)
