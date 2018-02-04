@@ -39,8 +39,8 @@ def openhouse_start():
     # Notify anyone who has RSVP'd to an open house that is starting soon.
     for openhouse in OpenHouse.objects.starting_soon_queue():
         if not openhouse._recipients_notified:
-            resource = '{}properties/{}/openhouses/{}/'.format(
-                    settings.BASE_URL,
+            resource = '{}listings/{}/open-houses/{}/'.format(
+                    settings.BASE_WEB_URL,
                     openhouse.kproperty.pk,
                     openhouse.pk
             )
