@@ -157,7 +157,7 @@ class OfferDetail(APIView):
         
         # Send offer withdrawal notification, and delete the offer.
         resource = '{}transactions/{}/offers/'.format(
-                settings.BASE_URL,
+                settings.BASE_WEB_URL,
                 transaction_pk
         )
         offer_withdraw_signal.send(sender=offer, resource=resource)

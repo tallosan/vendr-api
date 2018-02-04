@@ -219,8 +219,8 @@ class ContractDetail(APIView):
         contract = self.get_object(transaction_pk, pk)
 
         # Send contract withdrawal notification, and delete the contract.
-        resource = '{}transactions/{}/'.format(
-                settings.BASE_URL,
+        resource = '{}transactions/{}/contracts/'.format(
+                settings.BASE_WEB_URL,
                 transaction_pk
         )
         contract_withdraw_signal.send(
@@ -411,9 +411,10 @@ class ClauseBatchDetail(ClauseDetail):
         
         n_changes = len(response)
         contract = Contract.objects.get(pk=contract_pk)
-        resource = '{}{}'.format(
-                settings.BASE_API_URL,
-                request.path.replace('batch/', '')
+        resource = '{}transactions/{}/contracts/{}/'.format(
+                settings.BASE_WEB_URL,
+                transaction_pk,
+                contract.pk
         )
         clause_change_signal.send(
                 sender=contract,

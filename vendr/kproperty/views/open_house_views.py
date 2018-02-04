@@ -68,8 +68,8 @@ class OpenHouseList(APIView):
             )
 
             # Get the open house's URL resource, and send a change signal.
-            resource = '{}properties/{}/openhouses/{}/'.format(
-                    settings.BASE_URL,
+            resource = '{}listings/{}/open-houses/{}/'.format(
+                    settings.BASE_WEB_URL,
                     open_house.kproperty.pk,
                     open_house.pk
             )
@@ -134,8 +134,8 @@ class OpenHouseDetail(APIView):
             serializer.save()
 
             # Get the open house's URL resource, and send a change signal.
-            resource = '{}properties/{}/openhouses/{}/'.format(
-                    settings.BASE_URL,
+            resource = '{}listings/{}/open-houses/{}/'.format(
+                    settings.BASE_WEB_URL,
                     open_house.kproperty.pk,
                     open_house.pk
             )
@@ -157,10 +157,9 @@ class OpenHouseDetail(APIView):
         open_house = self.get_object(oh_pk)
     
         # Get the open house's URL resource, and send a change signal.
-        resource = '{}properties/{}/openhouses/{}/'.format(
-                settings.BASE_URL,
+        resource = '{}listings/{}/open-houses/'.format(
+                settings.BASE_WEB_URL,
                 open_house.kproperty.pk,
-                open_house.pk
         )
         openhouse_cancel_signal.send(sender=open_house, resource=resource)
         open_house.delete()
