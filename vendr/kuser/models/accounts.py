@@ -56,13 +56,13 @@ class BankAccount(BaseAccount):
     A user's bank account.
     Fields:
         `bank` (str) -- The user's bank name (e.g. BMO).
-        `insitution_number` (str) -- The user's institution number.
+        `institution_number` (str) -- The user's institution number.
         `branch_number` (str) -- The user's bank branch number.
         `account_number` (str) -- The user's bank account number
     """
 
     bank = models.CharField(max_length=64)
-    insitution_number = models.CharField(max_length=3)
+    institution_number = models.CharField(max_length=3)
     branch_number = models.CharField(max_length=5)
     account_number = models.CharField(max_length=12)
 

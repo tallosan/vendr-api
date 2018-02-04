@@ -31,7 +31,7 @@ class BankAccountSerializer(BaseAccountSerializer):
         model = BankAccount
         fields = BaseAccountSerializer.Meta.fields + (
                 "bank",
-                "insitution_number",
+                "institution_number",
                 "branch_number",
                 "account_number",
         )

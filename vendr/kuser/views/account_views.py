@@ -48,7 +48,11 @@ class AccountList(ListCreateAPIView):
     
     def post(self, request, *args, **kwargs):
 
+        print request.data
+        print request.data.get
         account_type = request.data.get("account_type", None)
+        print account_type
+
         assert account_type, (
                 "error: `account_type` must be specified."
         )
