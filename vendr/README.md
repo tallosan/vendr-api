@@ -17,11 +17,10 @@ BASE_URL = api.vendoor.xyz/v1/
 ### OAuth Keys:
 
 #### client_id:
-
-foOWPCONHldZXPnkZ1wVUEBemyVZp3dcARY4p7Lb
+<CLIENT_ID>
 
 #### client_secret:
-dGoXvLV0vU3EikGHUcBrRXhxLJyyLxW4jlReSmJC2UQbo8EYta5W1MWZsLfgVgHh5k5zkhuSprIIVL6TZ8x4qPplqieeO9C4gQqN8VMXvnFx64PlmLdZ7tpbRdapychk
+<CLIENT_SECRET>
 
 ---
 
