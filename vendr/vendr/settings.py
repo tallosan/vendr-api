@@ -94,7 +94,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
         'NAME': 'vendr',
-        'USER': 'dier',
+        'USER': '<USER>',
         'PASSWORD': os.environ.get("DB_PASSWORD", None),
         'HOST': 'localhost',
         'PORT': '',
@@ -202,7 +202,7 @@ LOGGING = {
 
 # Two-Factor authentication.
 MESSAGEBIRD_ACCESS_KEY = os.environ.get("MESSAGEBIRD_ACCESS_KEY", None)
-MESSAGEBIRD_SENDER = '+14509905541'
+MESSAGEBIRD_SENDER = '<SENDER>'
 
 # SMTP settings.
 EMAIL_HOST = 'smtp.sendgrid.net'
